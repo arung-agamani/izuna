@@ -1,6 +1,6 @@
 FROM node:16-buster-slim as builder
 WORKDIR /tmp
-COPY package.json /tmp/
+COPY package.json tsconfig.json /tmp/
 RUN npm install
 COPY ./src ./src
 RUN npm run build
