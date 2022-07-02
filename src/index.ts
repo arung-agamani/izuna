@@ -22,7 +22,7 @@ server.register(fastifySwagger, {
                 in: "header",
             },
         },
-        host: "127.0.0.1:8000",
+        host: "izuna.howlingmoon.dev",
         schemes: ["http"],
         consumes: ["application/json", "text/plain"],
         produces: ["application/json", "text/plain"],
@@ -101,7 +101,7 @@ server.get<{
         };
     }
 );
-server.listen({ port: 8000 }, (err, address) => {
+server.listen({ port: 8000, host: "0.0.0.0" }, (err, address) => {
     if (err) {
         console.error(err);
         process.exit(1);
