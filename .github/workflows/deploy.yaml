@@ -13,3 +13,8 @@ jobs:
                   script: |
                       echo "SSH into the server"
                       whoami
+                      ls
+                      rm -rf izuna
+                      git clone https://github.com/arung-agamani/izuna.git
+                      cd izuna
+                      docker build .
