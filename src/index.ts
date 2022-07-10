@@ -3,6 +3,24 @@ import fastifyRoutes from "@fastify/routes";
 import fastifySwagger from "@fastify/swagger";
 import type { IHeaders, IQueryString } from "./interfaces/request";
 import apiv1Routes from "./routes/api";
+import { config } from "./config";
+import createBot from "./bot/index";
+
+import dotenv from "dotenv";
+import path from "path";
+const dotenvResult = dotenv.config({
+    path: path.resolve(__dirname, "..", ".env"),
+});
+if (dotenvResult.error) {
+    console.error(dotenvResult.error);
+    process.exit(1);
+}
+
+if (process.env["NODE_ENV"] === "development") {
+    console.log("Application is running in development mode");
+}
+
+const botClient = createBot();
 
 const server = fastify();
 
@@ -101,12 +119,11 @@ server.get<{
         };
     }
 );
-server.listen({ port: 8000, host: "0.0.0.0" }, (err, address) => {
+server.listen({ port: config.port, host: config.host }, (err, address) => {
     if (err) {
         console.error(err);
         process.exit(1);
     }
-    console.log(server.routes);
     console.log(`Server is listening at ${address}`);
     server.swagger();
 });
