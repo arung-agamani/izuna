@@ -3,7 +3,7 @@ import { SapphireClient } from "@sapphire/framework";
 function createBotApp() {
     const client = new SapphireClient({
         intents: ["GUILDS", "GUILD_MESSAGES"],
-        defaultPrefix: "closure!",
+        regexPrefix: new RegExp("^sugar[,! ]", "i"),
     });
     client.login(process.env["DISCORD_BOT_TOKEN"]);
     return client;

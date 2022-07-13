@@ -64,6 +64,10 @@ server.register(apiv1Routes, {
     prefix: "/api",
 });
 
+server.decorate("bot", {
+    client: botClient,
+});
+
 server.get("/", async (_req, res) => {
     res.send({
         status: 200,
