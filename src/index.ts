@@ -6,18 +6,21 @@ import apiv1Routes from "./routes/api";
 import { config } from "./config";
 import createBot from "./bot/index";
 
-import dotenv from "dotenv";
-import path from "path";
-const dotenvResult = dotenv.config({
-    path: path.resolve(__dirname, "..", ".env"),
-});
-if (dotenvResult.error) {
-    console.error(dotenvResult.error);
-    process.exit(1);
-}
+// import dotenv from "dotenv";
+// import path from "path";
+// const dotenvResult = dotenv.config({
+//     path: path.resolve(__dirname, "..", ".env"),
+// });
+// if (dotenvResult.error) {
+//     console.error(dotenvResult.error);
+//     process.exit(1);
+// }
 
 if (process.env["NODE_ENV"] === "development") {
     console.log("Application is running in development mode");
+} else {
+    console.log("Application is running in production mode");
+    console.log(process.env);
 }
 
 const botClient = createBot();
