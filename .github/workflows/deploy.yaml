@@ -24,4 +24,4 @@ jobs:
                       docker build . -t izuna:latest
                       cd ..
                       rm -rf izuna
-                      docker run -d -p 8000:8000 --name izuna-runtime izuna:latest
+                      docker run -d -p 8000:8000 --name izuna-runtime -e DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }} izuna:latest
