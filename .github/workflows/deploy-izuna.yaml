@@ -15,13 +15,14 @@ jobs:
                   key: ${{ secrets.AIRI_SSH_PRIVATE_KEY }}
                   script: |
                       echo "SSH into the server"
-                      docker stop izuna-runtime
-                      docker container rm izuna-runtime
+                      docker stop closure-runtime
+                      docker container rm closure-runtime
                       docker image prune -f
                       rm -rf izuna
                       git clone https://github.com/arung-agamani/izuna.git
                       cd izuna
-                      docker build . -t izuna:latest
+                      git checkout izuna-master
+                      docker build . -t izuna-closure:latest
                       cd ..
                       rm -rf izuna
-                      docker run -d -p 8000:8000 --name izuna-runtime -e DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }} izuna:latest
+                      docker run -d -p 8001:8000 --name closure-runtime -e DISCORD_BOT_TOKEN=${{ secrets.CLOSURE_BOT_TOKEN }} izuna-closure:latest
