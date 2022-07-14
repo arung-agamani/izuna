@@ -22,7 +22,7 @@ export class ServerInfoCommand extends Command {
         await message.channel.send(
             `Server ID: ${guildPreview.id}\nCreated at: ${format(
                 guildPreview.createdAt,
-                "p"
+                "P"
             )}`
         );
         return;
