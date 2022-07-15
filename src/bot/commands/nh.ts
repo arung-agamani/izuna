@@ -14,13 +14,13 @@ export class NhCommand extends Command {
         try {
             const code = await args.pick("number");
             if (code < 500000 && code > 2) {
-                await message.channel.send(`https://nhentai.net/g/${code}`);
+                await message.author.send(`https://nhentai.net/g/${code}`);
                 return;
             }
-            await message.channel.send("Invalid code.");
+            await message.author.send("Invalid code.");
         } catch (error) {
             console.error(error);
-            await message.channel.send(
+            await message.author.send(
                 `Command returned error. Did you type non-number for the codes?`
             );
         }
