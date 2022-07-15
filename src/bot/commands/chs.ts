@@ -17,7 +17,11 @@ export class ChooseCommand extends Command {
         const r = new RegExp(`[^\s"']+|"([^"]*)"|'([^']*)'`, "ig");
         let allItems: string[] = [];
         try {
-            const splitByQuotes = (await args.rest("string"))
+            const stringArgs = (await args.rest("string"))
+                .replace(/“/g, '"')
+                .replace(/”/g, '"');
+            // console.log(stringArgs);
+            const splitByQuotes = stringArgs
                 .match(r)
                 ?.map((a) => a.trimStart().trimEnd())!;
             splitByQuotes
@@ -29,10 +33,16 @@ export class ChooseCommand extends Command {
                     allItems = allItems.concat(x.split(" "));
                 });
             allItems = allItems.concat(
-                splitByQuotes.filter((x) => {
-                    if (x.startsWith("'") || x.startsWith('"')) return true;
-                    else return false;
-                })
+                splitByQuotes
+                    .filter((x) => {
+                        if (
+                            (x.startsWith("'") && x.endsWith("'")) ||
+                            (x.startsWith('"') && x.endsWith('"'))
+                        )
+                            return true;
+                        else return false;
+                    })
+                    .map((x) => x.replace(/"/g, ""))
             );
             allItems = allItems.filter((x) => x.length > 0);
             const sample =
