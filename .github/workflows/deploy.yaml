@@ -3,8 +3,8 @@ on:
     push:
         branches:
             - "master"
-        paths:
-            - "src"
+        # paths:
+        #     - "src"
 jobs:
     deploy:
         runs-on: ubuntu-latest
