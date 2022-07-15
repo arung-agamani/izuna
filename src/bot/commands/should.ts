@@ -6,14 +6,20 @@ export class ShouldCommand extends Command {
         super(context, {
             ...options,
             name: "should",
-            aliases: ["shall"],
+            aliases: ["shall", "ryn", "bolehkah", "apakah", "am", "is", "are"],
             description:
                 "Spews out sugar's thoughts about 'should/shall' question. Only limited to those keywords only",
         });
     }
 
     public async messageRun(message: Message) {
-        const answer = Math.random() > 0.5 ? "Yes" : "No";
+        const answers = [
+            "Yes",
+            "No",
+            "Bayar uang kas dulu.",
+            "Silahkan coba lagi.",
+        ];
+        const answer = answers[Math.floor(Math.random() * answers.length)]!;
         await message.channel.send(answer);
     }
 }
