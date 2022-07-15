@@ -3,6 +3,17 @@ import fastifyRoutes from "@fastify/routes";
 import fastifySwagger from "@fastify/swagger";
 import type { IHeaders, IQueryString } from "./interfaces/request";
 import apiv1Routes from "./routes/api";
+import { config } from "./config";
+import createBot from "./bot/index";
+
+if (process.env["NODE_ENV"] === "development") {
+    console.log("Application is running in development mode");
+} else {
+    console.log("Application is running in production mode");
+    console.log(process.env);
+}
+
+const botClient = createBot();
 
 const server = fastify();
 
@@ -44,6 +55,10 @@ server.addSchema({
 
 server.register(apiv1Routes, {
     prefix: "/api",
+});
+
+server.decorate("bot", {
+    client: botClient,
 });
 
 server.get("/", async (_req, res) => {
@@ -101,12 +116,11 @@ server.get<{
         };
     }
 );
-server.listen({ port: 8000, host: "0.0.0.0" }, (err, address) => {
+server.listen({ port: config.port, host: config.host }, (err, address) => {
     if (err) {
         console.error(err);
         process.exit(1);
     }
-    console.log(server.routes);
     console.log(`Server is listening at ${address}`);
     server.swagger();
 });
