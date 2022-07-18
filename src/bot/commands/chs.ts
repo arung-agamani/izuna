@@ -14,7 +14,8 @@ export class ChooseCommand extends Command {
     }
 
     public async messageRun(message: Message, args: Args) {
-        const r = new RegExp(`[^\s"']+|"([^"]*)"|'([^']*)'`, "ig");
+        // const r = new RegExp(`[^\s"']+|"([^"]*)"|'([^']*)'`, "ig");
+        const r = /[^\s"']+|"([^"]*)"|'([^']*)'/gi;
         let allItems: string[] = [];
         try {
             const stringArgs = (await args.rest("string"))
