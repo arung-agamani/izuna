@@ -14,7 +14,7 @@ jobs:
                   username: ${{ secrets.AIRI_SSH_USER }}
                   key: ${{ secrets.AIRI_SSH_PRIVATE_KEY }}
                   script: |
-                      echo "SSH into the server"\
+                      echo "SSH into the server"
                       docker network disconnect closure-network closure-runtime
                       docker stop closure-runtime
                       docker container rm closure-runtime
