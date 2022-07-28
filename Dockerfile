@@ -10,5 +10,7 @@ WORKDIR /usr/src/app
 COPY package.json ./
 RUN npm install
 COPY --from=builder /tmp/build ./build
+COPY --from=builder /tmp/prisma ./prisma
+RUN npx prisma generate
 EXPOSE 8000
 CMD npm start
