@@ -7,7 +7,7 @@
     "scripts": {
         "build": "tsc -p tsconfig.json",
         "start": "node build/index.js",
-        "dev": "cross-env NODE_ENV=development node build/index.js"
+        "dev": "npx prisma migrate dev && cross-env NODE_ENV=development node build/index.js"
     },
     "dependencies": {
         "@fastify/routes": "^5.0.0",
