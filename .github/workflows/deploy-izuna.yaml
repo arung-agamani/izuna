@@ -14,7 +14,8 @@ jobs:
                   username: ${{ secrets.AIRI_SSH_USER }}
                   key: ${{ secrets.AIRI_SSH_PRIVATE_KEY }}
                   script: |
-                      echo "SSH into the server"
+                      echo "SSH into the server"\
+                      docker network disconnect closure-network closure-runtime
                       docker stop closure-runtime
                       docker container rm closure-runtime
                       docker image prune -f
@@ -25,4 +26,4 @@ jobs:
                       docker build . -t izuna-closure:latest
                       cd ..
                       rm -rf izuna
-                      docker run -d -p 8001:8000 --name closure-runtime -e DISCORD_BOT_TOKEN=${{ secrets.CLOSURE_BOT_TOKEN }} -e DATABASE_URL=${{ secrets.CLOSURE_DB_URL }} izuna-closure:latest
+                      docker run -d -p 8001:8000 --name closure-runtime --network=closure-network -e DISCORD_BOT_TOKEN=${{ secrets.CLOSURE_BOT_TOKEN }} -e DATABASE_URL=${{ secrets.CLOSURE_DB_URL }} izuna-closure:latest
