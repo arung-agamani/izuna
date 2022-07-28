@@ -5,17 +5,30 @@ import type { IHeaders, IQueryString } from "./interfaces/request";
 import apiv1Routes from "./routes/api";
 import { config } from "./config";
 import createBot from "./bot/index";
+import logger from "./lib/winston";
+import { init as initReminderFromDb, restartReminderJob } from "./lib/reminder";
 import dotenv from "dotenv";
 import path from "path";
 
+import type { SapphireClient } from "@sapphire/framework";
+
 if (process.env["NODE_ENV"] === "development") {
-    console.log("Application is running in development mode");
+    logger.info("Application is running in development mode");
     dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
 } else {
-    console.log("Application is running in production mode");
+    logger.info("Application is running in production mode");
 }
 
-const botClient = createBot();
+let botClient: SapphireClient;
+
+(async () => {
+    botClient = createBot();
+    if (botClient) {
+        console.log("all good");
+        await initReminderFromDb();
+        await restartReminderJob(botClient);
+    }
+})();
 
 const server = fastify();
 
@@ -57,10 +70,6 @@ server.addSchema({
 
 server.register(apiv1Routes, {
     prefix: "/api",
-});
-
-server.decorate("bot", {
-    client: botClient,
 });
 
 server.get("/", async (_req, res) => {
@@ -120,9 +129,9 @@ server.get<{
 );
 server.listen({ port: config.port, host: config.host }, (err, address) => {
     if (err) {
-        console.error(err);
+        logger.error(err);
         process.exit(1);
     }
-    console.log(`Server is listening at ${address}`);
+    logger.info(`Server is listening at ${address}`);
     server.swagger();
 });

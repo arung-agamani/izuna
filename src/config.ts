@@ -5,6 +5,8 @@ export const config = {
         process.env["NODE_ENV"] === "development"
             ? new RegExp("^cdev[,! ]", "i")
             : new RegExp("^closure[,! ]", "i"),
+    ownerUsers: ["145558597424644097"],
+    betaTesters: ["145558597424644097"],
 };
 
 if (process.env["NODE_ENV"] === "development") {
