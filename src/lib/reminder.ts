@@ -51,19 +51,26 @@ export function restartReminderJob(bot: SapphireClient) {
 }
 
 export async function init() {
-    const reminders = await prisma.reminder.findMany();
-    for (const reminder of reminders) {
-        reminderCollection.set(reminder.id, {
-            id: String(reminder.id),
-            uid: reminder.uid,
-            message: reminder.message,
-            cronString: reminder.cronString,
-            guildId: reminder.guildId,
-            channelId: reminder.channelId,
-            channelType: reminder.channelType,
-        });
+    logger.info("Fetching reminder from database");
+    try {
+        const reminders = await prisma.reminder.findMany();
+        for (const reminder of reminders) {
+            reminderCollection.set(reminder.id, {
+                id: String(reminder.id),
+                uid: reminder.uid,
+                message: reminder.message,
+                cronString: reminder.cronString,
+                guildId: reminder.guildId,
+                channelId: reminder.channelId,
+                channelType: reminder.channelType,
+            });
+        }
+        logger.info(
+            `Loaded ${reminderCollection.size} reminders to collection`
+        );
+    } catch (error) {
+        logger.error(JSON.stringify(error));
     }
-    logger.info(`Loaded ${reminderCollection.size} reminders to collection`);
 }
 
 export default reminderCollection;

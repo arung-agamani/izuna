@@ -6,10 +6,11 @@
     "license": "MIT",
     "scripts": {
         "build": "tsc -p tsconfig.json",
-        "start": "node build/index.js",
-        "dev": "npx prisma migrate dev && cross-env NODE_ENV=development node build/index.js"
+        "start": "npx prisma migrate dev && node build/index.js",
+        "dev": "cross-env NODE_ENV=development node build/index.js"
     },
     "dependencies": {
+        "@fastify/oauth2": "^5.1.0",
         "@fastify/routes": "^5.0.0",
         "@fastify/swagger": "^7.3.0",
         "@prisma/client": "^4.1.0",

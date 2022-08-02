@@ -5,6 +5,10 @@ export const config = {
         process.env["NODE_ENV"] === "development"
             ? new RegExp("^cdev[,! ]", "i")
             : new RegExp("^closure[,! ]", "i"),
+    domainPrefix:
+        process.env["NODE_ENV"] === "development"
+            ? `http://localhost:8000`
+            : "https://izuna.howlingmoon.dev",
     ownerUsers: ["145558597424644097"],
     betaTesters: ["145558597424644097"],
 };

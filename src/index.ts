@@ -3,6 +3,7 @@ import fastifyRoutes from "@fastify/routes";
 import fastifySwagger from "@fastify/swagger";
 import type { IHeaders, IQueryString } from "./interfaces/request";
 import apiv1Routes from "./routes/api";
+// import googleOauth from "./routes/api/auth/google";
 import { config } from "./config";
 import createBot from "./bot/index";
 import logger from "./lib/winston";
@@ -11,6 +12,7 @@ import dotenv from "dotenv";
 import path from "path";
 
 import type { SapphireClient } from "@sapphire/framework";
+import oauthplugin, { OAuth2Namespace } from "@fastify/oauth2";
 
 if (process.env["NODE_ENV"] === "development") {
     logger.info("Application is running in development mode");
@@ -71,6 +73,31 @@ server.addSchema({
 server.register(apiv1Routes, {
     prefix: "/api",
 });
+
+server.register(oauthplugin, {
+    name: "googleOAuth2",
+    scope: ["profile email"],
+    credentials: {
+        client: {
+            id: process.env["GOOGLE_OAUTH_CLIENT_ID"]!,
+            secret: process.env["GOOGLE_OAUTH_CLIENT_SECRET"]!,
+        },
+        auth: oauthplugin.GOOGLE_CONFIGURATION,
+    },
+    startRedirectPath: "/api/auth/google",
+    callbackUri: `${config.domainPrefix}/api/auth/google/callback`,
+});
+
+server.get("/api/auth/google/callback", {}, async (req, _) => {
+    const token =
+        await server.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
+    console.log(token);
+    return {
+        status: 200,
+        message: "Logged in!",
+    };
+});
+// server.register(googleOauth);
 
 server.get("/", async (_req, res) => {
     res.send({
@@ -135,3 +162,9 @@ server.listen({ port: config.port, host: config.host }, (err, address) => {
     logger.info(`Server is listening at ${address}`);
     server.swagger();
 });
+
+declare module "fastify" {
+    interface FastifyInstance {
+        googleOAuth2: OAuth2Namespace;
+    }
+}
