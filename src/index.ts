@@ -1,9 +1,12 @@
-import fastify from "fastify";
+import fastify, { FastifyReply, FastifyRequest } from "fastify";
 import fastifyRoutes from "@fastify/routes";
 import fastifySwagger from "@fastify/swagger";
+import fastifyCors from "@fastify/cors";
+import fastifyStatic from "@fastify/static";
+import fastifyJwt from "@fastify/jwt";
+import fastifyCookie from "@fastify/cookie";
 import type { IHeaders, IQueryString } from "./interfaces/request";
 import apiv1Routes from "./routes/api";
-// import googleOauth from "./routes/api/auth/google";
 import { config } from "./config";
 import createBot from "./bot/index";
 import logger from "./lib/winston";
@@ -33,8 +36,22 @@ let botClient: SapphireClient;
 })();
 
 const server = fastify();
-
+server.register(fastifyStatic, {
+    root: path.resolve(__dirname, "..", "web", "dist"),
+});
 server.register(fastifyRoutes);
+server.register(fastifyCors, {
+    origin: "*",
+    methods: ["GET", "POST", "OPTIONS"],
+});
+server.register(fastifyJwt, {
+    secret: process.env["AUTH_SECRET"]!,
+    cookie: {
+        cookieName: "ninpou",
+        signed: false,
+    },
+});
+server.register(fastifyCookie);
 server.register(fastifySwagger, {
     routePrefix: "/apidocs",
     swagger: {
@@ -70,6 +87,17 @@ server.addSchema({
     },
 });
 
+server.decorate(
+    "authenticate",
+    async function (request: FastifyRequest, response: FastifyReply) {
+        try {
+            await request.jwtVerify();
+        } catch (err) {
+            response.send(err);
+        }
+    }
+);
+
 server.register(apiv1Routes, {
     prefix: "/api",
 });
@@ -92,18 +120,48 @@ server.get("/api/auth/google/callback", {}, async (req, _) => {
     const token =
         await server.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
     console.log(token);
+
     return {
         status: 200,
         message: "Logged in!",
     };
 });
-// server.register(googleOauth);
 
-server.get("/", async (_req, res) => {
-    res.send({
-        status: 200,
-        message: "Hello!",
+server.register(oauthplugin, {
+    name: "discordOAuth2",
+    scope: ["email", "identify"],
+    credentials: {
+        client: {
+            id: process.env["DISCORD_OAUTH_CLIENT_ID"]!,
+            secret: process.env["DISCORD_OAUTH_CLIENT_SECRET"]!,
+        },
+        auth: oauthplugin.DISCORD_CONFIGURATION,
+    },
+    startRedirectPath: "/api/auth/discord",
+    callbackUri: `${config.domainPrefix}/api/auth/discord/callback`,
+});
+
+server.get("/api/auth/discord/callback", {}, async (req, reply) => {
+    const token =
+        await server.discordOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
+    console.log(token);
+    const signingToken = await reply.jwtSign({
+        name: "Test",
+        role: "Professional Awoo",
     });
+    reply
+        .setCookie("ninpou", signingToken, {
+            domain: "localhost",
+            path: "/",
+            secure: true,
+            httpOnly: true,
+            sameSite: true,
+        })
+        .code(200)
+        .send({
+            status: 200,
+            message: "Logged in!",
+        });
 });
 
 server.get<{
@@ -154,6 +212,7 @@ server.get<{
         };
     }
 );
+
 server.listen({ port: config.port, host: config.host }, (err, address) => {
     if (err) {
         logger.error(err);
@@ -166,5 +225,7 @@ server.listen({ port: config.port, host: config.host }, (err, address) => {
 declare module "fastify" {
     interface FastifyInstance {
         googleOAuth2: OAuth2Namespace;
+        discordOAuth2: OAuth2Namespace;
+        authenticate: (req: FastifyRequest, res: FastifyReply) => Promise<void>;
     }
 }
