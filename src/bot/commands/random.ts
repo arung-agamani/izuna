@@ -6,7 +6,7 @@ export class RandomCommand extends Command {
         super(context, {
             ...options,
             name: "random",
-            aliases: ["rand"],
+            aliases: ["rand", "rng"],
             description: "gives random number from 0 to 100, nyaa!",
         });
     }

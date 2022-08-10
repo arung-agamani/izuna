@@ -1,23 +1,57 @@
-import fastify from "fastify";
+import fastify, { FastifyReply, FastifyRequest } from "fastify";
 import fastifyRoutes from "@fastify/routes";
 import fastifySwagger from "@fastify/swagger";
+import fastifyCors from "@fastify/cors";
+import fastifyStatic from "@fastify/static";
+import fastifyJwt from "@fastify/jwt";
+import fastifyCookie from "@fastify/cookie";
 import type { IHeaders, IQueryString } from "./interfaces/request";
 import apiv1Routes from "./routes/api";
 import { config } from "./config";
 import createBot from "./bot/index";
+import logger from "./lib/winston";
+import { init as initReminderFromDb, restartReminderJob } from "./lib/reminder";
+import dotenv from "dotenv";
+import path from "path";
+
+import type { SapphireClient } from "@sapphire/framework";
+import oauthplugin, { OAuth2Namespace } from "@fastify/oauth2";
 
 if (process.env["NODE_ENV"] === "development") {
-    console.log("Application is running in development mode");
+    logger.info("Application is running in development mode");
+    dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
 } else {
-    console.log("Application is running in production mode");
-    console.log(process.env);
+    logger.info("Application is running in production mode");
 }
 
-const botClient = createBot();
+let botClient: SapphireClient;
+
+(async () => {
+    botClient = createBot();
+    if (botClient) {
+        console.log("all good");
+        await initReminderFromDb();
+        await restartReminderJob(botClient);
+    }
+})();
 
 const server = fastify();
-
+server.register(fastifyStatic, {
+    root: path.resolve(__dirname, "..", "web", "dist"),
+});
 server.register(fastifyRoutes);
+server.register(fastifyCors, {
+    origin: "*",
+    methods: ["GET", "POST", "OPTIONS"],
+});
+server.register(fastifyJwt, {
+    secret: process.env["AUTH_SECRET"]!,
+    cookie: {
+        cookieName: "ninpou",
+        signed: false,
+    },
+});
+server.register(fastifyCookie);
 server.register(fastifySwagger, {
     routePrefix: "/apidocs",
     swagger: {
@@ -53,19 +87,81 @@ server.addSchema({
     },
 });
 
+server.decorate(
+    "authenticate",
+    async function (request: FastifyRequest, response: FastifyReply) {
+        try {
+            await request.jwtVerify();
+        } catch (err) {
+            response.send(err);
+        }
+    }
+);
+
 server.register(apiv1Routes, {
     prefix: "/api",
 });
 
-server.decorate("bot", {
-    client: botClient,
+server.register(oauthplugin, {
+    name: "googleOAuth2",
+    scope: ["profile email"],
+    credentials: {
+        client: {
+            id: process.env["GOOGLE_OAUTH_CLIENT_ID"]!,
+            secret: process.env["GOOGLE_OAUTH_CLIENT_SECRET"]!,
+        },
+        auth: oauthplugin.GOOGLE_CONFIGURATION,
+    },
+    startRedirectPath: "/api/auth/google",
+    callbackUri: `${config.domainPrefix}/api/auth/google/callback`,
 });
 
-server.get("/", async (_req, res) => {
-    res.send({
+server.get("/api/auth/google/callback", {}, async (req, _) => {
+    const token =
+        await server.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
+    console.log(token);
+
+    return {
         status: 200,
-        message: "Hello!",
+        message: "Logged in!",
+    };
+});
+
+server.register(oauthplugin, {
+    name: "discordOAuth2",
+    scope: ["email", "identify"],
+    credentials: {
+        client: {
+            id: process.env["DISCORD_OAUTH_CLIENT_ID"]!,
+            secret: process.env["DISCORD_OAUTH_CLIENT_SECRET"]!,
+        },
+        auth: oauthplugin.DISCORD_CONFIGURATION,
+    },
+    startRedirectPath: "/api/auth/discord",
+    callbackUri: `${config.domainPrefix}/api/auth/discord/callback`,
+});
+
+server.get("/api/auth/discord/callback", {}, async (req, reply) => {
+    const token =
+        await server.discordOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
+    console.log(token);
+    const signingToken = await reply.jwtSign({
+        name: "Test",
+        role: "Professional Awoo",
     });
+    reply
+        .setCookie("ninpou", signingToken, {
+            domain: "localhost",
+            path: "/",
+            secure: true,
+            httpOnly: true,
+            sameSite: true,
+        })
+        .code(200)
+        .send({
+            status: 200,
+            message: "Logged in!",
+        });
 });
 
 server.get<{
@@ -116,11 +212,20 @@ server.get<{
         };
     }
 );
+
 server.listen({ port: config.port, host: config.host }, (err, address) => {
     if (err) {
-        console.error(err);
+        logger.error(err);
         process.exit(1);
     }
-    console.log(`Server is listening at ${address}`);
+    logger.info(`Server is listening at ${address}`);
     server.swagger();
 });
+
+declare module "fastify" {
+    interface FastifyInstance {
+        googleOAuth2: OAuth2Namespace;
+        discordOAuth2: OAuth2Namespace;
+        authenticate: (req: FastifyRequest, res: FastifyReply) => Promise<void>;
+    }
+}

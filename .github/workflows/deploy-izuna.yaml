@@ -1,0 +1,29 @@
+name: deploy-app
+on:
+    push:
+        branches:
+            - "izuna-master"
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Execute Server Command
+              uses: appleboy/ssh-action@master
+              with:
+                  host: ${{ secrets.AIRI_SSH_HOST }}
+                  username: ${{ secrets.AIRI_SSH_USER }}
+                  key: ${{ secrets.AIRI_SSH_PRIVATE_KEY }}
+                  script: |
+                      echo "SSH into the server"
+                      docker network disconnect closure-network closure-runtime
+                      docker stop closure-runtime
+                      docker container rm closure-runtime
+                      docker image prune -f
+                      rm -rf izuna
+                      git clone https://github.com/arung-agamani/izuna.git
+                      cd izuna
+                      git checkout izuna-master
+                      docker build . -t izuna-closure:latest
+                      cd ..
+                      rm -rf izuna
+                      docker run -d -p 8001:8000 --name closure-runtime --network=closure-network -e DISCORD_BOT_TOKEN=${{ secrets.CLOSURE_BOT_TOKEN }} -e DATABASE_URL=${{ secrets.CLOSURE_DB_URL }} izuna-closure:latest
