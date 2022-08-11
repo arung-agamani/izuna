@@ -5,17 +5,19 @@ import fastifyCors from "@fastify/cors";
 import fastifyStatic from "@fastify/static";
 import fastifyJwt from "@fastify/jwt";
 import fastifyCookie from "@fastify/cookie";
+import oauthplugin, { OAuth2Namespace } from "@fastify/oauth2";
+import type { SapphireClient } from "@sapphire/framework";
+import dotenv from "dotenv";
+import path from "path";
+import discordOAuth from "discord-oauth2";
+
 import type { IHeaders, IQueryString } from "./interfaces/request";
 import apiv1Routes from "./routes/api";
 import { config } from "./config";
 import createBot from "./bot/index";
 import logger from "./lib/winston";
 import { init as initReminderFromDb, restartReminderJob } from "./lib/reminder";
-import dotenv from "dotenv";
-import path from "path";
-
-import type { SapphireClient } from "@sapphire/framework";
-import oauthplugin, { OAuth2Namespace } from "@fastify/oauth2";
+import prisma from "./lib/prisma";
 
 if (process.env["NODE_ENV"] === "development") {
     logger.info("Application is running in development mode");
@@ -87,16 +89,13 @@ server.addSchema({
     },
 });
 
-server.decorate(
-    "authenticate",
-    async function (request: FastifyRequest, response: FastifyReply) {
-        try {
-            await request.jwtVerify();
-        } catch (err) {
-            response.send(err);
-        }
+server.decorate("authenticate", async function (request: FastifyRequest, response: FastifyReply) {
+    try {
+        await request.jwtVerify();
+    } catch (err) {
+        response.send(err);
     }
-);
+});
 
 server.register(apiv1Routes, {
     prefix: "/api",
@@ -117,8 +116,7 @@ server.register(oauthplugin, {
 });
 
 server.get("/api/auth/google/callback", {}, async (req, _) => {
-    const token =
-        await server.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
+    const token = await server.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
     console.log(token);
 
     return {
@@ -142,26 +140,42 @@ server.register(oauthplugin, {
 });
 
 server.get("/api/auth/discord/callback", {}, async (req, reply) => {
-    const token =
-        await server.discordOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
+    const token = await server.discordOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
     console.log(token);
-    const signingToken = await reply.jwtSign({
-        name: "Test",
-        role: "Professional Awoo",
+    const oauth = new discordOAuth();
+    const discordUser = await oauth.getUser(token.access_token);
+    let user = await prisma.user.findUnique({
+        where: {
+            uid: discordUser.id,
+        },
     });
+    if (!user) {
+        user = await prisma.user.create({
+            data: {
+                uid: discordUser.id,
+                name: discordUser.username,
+                email: discordUser.email || "",
+                dateCreated: new Date(),
+            },
+        });
+    }
+    const signingToken = await reply.jwtSign(
+        {
+            id: user.id,
+        },
+        {
+            expiresIn: "15m",
+        }
+    );
     reply
         .setCookie("ninpou", signingToken, {
             domain: "localhost",
             path: "/",
-            secure: true,
+            secure: false,
             httpOnly: true,
-            sameSite: true,
+            sameSite: false,
         })
-        .code(200)
-        .send({
-            status: 200,
-            message: "Logged in!",
-        });
+        .redirect("/");
 });
 
 server.get<{
@@ -212,6 +226,10 @@ server.get<{
         };
     }
 );
+
+server.setNotFoundHandler((_req, res) => {
+    res.sendFile("index.html");
+});
 
 server.listen({ port: config.port, host: config.host }, (err, address) => {
     if (err) {

@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
+import prisma from "../../../lib/prisma";
 
 async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
     fastify.get("/test", async (_req, _res) => {
@@ -22,15 +23,28 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
             return {
                 message: "here will be baseline for user API",
                 decoded: decodedValue.name,
+                user: req.user,
             };
         }
     );
 
-    fastify.get("/user/reminder", async (_req, _res) => {
-        return {
-            message: "here will be API for retrieving user's reminder",
-        };
-    });
+    fastify.get(
+        "/user/reminder",
+        { onRequest: [fastify.authenticate] },
+        async (req, _res) => {
+            const decodedValue = fastify.jwt.decode<{ uid: string }>(
+                req.cookies["ninpou"]!
+            )!;
+            const userReminder = await prisma.reminder.findMany({
+                where: {
+                    uid: decodedValue.uid,
+                },
+            });
+            return {
+                data: userReminder,
+            };
+        }
+    );
 }
 
 export default routes;

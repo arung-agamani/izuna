@@ -3,12 +3,7 @@ import { config } from "../config";
 
 function createBotApp() {
     const client = new SapphireClient({
-        intents: [
-            "GUILDS",
-            "GUILD_MESSAGES",
-            "DIRECT_MESSAGES",
-            "DIRECT_MESSAGE_TYPING",
-        ],
+        intents: ["GUILDS", "GUILD_MESSAGES", "DIRECT_MESSAGES", "DIRECT_MESSAGE_TYPING"],
         regexPrefix: config.botPrefix,
         partials: ["USER", "CHANNEL"],
     });
