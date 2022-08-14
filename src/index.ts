@@ -101,7 +101,7 @@ server.register(apiv1Routes, {
     prefix: "/api",
 });
 
-server.register(oauthplugin, {
+/* server.register(oauthplugin, {
     name: "googleOAuth2",
     scope: ["profile email"],
     credentials: {
@@ -123,7 +123,7 @@ server.get("/api/auth/google/callback", {}, async (req, _) => {
         status: 200,
         message: "Logged in!",
     };
-});
+}); */
 
 server.register(oauthplugin, {
     name: "discordOAuth2",
@@ -242,8 +242,16 @@ server.listen({ port: config.port, host: config.host }, (err, address) => {
 
 declare module "fastify" {
     interface FastifyInstance {
-        googleOAuth2: OAuth2Namespace;
+        // googleOAuth2: OAuth2Namespace;
         discordOAuth2: OAuth2Namespace;
         authenticate: (req: FastifyRequest, res: FastifyReply) => Promise<void>;
+    }
+}
+
+declare module "@fastify/jwt" {
+    interface FastifyJWT {
+        user: {
+            id: number;
+        };
     }
 }
