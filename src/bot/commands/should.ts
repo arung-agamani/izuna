@@ -50,25 +50,26 @@ export class ShouldCommand extends Command {
                 date: {
                     gt: sub(new Date(), { hours: 3 }),
                 },
+                from: message.author.id,
             },
         });
         if (whiskasRecently) {
-            if (
-                activationFunction(
-                    userScore._sum.amount!,
-                    totalScore._sum.amount!
-                ) > 0.5
-            ) {
+            const af_score = activationFunction(
+                userScore._sum.amount!,
+                totalScore._sum.amount!
+            );
+            if (af_score > 0.5) {
                 await message.channel.send(ssrAnswer);
                 return;
             }
-
             const answer =
                 positiveAnswers[
                     Math.floor(Math.random() * positiveAnswers.length)
                 ]!;
-            await message.channel.send(answer);
-            return;
+            if (af_score > 0.3 && Math.random() > 0.3) {
+                await message.channel.send(answer);
+                return;
+            }
         }
 
         const answers = [
