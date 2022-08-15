@@ -17,6 +17,7 @@ jobs:
                   key: ${{ secrets.AIRI_SSH_PRIVATE_KEY }}
                   script: |
                       echo "SSH into the server"
+                      docker network disconnect closure-network izuna-runtime
                       docker stop izuna-runtime
                       docker container rm izuna-runtime
                       docker image prune -f
@@ -26,4 +27,4 @@ jobs:
                       docker build . -t izuna:latest
                       cd ..
                       rm -rf izuna
-                      docker run -d -p 8000:8000 --name izuna-runtime -e DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }} izuna:latest
+                      docker run -d -p 8000:8000 --name izuna-runtime --network=closure-network -e DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }} -e SUGAR_DB_URL=${{ secrets.SUGAR_DB_URL }} izuna:latest

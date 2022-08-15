@@ -6,7 +6,16 @@ export class ShouldCommand extends Command {
         super(context, {
             ...options,
             name: "should",
-            aliases: ["shall", "ryn", "bolehkah", "apakah", "am", "is", "are"],
+            aliases: [
+                "shall",
+                "ryn",
+                "bolehkah",
+                "apakah",
+                "am",
+                "is",
+                "are",
+                "how",
+            ],
             description:
                 "Spews out sugar's thoughts about 'should/shall' question. Only limited to those keywords only",
         });

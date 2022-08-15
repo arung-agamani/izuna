@@ -5,9 +5,12 @@ import type { IHeaders, IQueryString } from "./interfaces/request";
 import apiv1Routes from "./routes/api";
 import { config } from "./config";
 import createBot from "./bot/index";
+import dotenv from "dotenv";
+import path from "path";
 
 if (process.env["NODE_ENV"] === "development") {
     console.log("Application is running in development mode");
+    dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
 } else {
     console.log("Application is running in production mode");
     console.log(process.env);
