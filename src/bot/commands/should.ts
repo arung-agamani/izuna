@@ -56,7 +56,7 @@ export class ShouldCommand extends Command {
             activationFunction(
                 userScore._sum.amount!,
                 totalScore._sum.amount!
-            ) > 0.8
+            ) > 0.5
         ) {
             if (whiskasRecently) {
                 await message.channel.send(ssrAnswer);
