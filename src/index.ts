@@ -140,42 +140,51 @@ server.register(oauthplugin, {
 });
 
 server.get("/api/auth/discord/callback", {}, async (req, reply) => {
-    const token = await server.discordOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
-    console.log(token);
-    const oauth = new discordOAuth();
-    const discordUser = await oauth.getUser(token.access_token);
-    let user = await prisma.user.findUnique({
-        where: {
-            uid: discordUser.id,
-        },
-    });
-    if (!user) {
-        user = await prisma.user.create({
-            data: {
+    try {
+        const token = await server.discordOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
+        console.log(token);
+        const oauth = new discordOAuth();
+        const discordUser = await oauth.getUser(token.access_token);
+        let user = await prisma.user.findUnique({
+            where: {
                 uid: discordUser.id,
-                name: discordUser.username,
-                email: discordUser.email || "",
-                dateCreated: new Date(),
             },
         });
-    }
-    const signingToken = await reply.jwtSign(
-        {
-            id: user.id,
-        },
-        {
-            expiresIn: "15m",
+        if (!user) {
+            user = await prisma.user.create({
+                data: {
+                    uid: discordUser.id,
+                    name: discordUser.username,
+                    email: discordUser.email || "",
+                    dateCreated: new Date(),
+                },
+            });
         }
-    );
-    reply
-        .setCookie("ninpou", signingToken, {
-            domain: "localhost",
-            path: "/",
-            secure: false,
-            httpOnly: true,
-            sameSite: false,
-        })
-        .redirect("/");
+        const signingToken = await reply.jwtSign(
+            {
+                id: user.id,
+            },
+            {
+                expiresIn: "15m",
+            }
+        );
+        reply
+            .setCookie("ninpou", signingToken, {
+                domain: "localhost",
+                path: "/",
+                secure: false,
+                httpOnly: true,
+                sameSite: false,
+            })
+            .redirect("/");
+    } catch (error) {
+        console.log(error);
+        logger.error(error);
+        reply.statusCode(500).send({
+            statusCode: 500,
+            error: "Something went wrong.",
+        });
+    }
 });
 
 server.get<{
