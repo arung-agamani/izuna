@@ -53,11 +53,11 @@ export class ShouldCommand extends Command {
                 from: message.author.id,
             },
         });
+        const af_score = activationFunction(
+            userScore._sum.amount!,
+            totalScore._sum.amount!
+        );
         if (whiskasRecently) {
-            const af_score = activationFunction(
-                userScore._sum.amount!,
-                totalScore._sum.amount!
-            );
             if (af_score > 0.5) {
                 await message.channel.send(ssrAnswer);
                 return;
@@ -70,6 +70,13 @@ export class ShouldCommand extends Command {
                 await message.channel.send(answer);
                 return;
             }
+        }
+        if (af_score > 0.1) {
+            const ans = ["Yes", "Maybe", "Silahkan coba lagi"];
+            await message.channel.send(
+                ans[Math.floor(Math.random() * ans.length)]!
+            );
+            return;
         }
 
         const answers = [
