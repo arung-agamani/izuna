@@ -136,7 +136,7 @@ server.register(oauthplugin, {
         auth: oauthplugin.DISCORD_CONFIGURATION,
     },
     startRedirectPath: "/api/auth/discord",
-    callbackUri: `${config.domainPrefix}/api/auth/discord/callback`,
+    callbackUri: `/api/auth/discord/callback`,
 });
 
 server.get("/api/auth/discord/callback", {}, async (req, reply) => {
