@@ -39,6 +39,7 @@ export class FeedCommand extends Command {
         }
         const recordOfRecentFeed = await prisma.feedRecord.findFirst({
             where: {
+                from: message.author.id,
                 date: {
                     gt: sub(new Date(), { hours: 3 }),
                 },
