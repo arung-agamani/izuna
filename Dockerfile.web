@@ -1,0 +1,6 @@
+FROM node:16-buster-slim as web-builder
+WORKDIR /tmp
+COPY web /tmp
+WORKDIR /tmp/web
+RUN yarn
+RUN yarn build

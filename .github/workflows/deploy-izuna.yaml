@@ -26,4 +26,8 @@ jobs:
                       docker build . -t izuna-closure:latest
                       cd ..
                       rm -rf izuna
-                      docker run -d -p 8001:8000 --name closure-runtime --network=closure-network -e DISCORD_BOT_TOKEN=${{ secrets.CLOSURE_BOT_TOKEN }} -e DATABASE_URL=${{ secrets.CLOSURE_DB_URL }} izuna-closure:latest
+                      docker run -d -p 8001:8000 --name closure-runtime --network=closure-network \
+                       -e DISCORD_BOT_TOKEN=${{ secrets.CLOSURE_BOT_TOKEN }} -e DATABASE_URL=${{ secrets.CLOSURE_DB_URL }} \
+                       -e DISCORD_OAUTH_CLIENT_ID=${{ secrets.CLOSURE_DISCORD_OAUTH_CLIENT_ID}} \
+                       -e DISCORD_OAUTH_CLIENT_SECRET=${{ secrets.DISCORD_OAUTH_CLIENT_SECRET}} \
+                       -e AUTH_SECRET=${{ secrets.CLOSURE_AUTH_SECRET }} izuna-closure:latest
