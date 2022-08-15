@@ -38,7 +38,7 @@ export class ShouldCommand extends Command {
             },
         });
         const activationFunction = (user: number, total: number) => {
-            const ratio = Math.exp(Math.log(user / total));
+            const ratio = Math.exp(Math.log10(user / total));
             return ratio;
         };
         const positiveAnswers = ["Yes", "Yes!", "YESSS!!!"];
@@ -52,16 +52,17 @@ export class ShouldCommand extends Command {
                 },
             },
         });
-        if (
-            activationFunction(
-                userScore._sum.amount!,
-                totalScore._sum.amount!
-            ) > 0.5
-        ) {
-            if (whiskasRecently) {
+        if (whiskasRecently) {
+            if (
+                activationFunction(
+                    userScore._sum.amount!,
+                    totalScore._sum.amount!
+                ) > 0.5
+            ) {
                 await message.channel.send(ssrAnswer);
                 return;
             }
+
             const answer =
                 positiveAnswers[
                     Math.floor(Math.random() * positiveAnswers.length)
