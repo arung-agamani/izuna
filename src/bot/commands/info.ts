@@ -30,6 +30,14 @@ export class InfoCommand extends Command {
                 `Sugar: "who are you?"`
             );
         } else {
+            const totalUserScore = await prisma.feedRecord.aggregate({
+                _sum: {
+                    amount: true,
+                },
+                where: {
+                    from: message.author.id,
+                },
+            });
             const totalScore = await prisma.feedRecord.aggregate({
                 _sum: {
                     amount: true,
@@ -37,13 +45,15 @@ export class InfoCommand extends Command {
             });
             infoMessageEmbed.addField(
                 `Relation with Sugar`,
-                `Sugar: "Hey, I recognize this guy, nyaa!\nHis/her user point is ${totalScore
+                `Sugar: "Hey, I recognize this guy, nyaa!\nHis/her user point is ${totalUserScore
                     ._sum.amount!}\nKeep feeding me, nyaa!"`
             );
+            if (message.author.id === "145558597424644097") {
+                infoMessageEmbed.setTimestamp().setFooter({
+                    text: `Btw, total score is  ${totalScore._sum.amount!}`,
+                });
+            }
         }
-        infoMessageEmbed.setTimestamp().setFooter({
-            text: "Eggs",
-        });
         await message.channel.send({ embeds: [infoMessageEmbed] });
     }
 }
