@@ -6,7 +6,7 @@
     "license": "MIT",
     "scripts": {
         "build": "tsc -p tsconfig.json",
-        "start": "npx prisma migrate dev --name=init && node build/index.js",
+        "start": "node build/index.js",
         "dev": "cross-env NODE_ENV=development node build/index.js"
     },
     "dependencies": {
