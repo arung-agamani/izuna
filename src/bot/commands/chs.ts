@@ -15,14 +15,13 @@ export class ChooseCommand extends Command {
     public async messageRun(message: Message, args: Args) {
         const r = /[\s, ]+/gi;
         let allItems: string[] = [];
-        const responses = ["", "Hmm, ", "*refuses to elaborate further* ", "I don't know, prolly ", "It's obvious, "];
+        const responses = ["", "Hmm... ", "*refuses to elaborate further* ", "I don't know, prolly... ", "It's obvious."];
         try {
             const stringArgs = (await args.rest("string"));
             allItems = stringArgs.split(r);
-            const sample =
-                allItems[Math.floor(Math.random() * allItems.length)]!;
-            const finalresp = responses[Math.floor(Math.random() * responses.length)]!.concat(sample);
-            await message.channel.send(finalresp);
+            const picked = allItems[Math.floor(Math.random() * allItems.length)]!;
+            const resp = responses[Math.floor(Math.random() * responses.length)]!;
+            await message.channel.send(`${resp} \n${picked}`);
         } catch (error) {
             await message.channel.send(
                 "Sugar can't choose from what you've given me, nyaa. Please try again."
