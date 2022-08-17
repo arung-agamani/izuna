@@ -1,7 +1,7 @@
 import { Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import prisma from "../../lib/prisma";
-import { sub } from "date-fns";
+import { sub, formatDistanceToNow } from "date-fns";
 
 export class FeedCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -46,8 +46,9 @@ export class FeedCommand extends Command {
             },
         });
         if (recordOfRecentFeed) {
+            const deltaTime = formatDistanceToNow(recordOfRecentFeed.date);
             await message.channel.send(
-                "You've feed me recently, nyaa. Let me sleep, nyaw..."
+                `You've feed me ${deltaTime}, nyaa. Let me sleep, nyaw...`
             );
             return;
         }
