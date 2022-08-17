@@ -14,7 +14,7 @@ export class FeedCommand extends Command {
         super(context, {
             ...options,
             name: "feed",
-            aliases: ["makan"],
+            aliases: ["makan", "mangan"],
             description: "Feeds Sugar various stuff.\nAlso gacha hell, haha",
         });
     }
@@ -22,43 +22,43 @@ export class FeedCommand extends Command {
     public async messageRun(message: Message) {
         const foods: Response[] = [
             {
-                name: "Donut",
+                name: "Donut (Common)",
                 weight: 1,
                 response:
                     "...\n..\n.\nAren't ya one cheap person. But still appreciated, ...n-nyaa.",
             },
             {
-                name: "Roti Yoland",
+                name: "Roti Yoland (Rare)",
                 weight: 2,
                 response:
                     "Now we're talking! Hey, wanna know what flavor of roti yoland that I think the best? Hehe.... ひ。み。つ！",
             },
             {
-                name: "Black Thunder",
+                name: "Black Thunder (Rare)",
                 weight: 3,
                 response:
                     "Wow, this is something. Sweet stuff! And crunchy! (❁´◡`❁)",
             },
             {
-                name: "Burger Nasi GKUB",
+                name: "Burger Nasi GKUB (Super Rare)",
                 weight: 5,
                 response:
                     "Hmm... Something pricey... And this small? Alright, not really my favorite because it can get messy real fast, but I do like the flavor!\n",
             },
             {
-                name: "Nasi Ayam Mang Otot",
+                name: "Nasi Ayam Mang Otot (Super Rare)",
                 weight: 7,
                 response:
                     "Ah I remember this. Not only the fact you can do paylater mechanic with mang otot, they have various of sauces too!\nCan you guess what are my favorite combos of sauce???",
             },
             {
-                name: "Ayam Crisbar",
+                name: "Ayam Crisbar (Sangat Super Rare)",
                 weight: 8,
                 response:
                     "MmmhhhHH!!!!!! Gotta love how you can wareg as much as you want on these Crisbar stalls.\nHey, hey, I can handle up to 5!.... Level 5 of spiciness, I mean!\nI didn't imply something else, alright!",
             },
             {
-                name: "Whiskas",
+                name: "Whiskas (UWOOOOGH Rare)",
                 weight: 10,
                 response:
                     "WOOAAAAAAAHHH! ARE YOU SURE YOU'RE GIVING ME THIS, NYAA? MMMHHHHHH CAN I CALL YOU MASTER FROM NOW ON?? CAN I??!! CAN I???!!!!!!!",
