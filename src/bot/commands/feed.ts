@@ -117,6 +117,34 @@ export class FeedCommand extends Command {
             );
             return;
         }
+        const recordOfZonkFeed = await prisma.feedRecord.findFirst({
+            where: {
+                from: message.author.id,
+                amount: -15,
+                date: {
+                    gt: sub(new Date(), { hours: 24 }),
+                },
+            },
+        });
+        if (recordOfZonkFeed) {
+            await message.channel.send(
+                `Didn't I tell you to go away? HISSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS`
+            );
+            return;
+        }
+        if (Math.random() > 0.99675) {
+            await prisma.feedRecord.create({
+                data: {
+                    from: message.author.id,
+                    amount: -15,
+                    date: new Date(),
+                },
+            });
+            await message.channel.send(
+                `[BETA]\nYou're trying to give me a cucumber. What does that even mean???!!\nHIISSSSSSSSSSSSSSSSSSSS--------------------\nI hate you. I HATE YOU! Don't you ever go seeing me again for the next 24 hours.`
+            );
+            return;
+        }
         await prisma.feedRecord.create({
             data: {
                 from: message.author.id,
