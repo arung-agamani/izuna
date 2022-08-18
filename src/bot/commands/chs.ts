@@ -13,7 +13,7 @@ export class ChooseCommand extends Command {
     }
 
     public async messageRun(message: Message, args: Args) {
-        const r = /[\s, ]+/gi;
+        const r = /[\s, ]+(?=(?:[^(\"|\')]*(\"|\')[^(\"|\')]*(\"|\'))*[^(\"|\')]*$)/gi;
         let allItems: string[] = [];
         const responses = ["", "Hmm... ", "*refuses to elaborate further* ", "I don't know, prolly... ", "It's obvious."];
         try {
