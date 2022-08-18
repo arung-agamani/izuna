@@ -37,7 +37,45 @@ Running in development mode will not require Docker, but it's required to have `
 | Variable Name       | Type   | Description                         |
 | ------------------- | ------ | ----------------------------------- |
 | `DISCORD_BOT_TOKEN` | string | Token used to login to Discord bot. |
+| `DATABASE_URL`      | string | URL to Postgres Database used       |
 
 ## Contributing
 
-Simply create an issue with features you want to contribute, and create PR to the `dev` branch. State the functionality, requirements, and why do you think your feature is cool to be added.
+If this is the first time you want to contribute, you need the following programs installed.
+
+-   git
+-   Node.js v16 or above
+-   Text editor / IDE. I prefer VSCode
+
+If this is the first time you attempt to code, you need the following additional programs installed.
+
+-   Github Desktop
+
+### Steps
+
+1. Clone the repository. If you're using git from command-line / terminal, just copy the HTTPS link and do `git clone [the link]` on your terminal. If you're using Github Desktop, the button is there for you.
+2. Open the project. If you're using VS Code, go to File > Open Folder... and choose the folder for this repository (should be "izuna" folder).
+3. Open the terminal/command-line. Make sure it's current location is in the project directory.
+4. Execute these commands from the terminal/command-line
+
+```
+yarn install
+yarn build
+```
+
+5. If there is nothing wrong then you're ready to go. Create a new branch where you can work in peace by using the following command
+
+```
+git checkout -b "[yourname]-[feature]"
+```
+
+6. Make some changes. When you're done, add the changes, create commit, and push into the remote repo as new branch. In command line you can do this with.
+
+```
+git commit -am "insert commit message here"
+git push origin "[yourname]-[feature]"
+```
+
+7. Open this repository again in the web. Go to "Pull request" tab and click on green button "New pull request".
+8. Below the "Compare changes" title, there is a part about "base: master" <- compare: master" thingy. Change the latter into the recent branch name you've pushed. And then click on "Create Pull Request".
+9. Your changes will be reviewed. If things are good, then congrats! You have contributed to this project! Nice!
