@@ -29,7 +29,7 @@ if (process.env["NODE_ENV"] === "development") {
 let botClient: SapphireClient;
 
 (async () => {
-    botClient = createBot();
+    botClient = await createBot();
     if (botClient) {
         console.log("all good");
         await initReminderFromDb();
@@ -180,7 +180,7 @@ server.get("/api/auth/discord/callback", {}, async (req, reply) => {
     } catch (error) {
         console.log(error);
         logger.error(error);
-        reply.statusCode(500).send({
+        reply.code(500).send({
             statusCode: 500,
             error: "Something went wrong.",
         });
