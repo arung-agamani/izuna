@@ -25,7 +25,7 @@ process.on("SIGTERM", async () => {
             .get("688349293970849812")
             ?.channels.cache.get("1009656928852516914") as ThreadChannel
     ).send(
-        "SIGTERM received. Commencing sleep protocol.\n\nSugar will now sleep..."
+        "A-are...\nsomehow my eyes feel really heavy, nyaa. \n\n...I'll...\ntake quick sleep...\n...nyaa....\nZzz"
     );
 });
 // and SIGINT on dev
