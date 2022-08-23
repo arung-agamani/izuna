@@ -14,4 +14,4 @@ COPY --from=builder /tmp/build ./build
 COPY ./prisma ./prisma
 RUN npx prisma generate
 EXPOSE 8000
-CMD npm start
+CMD ["node", "build/index.js"]

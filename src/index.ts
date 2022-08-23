@@ -7,6 +7,7 @@ import { config } from "./config";
 import createBot from "./bot/index";
 import dotenv from "dotenv";
 import path from "path";
+import type { ThreadChannel } from "discord.js";
 
 if (process.env["NODE_ENV"] === "development") {
     console.log("Application is running in development mode");
@@ -17,7 +18,16 @@ if (process.env["NODE_ENV"] === "development") {
 }
 
 const botClient = createBot();
-
+// attach SIGTERM listener
+process.on("SIGTERM", async () => {
+    await (
+        botClient.guilds.cache
+            .get("688349293970849812")
+            ?.channels.cache.get("1009656928852516914") as ThreadChannel
+    ).send(
+        "SIGTERM received. Commencing sleep protocol.\n\nSugar will now sleep..."
+    );
+});
 const server = fastify();
 
 server.register(fastifyRoutes);
