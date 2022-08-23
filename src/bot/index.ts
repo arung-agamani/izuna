@@ -13,7 +13,7 @@ async function createBotApp() {
     const nodes = [
         {
             name: "local",
-            url: "localhost:2333",
+            url: "closure-lavalink:2333",
             auth: "youshallnotpass",
         },
     ];
