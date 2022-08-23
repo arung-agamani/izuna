@@ -20,6 +20,7 @@ if (process.env["NODE_ENV"] === "development") {
 const botClient = createBot();
 // attach SIGTERM listener
 process.on("SIGTERM", async () => {
+    console.log("SIGTERM received. Performing cleanup...");
     await (
         botClient.guilds.cache
             .get("688349293970849812")
@@ -27,6 +28,8 @@ process.on("SIGTERM", async () => {
     ).send(
         "A-are...\nsomehow my eyes feel really heavy, nyaa. \n\n...I'll...\ntake quick sleep...\n...nyaa....\nZzz"
     );
+    console.log("Done cleanup. Exiting...");
+    process.exit(0);
 });
 // and SIGINT on dev
 process.on("SIGINT", async () => {

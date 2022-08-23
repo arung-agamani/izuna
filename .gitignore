@@ -132,3 +132,6 @@ dist
 # Build artifacts
 build
 .vscode
+
+test.js
+Dockerfile.test
