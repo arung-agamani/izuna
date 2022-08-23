@@ -28,6 +28,20 @@ process.on("SIGTERM", async () => {
         "SIGTERM received. Commencing sleep protocol.\n\nSugar will now sleep..."
     );
 });
+// and SIGINT on dev
+process.on("SIGINT", async () => {
+    console.log("SIGINT received. Performing cleanup...");
+    if (process.env["NODE_ENV"] === "development") {
+        await (
+            botClient.guilds.cache
+                .get("688349293970849812")
+                ?.channels.cache.get("1009656928852516914") as ThreadChannel
+        ).send(
+            "SIGINT received on DEV. Commencing sleep protocol.\n\nSugar will now sleep..."
+        );
+        process.exit(0);
+    }
+});
 const server = fastify();
 
 server.register(fastifyRoutes);
