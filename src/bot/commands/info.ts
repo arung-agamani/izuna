@@ -22,7 +22,12 @@ export class InfoCommand extends Command {
         infoMessageEmbed.setTitle("User Info");
         infoMessageEmbed.addField(
             `Common Info`,
-            `Name: **${message.author.username}**\nUserId: ${message.author.id}`
+            `Name: **${message.author.username}**\nUserId: ${
+                message.author.id
+            }\nNickname: ${
+                (await message.guild!.members.fetch(message.author.id))
+                    .displayName
+            }`
         );
         if (!user) {
             infoMessageEmbed.addField(

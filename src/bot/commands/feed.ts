@@ -67,6 +67,12 @@ export class FeedCommand extends Command {
         ];
         const isRequestingHistory = args.getFlags("history", "h");
         if (isRequestingHistory) {
+            if (!message.guild) {
+                await message.channel.send(
+                    "Can't do this command outside the server, nyaa"
+                );
+                return;
+            }
             const feedHistory = await prisma.feedRecord.findMany({
                 where: {
                     from: message.author.id,
@@ -77,7 +83,12 @@ export class FeedCommand extends Command {
                 take: 10,
             });
             const embed = new MessageEmbed();
-            embed.setTitle(`Feed history for <@${message.author.id}>`);
+            embed.setTitle(
+                `Feed history for ${
+                    (await message.guild.members.fetch(message.author.id))
+                        .displayName
+                }`
+            );
             let rekishi = "";
             for (let i = 0; i < feedHistory.length; i++) {
                 rekishi += `${i + 1}. ${
