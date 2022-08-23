@@ -1,5 +1,5 @@
-import { Command } from "@sapphire/framework";
-import type { Message } from "discord.js";
+import { Args, Command } from "@sapphire/framework";
+import { Message, MessageEmbed } from "discord.js";
 import prisma from "../../lib/prisma";
 import { sub, formatDistanceToNow } from "date-fns";
 
@@ -16,10 +16,11 @@ export class FeedCommand extends Command {
             name: "feed",
             aliases: ["makan", "mangan"],
             description: "Feeds Sugar various stuff.\nAlso gacha hell, haha",
+            flags: ["history", "h"],
         });
     }
 
-    public async messageRun(message: Message) {
+    public async messageRun(message: Message, args: Args) {
         const foods: Response[] = [
             {
                 name: "Donut (Common)",
@@ -64,6 +65,30 @@ export class FeedCommand extends Command {
                     "WOOAAAAAAAHHH! ARE YOU SURE YOU'RE GIVING ME THIS, NYAA? MMMHHHHHH CAN I CALL YOU MASTER FROM NOW ON?? CAN I??!! CAN I???!!!!!!!",
             },
         ];
+        const isRequestingHistory = args.getFlags("history", "h");
+        if (isRequestingHistory) {
+            const feedHistory = await prisma.feedRecord.findMany({
+                where: {
+                    from: message.author.id,
+                },
+                orderBy: {
+                    date: "desc",
+                },
+                take: 10,
+            });
+            const embed = new MessageEmbed();
+            embed.setTitle(`Feed history for <@${message.author.id}>`);
+            let rekishi = "";
+            for (let i = 0; i < feedHistory.length; i++) {
+                rekishi += `${i + 1}. ${
+                    foods.find((x) => x.weight === feedHistory[i]?.amount)?.name
+                }\n`;
+            }
+            embed.setDescription(rekishi);
+            await message.channel.send({ embeds: [embed] });
+            return;
+        }
+
         const gachaFunction = () => {
             const rng = Math.random();
             if (rng > 0.35) {
