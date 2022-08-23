@@ -28,6 +28,7 @@ process.on("SIGTERM", async () => {
     ).send(
         "A-are...\nsomehow my eyes feel really heavy, nyaa. \n\n...I'll...\ntake quick sleep...\n...nyaa....\nZzz"
     );
+    botClient.destroy();
     console.log("Done cleanup. Exiting...");
     process.exit(0);
 });
