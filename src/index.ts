@@ -63,7 +63,7 @@ server.register(fastifySwagger, {
                 in: "header",
             },
         },
-        host: "izuna.howlingmoon.dev",
+        host: "sugar.howlingmoon.dev",
         schemes: ["http"],
         consumes: ["application/json", "text/plain"],
         produces: ["application/json", "text/plain"],
