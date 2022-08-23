@@ -19,6 +19,7 @@ jobs:
                       echo "SSH into the server"
                       docker network disconnect closure-network izuna-runtime
                       docker stop izuna-runtime
+                      sleep 5
                       docker container rm izuna-runtime
                       docker image prune -f
                       rm -rf izuna
