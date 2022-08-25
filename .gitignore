@@ -132,3 +132,6 @@ dist
 # Build artifacts
 build
 *.db
+
+test.js
+Dockerfile.test

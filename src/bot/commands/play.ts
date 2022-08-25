@@ -8,6 +8,9 @@ type LavalinkLoadType = "TRACK_LOADED" | "PLAYLIST_LOADED" | "SEARCH_RESULT" | "
 //     loadType: "TRACK_LOADED" | "PLAYLIST_LOADED" | "SEARCH_RESULT" | "NO_MATCHES" | "LOAD_FAILED";
 // }
 
+const youtubeVideoRegex = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/gm;
+const youtubePlaylistRegex = /(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:playlist|list|embed)(?:\.php)?(?:\?.*list=|\/))([a-zA-Z0-9\-_]+)/gm;
+
 export class PlayMusicCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
@@ -28,6 +31,17 @@ export class PlayMusicCommand extends Command {
         }
         // search the stuff
         const searchQuery = await args.rest("string");
+        // is youtube video?
+        const youtubeRegexRes = youtubeVideoRegex.exec(searchQuery);
+        const youtubePlaylistRes = youtubePlaylistRegex.exec(searchQuery);
+        let videoId = "";
+        let playlistId = "";
+        if (youtubeRegexRes && youtubeRegexRes[5]) {
+            videoId = youtubeRegexRes[5];
+        }
+        if (youtubePlaylistRes && youtubePlaylistRes[1]) {
+            playlistId = youtubePlaylistRes[1];
+        }
         if (searchQuery === "") {
             await message.channel.send("Please put in something to search");
             return;
@@ -42,7 +56,15 @@ export class PlayMusicCommand extends Command {
             await message.channel.send("No music player node currently connected.");
             return;
         }
-        const searchRes = await lavalinkNode.rest.resolve(`ytsearch: ${searchQuery}`);
+
+        let searchRes;
+        if (youtubePlaylistRes) {
+            searchRes = await lavalinkNode.rest.resolve(playlistId);
+        } else if (youtubeRegexRes) {
+            searchRes = await lavalinkNode.rest.resolve(videoId);
+        } else {
+            searchRes = await lavalinkNode.rest.resolve(`ytsearch: ${searchQuery}`);
+        }
 
         if ((searchRes?.loadType as LavalinkLoadType) === "LOAD_FAILED" || !searchRes) {
             await message.channel.send("Failed to search that query. Try with different formatting, I guess?");
@@ -58,7 +80,7 @@ export class PlayMusicCommand extends Command {
             player.on("exception", (err) => {
                 logger.error("Shoukaku player error");
                 logger.error(err);
-                if (err.error === "Thi video is not available") {
+                if (err.error === "This video is not available") {
                     message.channel.send("Skipping the track. Reason: This video is not available :(");
                 }
             });

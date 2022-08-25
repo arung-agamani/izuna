@@ -14,22 +14,11 @@ async function createBotApp() {
         {
             name: "local",
             url: "closure-lavalink:2333",
+            // url: "localhost:2333",
             auth: "youshallnotpass",
         },
     ];
     await client.login(process.env["DISCORD_BOT_TOKEN"]);
-    // const manager = new Manager(nodes, {
-    //     user: client.user?.id!,
-    //     send: (packet) => {
-    //         if (client.guilds.cache) {
-    //             const guild = client.guilds.cache.get(packet.d.guild_id);
-    //             if (guild) {
-    //                 console.log(packet);
-    //                 return guild.shard.send(packet);
-    //             }
-    //         }
-    //     },
-    // });
     const manager = new Shoukaku(new Connectors.DiscordJS(client), nodes);
     setShoukakuManager(manager);
     // await manager.connect();
