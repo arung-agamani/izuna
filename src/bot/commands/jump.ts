@@ -6,9 +6,8 @@ export class RemoveFromQueueCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
-            name: "remove",
-            aliases: ["delete"],
-            description: "Remove a certain track from music queue",
+            name: "jump",
+            description: "Set the next play head to selected track number from queue",
         });
     }
 
@@ -27,18 +26,14 @@ export class RemoveFromQueueCommand extends Command {
             return;
         }
         try {
-            const posToRemove = await args.pick("integer");
+            const posToJump = await args.pick("integer");
             // check if there is a current playing track
-            if (posToRemove < 1 || posToRemove > musicGuildInfo.queue.length) {
-                await message.channel.send("Out of range track number.");
+            if (posToJump > 0 && posToJump <= musicGuildInfo.queue.length) {
+                musicGuildInfo.currentPosition = posToJump - 1;
+                await message.channel.send(`Set the play head to track ${posToJump}. **${musicGuildInfo.queue[posToJump - 1]?.info.title}**`);
                 return;
             }
-            if (musicGuildInfo.isPlaying && musicGuildInfo.currentPosition === posToRemove - 1) {
-                await message.channel.send("Cannot remove currently playing track.");
-                return;
-            }
-            const deletedTracks = musicGuildInfo.queue.splice(posToRemove - 1, 1);
-            await message.channel.send(`Removed track **${deletedTracks[0]?.info.title}** from the queue.`);
+            await message.channel.send(`Out of range track number.`);
             return;
         } catch (error) {
             await message.channel.send("Error on command. Please put non-zero positive integer");
