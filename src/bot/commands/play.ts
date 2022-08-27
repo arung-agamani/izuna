@@ -89,7 +89,12 @@ export class PlayMusicCommand extends Command {
                 const currentMusicGuildInfo = musicManager.get(message.guildId!);
                 if (!currentMusicGuildInfo) return;
                 const newMusicGuildInfo = { ...currentMusicGuildInfo };
-                newMusicGuildInfo.currentPosition += 1;
+                if (newMusicGuildInfo.isSkippingQueued) {
+                    newMusicGuildInfo.isSkippingQueued = false;
+                    newMusicGuildInfo.currentPosition = newMusicGuildInfo.skipPosition;
+                } else {
+                    newMusicGuildInfo.currentPosition += 1;
+                }
                 newMusicGuildInfo.isPlaying = true;
                 if (newMusicGuildInfo.currentPosition === newMusicGuildInfo.queue.length) {
                     await message.channel.send("Reached the end of playlist");
@@ -115,6 +120,8 @@ export class PlayMusicCommand extends Command {
                 isPlaying: false,
                 queue: [],
                 player: player,
+                isSkippingQueued: false,
+                skipPosition: 0,
             };
             musicManager.set(message.guildId, thisGuildInfo);
             musicGuildInfo = thisGuildInfo;

@@ -29,7 +29,8 @@ export class RemoveFromQueueCommand extends Command {
             const posToJump = await args.pick("integer");
             // check if there is a current playing track
             if (posToJump > 0 && posToJump <= musicGuildInfo.queue.length) {
-                musicGuildInfo.currentPosition = posToJump - 1;
+                musicGuildInfo.skipPosition = posToJump - 1;
+                musicGuildInfo.isSkippingQueued = true;
                 await message.channel.send(`Set the play head to track ${posToJump}. **${musicGuildInfo.queue[posToJump - 1]?.info.title}**`);
                 return;
             }

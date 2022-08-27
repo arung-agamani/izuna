@@ -9,6 +9,8 @@ export interface MusicGuildInfo {
     isRepeat: "no" | "single" | "playlist";
     isPlaying: boolean;
     player: Player;
+    isSkippingQueued: boolean;
+    skipPosition: number;
 }
 
 export interface MusicQueueItem {
