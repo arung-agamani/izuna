@@ -3,7 +3,13 @@ import type { ThreadChannel } from "discord.js";
 
 function createBotApp() {
     const client = new SapphireClient({
-        intents: ["GUILDS", "GUILD_MESSAGES"],
+        intents: [
+            "GUILDS",
+            "GUILD_MESSAGES",
+            "DIRECT_MESSAGES",
+            "DIRECT_MESSAGE_TYPING",
+            "GUILD_VOICE_STATES",
+        ],
         regexPrefix: new RegExp("^sugar[,! ]", "i"),
     });
     client.login(process.env["DISCORD_BOT_TOKEN"]);
