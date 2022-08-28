@@ -10,6 +10,7 @@ function createBotApp() {
             "DIRECT_MESSAGE_TYPING",
             "GUILD_VOICE_STATES",
         ],
+        partials: ["USER", "CHANNEL"],
         regexPrefix: new RegExp("^sugar[,! ]", "i"),
     });
     client.login(process.env["DISCORD_BOT_TOKEN"]);
