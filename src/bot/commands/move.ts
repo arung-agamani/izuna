@@ -30,7 +30,7 @@ export class MoveQueueItemCommand extends Command {
             const posToJump = await args.pick("integer");
             // check if there is a current playing track
             if (posToJump > 0 && posToJump <= musicGuildInfo.queue.length && posToMove > 0 && posToMove <= musicGuildInfo.queue.length) {
-                const item = musicGuildInfo.queue.splice(posToMove - 1, 1)[0];
+                const item = musicGuildInfo.queue.splice(posToMove - 1, 1)[0]!;
                 musicGuildInfo.queue.splice(posToJump - 1, 0, item);
                 await message.channel.send(`Moved track **${item.info.title}** to position **${posToJump - 1}**`);
                 return;
