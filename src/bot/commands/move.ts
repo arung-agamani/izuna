@@ -32,7 +32,7 @@ export class MoveQueueItemCommand extends Command {
             if (posToJump > 0 && posToJump <= musicGuildInfo.queue.length && posToMove > 0 && posToMove <= musicGuildInfo.queue.length) {
                 const item = musicGuildInfo.queue.splice(posToMove - 1, 1)[0]!;
                 musicGuildInfo.queue.splice(posToJump - 1, 0, item);
-                await message.channel.send(`Moved track **${item.info.title}** to position **${posToJump - 1}**`);
+                await message.channel.send(`Moved track **${item.info.title}** to position **${posToJump}**`);
                 return;
             }
             await message.channel.send(`Out of range track number.`);
