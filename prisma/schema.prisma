@@ -14,6 +14,15 @@ model User {
   id Int @id @default(autoincrement())
   uid String @unique
   name String
+  danbooru_user DanbooruUser? @relation("DanbooruUser")
+}
+
+model DanbooruUser {
+  id Int @id @default(autoincrement())
+  user User @relation("DanbooruUser", fields: [discord_uid], references: [uid])
+  discord_uid String @unique
+  api_key String
+  username String
 }
 
 model FeedRecord {
