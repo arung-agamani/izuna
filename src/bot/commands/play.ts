@@ -4,13 +4,28 @@ import musicManager, { MusicGuildInfo, getShoukakuManager } from "../../lib/musi
 import logger from "../../lib/winston";
 
 type LavalinkLoadType = "TRACK_LOADED" | "PLAYLIST_LOADED" | "SEARCH_RESULT" | "NO_MATCHES" | "LOAD_FAILED";
-// interface LavalinkLoadTracksRes {
-//     loadType: "TRACK_LOADED" | "PLAYLIST_LOADED" | "SEARCH_RESULT" | "NO_MATCHES" | "LOAD_FAILED";
-// }
 
 const youtubeVideoRegex = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/gm;
 const youtubePlaylistRegex = /(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:playlist|list|embed)(?:\.php)?(?:\?.*list=|\/))([a-zA-Z0-9\-_]+)/gm;
 
+// taken from https://stackoverflow.com/a/11486026
+function fancyTimeFormat(duration: number) {
+    // Hours, minutes and seconds
+    var hrs = ~~(duration / 3600);
+    var mins = ~~((duration % 3600) / 60);
+    var secs = ~~duration % 60;
+
+    // Output like "1:01" or "4:03:59" or "123:03:59"
+    var ret = "";
+
+    if (hrs > 0) {
+        ret += "" + hrs + ":" + (mins < 10 ? "0" : "");
+    }
+
+    ret += "" + mins + ":" + (secs < 10 ? "0" : "");
+    ret += "" + secs;
+    return ret;
+}
 export class PlayMusicCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
@@ -103,9 +118,9 @@ export class PlayMusicCommand extends Command {
                     return;
                 }
                 await message.channel.send(
-                    `Track loaded. ${newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]?.info.title} | Duration: ${
-                        newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]?.info.length
-                    }`
+                    `Track loaded. ${newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]?.info.title} | Duration: ${fancyTimeFormat(
+                        newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]?.info.length! / 1000
+                    )}`
                 );
                 newMusicGuildInfo.player.playTrack({ track: newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]?.track! });
                 newMusicGuildInfo.isPlaying = true;
@@ -129,7 +144,9 @@ export class PlayMusicCommand extends Command {
         switch (searchRes.loadType as LavalinkLoadType) {
             case "TRACK_LOADED":
                 musicGuildInfo?.queue.push(searchRes.tracks[0]!);
-                await message.channel.send(`Track loaded. ${searchRes.tracks[0]?.info.title} | Duration: ${searchRes.tracks[0]?.info.length}`);
+                await message.channel.send(
+                    `Track loaded. ${searchRes.tracks[0]?.info.title} | Duration: ${fancyTimeFormat(searchRes.tracks[0]?.info.length! / 1000)}`
+                );
                 break;
             case "PLAYLIST_LOADED":
                 const tracks = searchRes.tracks;
@@ -143,7 +160,9 @@ export class PlayMusicCommand extends Command {
             case "SEARCH_RESULT":
                 musicGuildInfo?.queue.push(searchRes.tracks[0]!);
                 await message.channel.send("Search result for: " + searchQuery);
-                await message.channel.send(`Track loaded. ${searchRes.tracks[0]?.info.title} | Duration: ${searchRes.tracks[0]?.info.length}`);
+                await message.channel.send(
+                    `Track loaded. **${searchRes.tracks[0]?.info.title}** | Duration: ${fancyTimeFormat(searchRes.tracks[0]?.info.length! / 1000)}`
+                );
                 break;
             case "NO_MATCHES":
                 await message.channel.send("No result found... Hmm...");
