@@ -2,30 +2,13 @@ import { Args, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import musicManager, { MusicGuildInfo, getShoukakuManager } from "../../lib/musicQueue";
 import logger from "../../lib/winston";
+import { fancyTimeFormat } from "../../lib/utils";
 
 type LavalinkLoadType = "TRACK_LOADED" | "PLAYLIST_LOADED" | "SEARCH_RESULT" | "NO_MATCHES" | "LOAD_FAILED";
 
 const youtubeVideoRegex = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/gm;
 const youtubePlaylistRegex = /(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:playlist|list|embed)(?:\.php)?(?:\?.*list=|\/))([a-zA-Z0-9\-_]+)/gm;
 
-// taken from https://stackoverflow.com/a/11486026
-function fancyTimeFormat(duration: number) {
-    // Hours, minutes and seconds
-    var hrs = ~~(duration / 3600);
-    var mins = ~~((duration % 3600) / 60);
-    var secs = ~~duration % 60;
-
-    // Output like "1:01" or "4:03:59" or "123:03:59"
-    var ret = "";
-
-    if (hrs > 0) {
-        ret += "" + hrs + ":" + (mins < 10 ? "0" : "");
-    }
-
-    ret += "" + mins + ":" + (secs < 10 ? "0" : "");
-    ret += "" + secs;
-    return ret;
-}
 export class PlayMusicCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {

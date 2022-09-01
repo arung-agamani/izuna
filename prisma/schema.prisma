@@ -28,3 +28,14 @@ model Reminder {
   channelId String
   channelType String
 }
+
+model Playlist {
+  id Int @id @default(autoincrement())
+  userId String
+  guildId String
+  tracks Json
+  dateCreated DateTime
+  name String
+
+  @@unique([userId, name])
+}
