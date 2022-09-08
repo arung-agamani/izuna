@@ -32,6 +32,14 @@ export class RemoveFromQueueCommand extends Command {
                 musicGuildInfo.skipPosition = posToJump - 1;
                 musicGuildInfo.isSkippingQueued = true;
                 await message.channel.send(`Set the play head to track ${posToJump}. **${musicGuildInfo.queue[posToJump - 1]?.info.title}**`);
+                if (!musicGuildInfo.isPlaying && musicGuildInfo.currentPosition === musicGuildInfo.queue.length) {
+                    const poppedTrack = musicGuildInfo.queue[posToJump - 1]!;
+                    musicGuildInfo.currentPosition = posToJump - 1;
+                    musicGuildInfo.isSkippingQueued = false;
+                    await musicGuildInfo.player.playTrack({ track: poppedTrack.track });
+                    await message.channel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
+                    musicGuildInfo.isPlaying = true;
+                }
                 return;
             }
             await message.channel.send(`Out of range track number.`);

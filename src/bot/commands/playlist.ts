@@ -114,6 +114,7 @@ export class PlaylistMusicCommand extends Command {
                             name: arg2,
                         },
                     });
+                    // can be improved by using upsert, but eh... later
                     if (!prevPlaylistInstance) {
                         await prisma.playlist.create({
                             data: {
