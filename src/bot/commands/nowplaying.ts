@@ -1,8 +1,10 @@
 import { Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
+import { MessageEmbed } from "discord.js";
 import musicManager from "../../lib/musicQueue";
+import { fancyTimeFormat } from "../../lib/utils";
 // import prisma from "../../lib/prisma";
-
+import { PaginatedMessage } from "@sapphire/discord.js-utilities";
 export class NowPlayingMusicCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
@@ -27,21 +29,57 @@ export class NowPlayingMusicCommand extends Command {
             await message.channel.send("No bot in voice channel. Are you okay?");
             return;
         }
-        // check if there is a current playing track
-        let msg = "";
         if (musicGuildInfo.queue.length === 0) {
-            msg += "No item in queue.";
+            await message.channel.send("No item in queue");
+            return;
         }
+        // check if there is a current playing track
+        const queue = musicGuildInfo.queue;
+        const paginatedMessage = new PaginatedMessage();
         let i = 0;
-        for (const track of musicGuildInfo.queue) {
-            if (i === musicGuildInfo.currentPosition) {
-                msg += `**${i + 1}. ${track.info.title} - Duration ${track.info.length}**\n`;
-            } else {
-                msg += `${i + 1}. ${track.info.title} - Duration ${track.info.length}\n`;
+        if (queue.length < 10) {
+            const page = new MessageEmbed();
+            page.setTitle("Now playing queue...");
+            let msg = "";
+            for (const track of queue) {
+                msg += `${i + 1}. ${track.info.title} - Duration ${fancyTimeFormat(track.info.length! / 1000)}\n`;
+                i++;
             }
-            i++;
+            page.setDescription(msg);
+            paginatedMessage.addPageEmbed((embed) => {
+                embed.setTitle("Now playing queue...");
+                embed.setDescription(msg);
+                return embed;
+            });
+        } else {
+            let totalPages = Math.ceil(queue.length / 10);
+            let pageCounter = 0;
+            while (pageCounter < totalPages) {
+                let msg = "";
+                if (pageCounter < totalPages - 1) {
+                    for (let j = 0; j < 10; j++) {
+                        msg += `${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}\n`;
+                        i++;
+                    }
+                    paginatedMessage.addPageEmbed((embed) => {
+                        embed.setTitle("Now playing queue...");
+                        embed.setDescription(msg);
+                        return embed;
+                    });
+                } else {
+                    for (let j = i; j < queue.length; j++) {
+                        msg += `${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}\n`;
+                        i++;
+                    }
+                    paginatedMessage.addPageEmbed((embed) => {
+                        embed.setTitle("Now playing queue...");
+                        embed.setDescription(msg);
+                        return embed;
+                    });
+                }
+            }
         }
-        await message.channel.send(msg);
+        await paginatedMessage.run(message);
         return;
     }
 }

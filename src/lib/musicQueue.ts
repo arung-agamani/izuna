@@ -7,6 +7,7 @@ export interface MusicGuildInfo {
     currentPosition: number;
     queue: Track[];
     isRepeat: "no" | "single" | "playlist";
+    isPausing: boolean;
     isPlaying: boolean;
     player: Player;
     isSkippingQueued: boolean;

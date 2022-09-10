@@ -116,6 +116,7 @@ export class PlayMusicCommand extends Command {
                 currentPosition: 0, // 0-based indexing
                 isRepeat: "no",
                 isPlaying: false,
+                isPausing: false,
                 queue: [],
                 player: player,
                 isSkippingQueued: false,
