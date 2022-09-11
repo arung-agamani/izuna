@@ -56,6 +56,7 @@ export class NowPlayingMusicCommand extends Command {
             let pageCounter = 0;
             while (pageCounter < totalPages) {
                 let msg = "";
+                // console.log(pageCounter);
                 if (pageCounter < totalPages - 1) {
                     for (let j = 0; j < 10; j++) {
                         msg += `${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}\n`;
@@ -66,6 +67,7 @@ export class NowPlayingMusicCommand extends Command {
                         embed.setDescription(msg);
                         return embed;
                     });
+                    pageCounter++;
                 } else {
                     for (let j = i; j < queue.length; j++) {
                         msg += `${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}\n`;
@@ -76,6 +78,7 @@ export class NowPlayingMusicCommand extends Command {
                         embed.setDescription(msg);
                         return embed;
                     });
+                    pageCounter++;
                 }
             }
         }
