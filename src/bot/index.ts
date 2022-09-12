@@ -30,6 +30,7 @@ async function createBotApp() {
     });
 
     client.on("messageCreate", async (message) => {
+        if (message.author.bot) return;
         if (message.content === "Awoo?") {
             await message.reply("Awoo!");
             return;
@@ -46,14 +47,24 @@ async function createBotApp() {
             if (foundTag === "") {
                 return;
             }
-            const tag = await prisma.tag.findFirst({
-                where: {
-                    userId: message.author.id,
-                    name: foundTag,
-                },
-            });
+            let tag = null;
+            if (message.inGuild()) {
+                tag = await prisma.tag.findFirst({
+                    where: {
+                        guildId: message.guildId,
+                        name: foundTag,
+                    },
+                });
+            } else {
+                tag = await prisma.tag.findFirst({
+                    where: {
+                        userId: message.author.id,
+                        name: foundTag,
+                    },
+                });
+            }
             if (!tag) {
-                await message.channel.send(`No tag **${foundTag}** found for this user.`);
+                await message.channel.send(`No tag **${foundTag}** found.`);
                 return;
             }
             if (tag.isMedia) {

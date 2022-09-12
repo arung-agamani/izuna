@@ -43,8 +43,10 @@ model Playlist {
 model Tag {
   id Int @id @default(autoincrement())
   userId String
+  guildId String
   name String
   dateCreated DateTime
   message String
   isMedia Boolean
+  isGuild Boolean
 }

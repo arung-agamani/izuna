@@ -20,27 +20,108 @@ export class TagCommand extends Command {
             const attachments = Array.from(message.attachments.values());
             if (message.attachments.size === 0) {
                 const arg3 = await args.rest("string", { minimum: 1 });
-                await prisma.tag.create({
-                    data: {
-                        name: arg2,
-                        userId: message.author.id,
-                        dateCreated: new Date(),
-                        message: arg3,
-                        isMedia: false,
-                    },
-                });
+                const data = {
+                    name: arg2,
+                    userId: message.author.id,
+                    guildId: message.guildId || "",
+                    dateCreated: new Date(),
+                    message: arg3,
+                    isMedia: false,
+                    isGuild: message.inGuild(),
+                };
+                if (message.inGuild()) {
+                    const tag = await prisma.tag.findFirst({
+                        where: {
+                            guildId: message.guildId,
+                            name: arg2,
+                        },
+                    });
+                    if (tag) {
+                        await prisma.tag.updateMany({
+                            data,
+                            where: {
+                                guildId: message.guildId,
+                                name: arg2,
+                            },
+                        });
+                    } else {
+                        await prisma.tag.create({
+                            data,
+                        });
+                    }
+                } else {
+                    const tag = await prisma.tag.findFirst({
+                        where: {
+                            userId: message.author.id,
+                            name: arg2,
+                        },
+                    });
+                    if (tag) {
+                        await prisma.tag.updateMany({
+                            data,
+                            where: {
+                                userId: message.author.id,
+                                name: arg2,
+                            },
+                        });
+                    } else {
+                        await prisma.tag.create({
+                            data,
+                        });
+                    }
+                }
                 await message.channel.send(`Tag **${arg2}** registered`);
                 return;
             } else {
-                await prisma.tag.create({
-                    data: {
-                        name: arg2,
-                        userId: message.author.id,
-                        dateCreated: new Date(),
-                        message: attachments[0]!.url,
-                        isMedia: true,
-                    },
-                });
+                const data = {
+                    name: arg2,
+                    userId: message.author.id,
+                    guildId: message.guildId || "",
+                    dateCreated: new Date(),
+                    message: attachments[0]!.url,
+                    isMedia: true,
+                    isGuild: message.inGuild(),
+                };
+                if (message.inGuild()) {
+                    const tag = await prisma.tag.findFirst({
+                        where: {
+                            guildId: message.guildId,
+                            name: arg2,
+                        },
+                    });
+                    if (tag) {
+                        await prisma.tag.updateMany({
+                            data,
+                            where: {
+                                guildId: message.guildId,
+                                name: arg2,
+                            },
+                        });
+                    } else {
+                        await prisma.tag.create({
+                            data,
+                        });
+                    }
+                } else {
+                    const tag = await prisma.tag.findFirst({
+                        where: {
+                            userId: message.author.id,
+                        },
+                    });
+                    if (tag) {
+                        await prisma.tag.updateMany({
+                            data,
+                            where: {
+                                userId: message.author.id,
+                                name: arg2,
+                            },
+                        });
+                    } else {
+                        await prisma.tag.create({
+                            data,
+                        });
+                    }
+                }
                 await message.channel.send(`Tag **${arg2}** registered`);
                 return;
             }
