@@ -59,7 +59,11 @@ export class NowPlayingMusicCommand extends Command {
                 // console.log(pageCounter);
                 if (pageCounter < totalPages - 1) {
                     for (let j = 0; j < 10; j++) {
-                        msg += `${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}\n`;
+                        if (musicGuildInfo.currentPosition === i) {
+                            msg += `**${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}**\n`;
+                        } else {
+                            msg += `${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}\n`;
+                        }
                         i++;
                     }
                     paginatedMessage.addPageEmbed((embed) => {
@@ -70,7 +74,11 @@ export class NowPlayingMusicCommand extends Command {
                     pageCounter++;
                 } else {
                     for (let j = i; j < queue.length; j++) {
-                        msg += `${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}\n`;
+                        if (musicGuildInfo.currentPosition === i) {
+                            msg += `**${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}**\n`;
+                        } else {
+                            msg += `${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}\n`;
+                        }
                         i++;
                     }
                     paginatedMessage.addPageEmbed((embed) => {
@@ -82,6 +90,8 @@ export class NowPlayingMusicCommand extends Command {
                 }
             }
         }
+        let currentPage = Math.floor(queue.length / 10);
+        paginatedMessage.setIndex(currentPage);
         await paginatedMessage.run(message);
         return;
     }

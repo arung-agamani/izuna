@@ -129,7 +129,9 @@ export class PlayMusicCommand extends Command {
             case "TRACK_LOADED":
                 musicGuildInfo?.queue.push(searchRes.tracks[0]!);
                 await message.channel.send(
-                    `Track loaded. ${searchRes.tracks[0]?.info.title} | Duration: ${fancyTimeFormat(searchRes.tracks[0]?.info.length! / 1000)}`
+                    `Track loaded. ${searchRes.tracks[0]?.info.title} | Duration: ${fancyTimeFormat(searchRes.tracks[0]?.info.length! / 1000)} | Pos: ${
+                        musicGuildInfo.queue.length
+                    }`
                 );
                 break;
             case "PLAYLIST_LOADED":
@@ -145,7 +147,9 @@ export class PlayMusicCommand extends Command {
                 musicGuildInfo?.queue.push(searchRes.tracks[0]!);
                 await message.channel.send("Search result for: " + searchQuery);
                 await message.channel.send(
-                    `Track loaded. **${searchRes.tracks[0]?.info.title}** | Duration: ${fancyTimeFormat(searchRes.tracks[0]?.info.length! / 1000)}`
+                    `Track loaded. **${searchRes.tracks[0]?.info.title}** | Duration: ${fancyTimeFormat(searchRes.tracks[0]?.info.length! / 1000)} | Pos: ${
+                        musicGuildInfo.queue.length
+                    }`
                 );
                 break;
             case "NO_MATCHES":

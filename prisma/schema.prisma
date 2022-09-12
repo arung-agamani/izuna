@@ -39,3 +39,12 @@ model Playlist {
 
   @@unique([userId, name])
 }
+
+model Tag {
+  id Int @id @default(autoincrement())
+  userId String
+  name String
+  dateCreated DateTime
+  message String
+  isMedia Boolean
+}

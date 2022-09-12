@@ -195,6 +195,48 @@ export class PlaylistMusicCommand extends Command {
                 }
                 await message.channel.send(playlistInfo);
                 return;
+            } else if (arg1 === "list") {
+                const playlists = await prisma.playlist.findMany({
+                    select: {
+                        name: true,
+                    },
+                    where: {
+                        userId: message.author.id,
+                    },
+                });
+                if (playlists.length === 0) {
+                    await message.channel.send(`There is no playlist for <@${message.author.id}>`);
+                    return;
+                }
+                let playlistInfo = `Playlist registered for <@${message.author.id}>\n`;
+                let i = 0;
+                for (const playlist of playlists) {
+                    playlistInfo += `${i + 1}. **${playlist.name}**\n`;
+                }
+                await message.channel.send(playlistInfo);
+                return;
+            } else if (arg1 === "remove") {
+                const arg2 = await args.pick("string");
+                const playlist = await prisma.playlist.findFirst({
+                    where: {
+                        userId: message.author.id,
+                        name: arg2,
+                    },
+                });
+                if (!playlist) {
+                    await message.channel.send(`There is no playlist with name **${arg2}**.`);
+                    return;
+                }
+                await prisma.playlist.delete({
+                    where: {
+                        userId_name: {
+                            userId: message.author.id,
+                            name: arg2,
+                        },
+                    },
+                });
+                await message.reply(`Successfully deleted playlist **${arg2}**`);
+                return;
             }
         } catch (error) {
             console.log(error);
