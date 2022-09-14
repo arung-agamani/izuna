@@ -154,12 +154,22 @@ export class PlaylistMusicCommand extends Command {
                 }
             } else if (arg1 === "load") {
                 const arg2 = await args.pick("string");
-                const playlist = await prisma.playlist.findFirst({
-                    where: {
-                        userId: message.author.id,
-                        name: arg2,
-                    },
-                });
+                let playlist = null;
+                if (message.inGuild()) {
+                    playlist = await prisma.playlist.findFirst({
+                        where: {
+                            guildId: message.guildId,
+                            name: arg2,
+                        },
+                    });
+                } else {
+                    playlist = await prisma.playlist.findFirst({
+                        where: {
+                            userId: message.author.id,
+                            name: arg2,
+                        },
+                    });
+                }
                 if (!playlist) {
                     await message.channel.send(`There is no playlist with name **${arg2}**`);
                     return;
@@ -176,12 +186,22 @@ export class PlaylistMusicCommand extends Command {
                 return;
             } else if (arg1 === "info") {
                 const arg2 = await args.pick("string");
-                const playlist = await prisma.playlist.findFirst({
-                    where: {
-                        userId: message.author.id,
-                        name: arg2,
-                    },
-                });
+                let playlist = null;
+                if (message.inGuild()) {
+                    playlist = await prisma.playlist.findFirst({
+                        where: {
+                            guildId: message.guildId,
+                            name: arg2,
+                        },
+                    });
+                } else {
+                    playlist = await prisma.playlist.findFirst({
+                        where: {
+                            userId: message.author.id,
+                            name: arg2,
+                        },
+                    });
+                }
                 if (!playlist) {
                     await message.channel.send(`There is no playlist with name **${arg2}**.`);
                     return;
@@ -196,14 +216,26 @@ export class PlaylistMusicCommand extends Command {
                 await message.channel.send(playlistInfo);
                 return;
             } else if (arg1 === "list") {
-                const playlists = await prisma.playlist.findMany({
-                    select: {
-                        name: true,
-                    },
-                    where: {
-                        userId: message.author.id,
-                    },
-                });
+                let playlists = null;
+                if (message.inGuild()) {
+                    playlists = await prisma.playlist.findMany({
+                        select: {
+                            name: true,
+                        },
+                        where: {
+                            guildId: message.guildId,
+                        },
+                    });
+                } else {
+                    playlists = await prisma.playlist.findMany({
+                        select: {
+                            name: true,
+                        },
+                        where: {
+                            userId: message.author.id,
+                        },
+                    });
+                }
                 if (playlists.length === 0) {
                     await message.channel.send(`There is no playlist for <@${message.author.id}>`);
                     return;
@@ -217,12 +249,22 @@ export class PlaylistMusicCommand extends Command {
                 return;
             } else if (arg1 === "remove") {
                 const arg2 = await args.pick("string");
-                const playlist = await prisma.playlist.findFirst({
-                    where: {
-                        userId: message.author.id,
-                        name: arg2,
-                    },
-                });
+                let playlist = null;
+                if (message.inGuild()) {
+                    playlist = await prisma.playlist.findFirst({
+                        where: {
+                            guildId: message.guildId,
+                            name: arg2,
+                        },
+                    });
+                } else {
+                    playlist = await prisma.playlist.findFirst({
+                        where: {
+                            userId: message.author.id,
+                            name: arg2,
+                        },
+                    });
+                }
                 if (!playlist) {
                     await message.channel.send(`There is no playlist with name **${arg2}**.`);
                     return;
