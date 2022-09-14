@@ -162,6 +162,14 @@ export class PlaylistMusicCommand extends Command {
                             name: arg2,
                         },
                     });
+                    if (!playlist) {
+                        playlist = await prisma.playlist.findFirst({
+                            where: {
+                                userId: message.author.id,
+                                name: arg2,
+                            },
+                        });
+                    }
                 } else {
                     playlist = await prisma.playlist.findFirst({
                         where: {
