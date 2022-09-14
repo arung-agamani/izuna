@@ -69,14 +69,19 @@ export class RkgkCommand extends Command {
                 });
                 await message.channel.send("User created...");
             }
-            const userApiKey = await prisma.danbooruUser.findUnique({
+            let userApiKey = await prisma.danbooruUser.findUnique({
                 where: { discord_uid: message.author.id },
             });
             if (!userApiKey) {
                 await message.channel.send(
-                    "You haven't registered API key. Please go to your profile page and create API key.\nThen, run `sugar, rkgk register` command"
+                    "You haven't registered API key. Sugar will use her account to upload this."
                 );
-                return;
+                userApiKey = {
+                    id: -1,
+                    discord_uid: "",
+                    username: "sugar_serviceaccount",
+                    api_key: process.env["SUGARBOORU_API_KEY"]!,
+                };
             }
             // retrieve image attached with message
             if (message.attachments.size <= 0) {

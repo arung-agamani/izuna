@@ -132,6 +132,7 @@ dist
 # Build artifacts
 build
 .vscode
+.vscode/*
 
 test.js
 Dockerfile.test
