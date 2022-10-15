@@ -91,12 +91,22 @@ export class PlayMusicCommand extends Command {
                     newMusicGuildInfo.isSkippingQueued = false;
                     newMusicGuildInfo.currentPosition = newMusicGuildInfo.skipPosition;
                 } else {
-                    newMusicGuildInfo.currentPosition += 1;
+                    if (newMusicGuildInfo.isRepeat !== "single") {
+                        newMusicGuildInfo.currentPosition += 1;
+                    }
                 }
                 newMusicGuildInfo.isPlaying = true;
                 if (newMusicGuildInfo.currentPosition === newMusicGuildInfo.queue.length) {
                     await message.channel.send("Reached the end of playlist");
-                    newMusicGuildInfo.isPlaying = false;
+                    if (newMusicGuildInfo.isRepeat === "playlist") {
+                        newMusicGuildInfo.currentPosition = 0;
+                        await message.channel.send("Playlist loop is set. Resetting playhead to the beginning of the queue.");
+                        const poppedTrack = newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]!;
+                        newMusicGuildInfo.player.playTrack({ track: poppedTrack.track });
+                        await message.channel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
+                    } else {
+                        newMusicGuildInfo.isPlaying = false;
+                    }
                     musicManager.set(message.guildId!, newMusicGuildInfo);
                     return;
                 }
