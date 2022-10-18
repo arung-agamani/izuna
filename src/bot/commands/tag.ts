@@ -13,7 +13,15 @@ export class TagCommand extends Command {
     }
 
     public async messageRun(message: Message, args: Args) {
-        if (!(message.channel.type === "DM" || message.channel.type === "GUILD_TEXT")) return;
+        if (
+            !(
+                message.channel.type === "DM" ||
+                message.channel.type === "GUILD_TEXT" ||
+                message.channel.type === "GUILD_PUBLIC_THREAD" ||
+                message.channel.type === "GUILD_PRIVATE_THREAD"
+            )
+        )
+            return;
         const arg1 = await args.pick("string");
         if (arg1 === "add") {
             const arg2 = await args.pick("string");
