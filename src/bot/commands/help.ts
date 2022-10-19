@@ -12,9 +12,6 @@ export class HelpCommand extends Command {
     }
 
     public async messageRun(message: Message) {
-        console.log(
-            Array.from(this.container.client.stores.get("commands").entries())
-        );
         const commandIter = this.container.stores.get("commands").entries();
         const commands = [];
         for (const command of commandIter) {
@@ -26,10 +23,7 @@ export class HelpCommand extends Command {
         const helpMessageEmbed = new MessageEmbed();
         helpMessageEmbed.setTitle("Help Section");
         for (const command of commands) {
-            helpMessageEmbed.addField(
-                `**${command.name}**`,
-                command.description
-            );
+            helpMessageEmbed.addField(`**${command.name}**`, command.description);
         }
         helpMessageEmbed.setTimestamp().setFooter({
             text: "Eggs",

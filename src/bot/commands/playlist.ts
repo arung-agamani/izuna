@@ -148,7 +148,6 @@ export class PlaylistMusicCommand extends Command {
 
                     return;
                 } catch (error) {
-                    console.log(error);
                     await message.channel.send("Please give playlist name. Use simple name because it's what will be used for loading later on");
                     return;
                 }

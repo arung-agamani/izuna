@@ -27,6 +27,7 @@ jobs:
                       cd ..
                       rm -rf izuna
                       docker run -d -p 8001:8000 --name closure-runtime --network=closure-network \
+                       --mount source=closure-logs,target=/usr/src/app/log \
                        -e DISCORD_BOT_TOKEN=${{ secrets.CLOSURE_BOT_TOKEN }} -e DATABASE_URL=${{ secrets.CLOSURE_DB_URL }} \
                        -e DISCORD_OAUTH_CLIENT_ID=${{ secrets.CLOSURE_DISCORD_OAUTH_CLIENT_ID}} \
                        -e DISCORD_OAUTH_CLIENT_SECRET=${{ secrets.DISCORD_OAUTH_CLIENT_SECRET}} \
