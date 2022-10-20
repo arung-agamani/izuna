@@ -1,6 +1,6 @@
-import { Command } from "@sapphire/framework";
-import { Message, MessageEmbed } from "discord.js";
-import reminderCollection from "../../lib/reminder";
+import { Command, Args } from "@sapphire/framework";
+import type { Message } from "discord.js";
+import { getGoogleClient } from "../../lib/google";
 // import prisma from "../../lib/prisma";
 
 export class TestCommand extends Command {
@@ -12,20 +12,21 @@ export class TestCommand extends Command {
         });
     }
 
-    public async messageRun(message: Message) {
-        console.log(message.channel.type);
-        const allReminders = Array.from(reminderCollection.values());
-        if (allReminders.length === 0) {
-            return await message.channel.send("No reminders has set");
+    public async messageRun(message: Message, args: Args) {
+        const url = await args.rest("string");
+        const regex = /\/file\/d\/([^\/]+)/;
+        const id = regex.exec(url);
+        if (!id) {
+            await message.channel.send("Invalid url");
+            return;
         }
-        const embedMessage = new MessageEmbed();
-        embedMessage.setTitle("Current reminder for this user");
-        for (const reminder of allReminders) {
-            embedMessage.addField(
-                `${reminder.message} -- ID: ${reminder.id}`,
-                `Cron string: **${reminder.cronString}**`
-            );
-        }
-        return await message.channel.send({ embeds: [embedMessage] });
+        const fileId = id[1]!;
+        const drive = getGoogleClient();
+        const file = await drive.files.get({
+            fileId,
+            fields: "webContentLink",
+        });
+        console.log(file);
+        await message.channel.send("Url valid. Check your logs");
     }
 }

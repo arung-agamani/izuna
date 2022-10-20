@@ -1,14 +1,16 @@
 import { Args, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
+import { HttpUrlRegex } from "@sapphire/discord-utilities";
 import musicManager, { MusicGuildInfo, getShoukakuManager } from "../../lib/musicQueue";
 import logger from "../../lib/winston";
 import { fancyTimeFormat } from "../../lib/utils";
+import { getGoogleClient } from "../../lib/google";
 
 type LavalinkLoadType = "TRACK_LOADED" | "PLAYLIST_LOADED" | "SEARCH_RESULT" | "NO_MATCHES" | "LOAD_FAILED";
 
 const youtubeVideoRegex = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/gm;
 const youtubePlaylistRegex = /(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:playlist|list|embed)(?:\.php)?(?:\?.*list=|\/))([a-zA-Z0-9\-_]+)/gm;
-
+const driveRegex = /\/file\/d\/([^\/]+)/;
 export class PlayMusicCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
@@ -60,6 +62,19 @@ export class PlayMusicCommand extends Command {
             searchRes = await lavalinkNode.rest.resolve(playlistId);
         } else if (youtubeRegexRes) {
             searchRes = await lavalinkNode.rest.resolve(videoId);
+        } else if (driveRegex.exec(searchQuery)) {
+            const fileId = driveRegex.exec(searchQuery)![1]!;
+            const drive = getGoogleClient();
+            const file = await drive.files.get({
+                fileId,
+                fields: "webContentLink",
+            });
+            searchRes = await lavalinkNode.rest.resolve(file.data.webContentLink!);
+            await message.channel.send(
+                "**[Warning]** That looks like a Google Drive link.\nThis feature is currently unstable and you might encounter unplayable track case (especially after track finish).\nIn case of unplayable track, please requeue the track and delete old unplayable track."
+            );
+        } else if (HttpUrlRegex.exec(searchQuery)) {
+            searchRes = await lavalinkNode.rest.resolve(searchQuery);
         } else {
             searchRes = await lavalinkNode.rest.resolve(`ytsearch: ${searchQuery}`);
         }
