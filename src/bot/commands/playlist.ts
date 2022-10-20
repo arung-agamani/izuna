@@ -11,6 +11,7 @@ interface Playlist {
     guildId: string;
     queue: Track[];
     dateCreated: Date;
+    private: Boolean;
 }
 
 export class PlaylistMusicCommand extends Command {
@@ -19,6 +20,7 @@ export class PlaylistMusicCommand extends Command {
             ...options,
             name: "playlist",
             description: "Playlist utilities",
+            flags: ["private", "p"],
         });
     }
 
@@ -103,11 +105,13 @@ export class PlaylistMusicCommand extends Command {
             if (arg1 === "save") {
                 try {
                     const arg2 = await args.pick("string");
+                    const isPrivate = args.getFlags("private", "p");
                     const playlist: Playlist = {
                         userId: message.author.id,
                         guildId: message.inGuild() ? message.guildId : "",
                         queue: [...musicGuildInfo.queue],
                         dateCreated: new Date(),
+                        private: isPrivate,
                     };
                     const prevPlaylistInstance = await prisma.playlist.findFirst({
                         where: {
@@ -124,6 +128,7 @@ export class PlaylistMusicCommand extends Command {
                                 tracks: JSON.stringify(playlist.queue),
                                 dateCreated: playlist.dateCreated,
                                 name: arg2,
+                                private: isPrivate,
                             },
                         });
                         await message.channel.send(`Playlist saved under the name **${arg2}**.`);
@@ -153,27 +158,22 @@ export class PlaylistMusicCommand extends Command {
                 }
             } else if (arg1 === "load") {
                 const arg2 = await args.pick("string");
+                const isPrivate = args.getFlags("private", "p");
                 let playlist = null;
                 if (message.inGuild()) {
                     playlist = await prisma.playlist.findFirst({
                         where: {
                             guildId: message.guildId,
                             name: arg2,
+                            private: isPrivate,
                         },
                     });
-                    if (!playlist) {
-                        playlist = await prisma.playlist.findFirst({
-                            where: {
-                                userId: message.author.id,
-                                name: arg2,
-                            },
-                        });
-                    }
                 } else {
                     playlist = await prisma.playlist.findFirst({
                         where: {
                             userId: message.author.id,
                             name: arg2,
+                            private: isPrivate,
                         },
                     });
                 }
@@ -193,12 +193,14 @@ export class PlaylistMusicCommand extends Command {
                 return;
             } else if (arg1 === "info") {
                 const arg2 = await args.pick("string");
+                const isPrivate = args.getFlags("private", "p");
                 let playlist = null;
                 if (message.inGuild()) {
                     playlist = await prisma.playlist.findFirst({
                         where: {
                             guildId: message.guildId,
                             name: arg2,
+                            private: isPrivate,
                         },
                     });
                 } else {
@@ -206,6 +208,7 @@ export class PlaylistMusicCommand extends Command {
                         where: {
                             userId: message.author.id,
                             name: arg2,
+                            private: isPrivate,
                         },
                     });
                 }
@@ -223,26 +226,31 @@ export class PlaylistMusicCommand extends Command {
                 await message.channel.send(playlistInfo);
                 return;
             } else if (arg1 === "list") {
-                let playlists = null;
+                let playlistsGuild: any[] = [];
+                let playlistsPrivate = [];
                 if (message.inGuild()) {
-                    playlists = await prisma.playlist.findMany({
+                    playlistsGuild = await prisma.playlist.findMany({
                         select: {
                             name: true,
+                            private: true,
                         },
                         where: {
                             guildId: message.guildId,
-                        },
-                    });
-                } else {
-                    playlists = await prisma.playlist.findMany({
-                        select: {
-                            name: true,
-                        },
-                        where: {
-                            userId: message.author.id,
+                            private: false,
                         },
                     });
                 }
+                playlistsPrivate = await prisma.playlist.findMany({
+                    select: {
+                        name: true,
+                        private: true,
+                    },
+                    where: {
+                        userId: message.author.id,
+                        private: true,
+                    },
+                });
+                const playlists = playlistsGuild.concat(playlistsPrivate);
                 if (playlists.length === 0) {
                     await message.channel.send(`There is no playlist for <@${message.author.id}>`);
                     return;
@@ -250,7 +258,8 @@ export class PlaylistMusicCommand extends Command {
                 let playlistInfo = `Playlist registered for <@${message.author.id}>\n`;
                 let i = 0;
                 for (const playlist of playlists) {
-                    playlistInfo += `${i + 1}. **${playlist.name}**\n`;
+                    playlistInfo += `${i + 1}. **${playlist.name}**${playlist.private ? " [private]" : ""}\n`;
+                    i++;
                 }
                 await message.channel.send(playlistInfo);
                 return;
