@@ -31,10 +31,10 @@ export class LoopQueueCommand extends Command {
             if (loopMode === "all") {
                 musicGuildInfo.isRepeat = "playlist";
                 await message.channel.send("Set the loop to **entire playlist**.");
-            } else if (loopMode === "one" || loopMode === "1") {
+            } else if (loopMode === "one" || loopMode === "1" || loopMode === "single") {
                 musicGuildInfo.isRepeat = "single";
                 await message.channel.send("Set the loop to **this** track only.");
-            } else if (loopMode === "none") {
+            } else if (loopMode === "none" || loopMode === "off") {
                 musicGuildInfo.isRepeat = "no";
                 await message.channel.send("Track repeat has been disabled.");
             } else {
