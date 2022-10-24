@@ -160,12 +160,12 @@ export class PlaylistMusicCommand extends Command {
                 const arg2 = await args.pick("string");
                 const isPrivate = args.getFlags("private", "p");
                 let playlist = null;
-                if (message.inGuild()) {
+                if (!isPrivate) {
                     playlist = await prisma.playlist.findFirst({
                         where: {
                             guildId: message.guildId,
                             name: arg2,
-                            private: isPrivate,
+                            private: false,
                         },
                     });
                 } else {
@@ -195,12 +195,12 @@ export class PlaylistMusicCommand extends Command {
                 const arg2 = await args.pick("string");
                 const isPrivate = args.getFlags("private", "p");
                 let playlist = null;
-                if (message.inGuild()) {
+                if (!isPrivate) {
                     playlist = await prisma.playlist.findFirst({
                         where: {
                             guildId: message.guildId,
                             name: arg2,
-                            private: isPrivate,
+                            private: false,
                         },
                     });
                 } else {
