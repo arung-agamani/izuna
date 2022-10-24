@@ -90,7 +90,7 @@ export class NowPlayingMusicCommand extends Command {
                 }
             }
         }
-        let currentPage = Math.floor(queue.length / 10);
+        let currentPage = Math.floor(musicGuildInfo.currentPosition / 10);
         paginatedMessage.setIndex(currentPage);
         await paginatedMessage.run(message);
         return;
