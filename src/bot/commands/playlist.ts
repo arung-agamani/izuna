@@ -173,7 +173,7 @@ export class PlaylistMusicCommand extends Command {
                         where: {
                             userId: message.author.id,
                             name: arg2,
-                            private: isPrivate,
+                            private: true,
                         },
                     });
                 }
@@ -208,7 +208,7 @@ export class PlaylistMusicCommand extends Command {
                         where: {
                             userId: message.author.id,
                             name: arg2,
-                            private: isPrivate,
+                            private: true,
                         },
                     });
                 }
