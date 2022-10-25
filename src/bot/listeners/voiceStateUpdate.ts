@@ -59,15 +59,9 @@ export class VoiceStateUpdateListener extends Listener {
                 createdVoiceChannel = await category.createChannel(channelNameToCreate, {
                     type: "GUILD_VOICE",
                 });
-                createdVoiceChannel.permissionOverwrites.create(user, {
-                    MANAGE_CHANNELS: true,
-                });
             } else {
                 createdVoiceChannel = await guild.channels.create(channelNameToCreate, {
                     type: "GUILD_VOICE",
-                });
-                createdVoiceChannel.permissionOverwrites.create(user, {
-                    MANAGE_CHANNELS: true,
                 });
             }
             logger.debug(`${createdVoiceChannel.name} voice channel is created`);
