@@ -7,7 +7,8 @@
     "scripts": {
         "build": "tsc -p tsconfig.json",
         "start": "npx prisma generate && node build/index.js",
-        "dev": "cross-env NODE_ENV=development node build/index.js"
+        "dev": "cross-env NODE_ENV=development node build/index.js",
+        "dev-mute": "cross-env NODE_ENV=development MUTE=1 node build/index.js"
     },
     "dependencies": {
         "@fastify/cookie": "^7.3.1",

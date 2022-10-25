@@ -47,3 +47,18 @@ model Tag {
   isMedia     Boolean
   isGuild     Boolean
 }
+
+model JoinToCreateVC {
+  id Int @id @default(autoincrement())
+  guildId String @unique
+  parentChannelId String
+
+}
+
+model EphemeralVC {
+  id Int @id @default(autoincrement())
+  guildId String
+  channelId String
+  
+  @@unique([guildId, channelId])
+}

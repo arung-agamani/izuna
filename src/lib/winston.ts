@@ -1,4 +1,13 @@
-import winston from "winston";
+import winston, { format } from "winston";
+const colors = {
+    error: "red",
+    warn: "yellow",
+    info: "green",
+    http: "magenta",
+    debug: "white",
+};
+
+winston.addColors(colors);
 
 const logger = winston.createLogger({
     level: "debug",
@@ -6,16 +15,14 @@ const logger = winston.createLogger({
     transports: [
         new winston.transports.File({ filename: "log/error.log", level: "error" }),
         new winston.transports.File({ filename: "log/combined.log", level: "debug" }),
-        new winston.transports.Console(),
+        new winston.transports.Console({
+            format: winston.format.combine(
+                format.colorize({ all: true }),
+                format.timestamp({ format: "YYYY-MM-DD HH:mm:ss:ms" }),
+                format.printf((info) => `${info["timestamp"]} [${info.level}] - ${info.message}`)
+            ),
+        }),
     ],
 });
-
-if (process.env["NODE_ENV"] === "development") {
-    logger.add(
-        new winston.transports.Console({
-            format: winston.format.simple(),
-        })
-    );
-}
 
 export default logger;
