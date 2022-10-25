@@ -1,7 +1,6 @@
 import { Args, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import { MessageEmbed } from "discord.js";
-import logger from "../../lib/winston";
 
 type CategoryMap = Map<string, Set<string>>;
 
