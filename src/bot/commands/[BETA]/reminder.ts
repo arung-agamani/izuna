@@ -1,28 +1,21 @@
 import { Args, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import { config } from "../../config";
-import prisma from "../../lib/prisma";
-import reminderCollection, { restartReminderJob } from "../../lib/reminder";
+import { config } from "../../../config";
+import prisma from "../../../lib/prisma";
+import reminderCollection, { restartReminderJob } from "../../../lib/reminder";
 
 export class ReminderCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
             name: "reminder",
-            description:
-                "[BETA] Send a reminder message. If done in server channel, will be sent ",
+            description: "[BETA] Send a reminder message. If done in server channel, will be sent ",
             flags: ["delete", "d"],
         });
     }
 
     public async messageRun(message: Message, args: Args) {
-        if (
-            !(
-                message.channel.type === "DM" ||
-                message.channel.type === "GUILD_TEXT"
-            )
-        )
-            return;
+        if (!(message.channel.type === "DM" || message.channel.type === "GUILD_TEXT")) return;
         if (!config.betaTesters.includes(message.author.id)) return;
         const cronString = await args.pick("string");
         const msg = await args.pick("string");

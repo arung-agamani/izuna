@@ -1,6 +1,6 @@
 import { Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import musicManager from "../../lib/musicQueue";
+import musicManager from "../../../lib/musicQueue";
 // import prisma from "../../lib/prisma";
 
 export class SkipMusicCommand extends Command {

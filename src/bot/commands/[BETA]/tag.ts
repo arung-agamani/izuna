@@ -1,6 +1,6 @@
 import { Args, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import prisma from "../../lib/prisma";
+import prisma from "../../../lib/prisma";
 
 export class TagCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {

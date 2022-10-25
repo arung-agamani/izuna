@@ -1,16 +1,15 @@
 import { Args, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import { config } from "../../config";
-import prisma from "../../lib/prisma";
-import reminderCollection, { restartReminderJob } from "../../lib/reminder";
+import { config } from "../../../config";
+import prisma from "../../../lib/prisma";
+import reminderCollection, { restartReminderJob } from "../../../lib/reminder";
 
 export class DelReminderCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
             name: "delreminder",
-            description:
-                "Delete a reminder message. Give a single ID for the ID to be deleted",
+            description: "Delete a reminder message. Give a single ID for the ID to be deleted",
             flags: ["delete", "d"],
         });
     }
@@ -27,9 +26,7 @@ export class DelReminderCommand extends Command {
             },
         });
         if (!reminder) {
-            await message.channel.send(
-                "There is no reminder with that id attached to you."
-            );
+            await message.channel.send("There is no reminder with that id attached to you.");
             return;
         }
         await prisma.reminder.delete({
@@ -38,13 +35,9 @@ export class DelReminderCommand extends Command {
             },
         });
         if (reminderCollection.delete(Number(id))) {
-            await message.channel.send(
-                `Reminder for <@${message.author.id}> with id "${reminder.id}" has been delete`
-            );
+            await message.channel.send(`Reminder for <@${message.author.id}> with id "${reminder.id}" has been delete`);
         } else {
-            await message.channel.send(
-                `Reminder for <@${message.author.id}> with id "${reminder.id}" has failed to delete`
-            );
+            await message.channel.send(`Reminder for <@${message.author.id}> with id "${reminder.id}" has failed to delete`);
         }
         restartReminderJob(this.container.client);
     }

@@ -1,6 +1,6 @@
 import { Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import musicManager, { getShoukakuManager } from "../../lib/musicQueue";
+import musicManager, { getShoukakuManager } from "../../../lib/musicQueue";
 // import prisma from "../../lib/prisma";
 
 export class StopMusicCommand extends Command {

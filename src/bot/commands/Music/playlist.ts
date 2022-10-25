@@ -1,10 +1,10 @@
 import { Args, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import type { Track } from "shoukaku";
-import musicManager, { getShoukakuManager, MusicGuildInfo } from "../../lib/musicQueue";
-import prisma from "../../lib/prisma";
-import { fancyTimeFormat } from "../../lib/utils";
-import logger from "../../lib/winston";
+import musicManager, { getShoukakuManager, MusicGuildInfo } from "../../../lib/musicQueue";
+import prisma from "../../../lib/prisma";
+import { fancyTimeFormat } from "../../../lib/utils";
+import logger from "../../../lib/winston";
 
 interface Playlist {
     userId: string;

@@ -1,14 +1,13 @@
 import { Args, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import musicManager from "../../lib/musicQueue";
+import musicManager from "../../../lib/musicQueue";
 
-export class RemoveFromQueueCommand extends Command {
+export class MoveQueueItemCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
-            name: "remove",
-            aliases: ["delete"],
-            description: "Remove a certain track from music queue",
+            name: "move",
+            description: "Move selected track to new position",
         });
     }
 
@@ -27,21 +26,19 @@ export class RemoveFromQueueCommand extends Command {
             return;
         }
         try {
-            const posToRemove = await args.pick("integer");
+            const posToMove = await args.pick("integer");
+            const posToJump = await args.pick("integer");
             // check if there is a current playing track
-            if (posToRemove < 1 || posToRemove > musicGuildInfo.queue.length) {
-                await message.channel.send("Out of range track number.");
+            if (posToJump > 0 && posToJump <= musicGuildInfo.queue.length && posToMove > 0 && posToMove <= musicGuildInfo.queue.length) {
+                const item = musicGuildInfo.queue.splice(posToMove - 1, 1)[0]!;
+                musicGuildInfo.queue.splice(posToJump - 1, 0, item);
+                await message.channel.send(`Moved track **${item.info.title}** to position **${posToJump}**`);
                 return;
             }
-            if (musicGuildInfo.isPlaying && musicGuildInfo.currentPosition === posToRemove - 1) {
-                await message.channel.send("Cannot remove currently playing track.");
-                return;
-            }
-            const deletedTracks = musicGuildInfo.queue.splice(posToRemove - 1, 1);
-            await message.channel.send(`Removed track **${deletedTracks[0]?.info.title}** from the queue.`);
+            await message.channel.send(`Out of range track number.`);
             return;
         } catch (error) {
-            await message.channel.send("Error on command. Please put non-zero positive integer");
+            await message.channel.send("Error on command. Please put non-zero positive integer for both arguments");
             return;
         }
     }

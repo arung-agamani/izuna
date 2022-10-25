@@ -18,7 +18,6 @@ jobs:
                       docker network disconnect closure-network closure-runtime
                       docker stop closure-runtime
                       docker container rm closure-runtime
-                      docker image prune -f
                       rm -rf izuna
                       git clone https://github.com/arung-agamani/izuna.git
                       cd izuna

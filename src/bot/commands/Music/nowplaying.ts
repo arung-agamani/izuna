@@ -1,8 +1,8 @@
 import { Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import { MessageEmbed } from "discord.js";
-import musicManager from "../../lib/musicQueue";
-import { fancyTimeFormat } from "../../lib/utils";
+import musicManager from "../../../lib/musicQueue";
+import { fancyTimeFormat } from "../../../lib/utils";
 // import prisma from "../../lib/prisma";
 import { PaginatedMessage } from "@sapphire/discord.js-utilities";
 export class NowPlayingMusicCommand extends Command {

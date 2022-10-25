@@ -1,10 +1,10 @@
 import { Args, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import { HttpUrlRegex } from "@sapphire/discord-utilities";
-import musicManager, { MusicGuildInfo, getShoukakuManager } from "../../lib/musicQueue";
-import logger from "../../lib/winston";
-import { fancyTimeFormat } from "../../lib/utils";
-import { getGoogleClient } from "../../lib/google";
+import musicManager, { MusicGuildInfo, getShoukakuManager } from "../../../lib/musicQueue";
+import logger from "../../../lib/winston";
+import { fancyTimeFormat } from "../../../lib/utils";
+import { getGoogleClient } from "../../../lib/google";
 
 type LavalinkLoadType = "TRACK_LOADED" | "PLAYLIST_LOADED" | "SEARCH_RESULT" | "NO_MATCHES" | "LOAD_FAILED";
 

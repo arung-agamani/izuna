@@ -1,6 +1,6 @@
 import { Args, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import musicManager from "../../lib/musicQueue";
+import musicManager from "../../../lib/musicQueue";
 
 export class LoopQueueCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
