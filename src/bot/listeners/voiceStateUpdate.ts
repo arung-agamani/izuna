@@ -1,6 +1,6 @@
 import { Listener } from "@sapphire/framework";
 import type { VoiceState, VoiceBasedChannel } from "discord.js";
-import { joinToCreateVoiceChatManager, deleteFromEphemeralVCManager, addToEphemeralVCManager } from "../../lib/channelTracker";
+import { joinToCreateVoiceChatManager, channelTrackingManager, deleteFromEphemeralVCManager, addToEphemeralVCManager } from "../../lib/channelTracker";
 import logger from "../../lib/winston";
 
 export class VoiceStateUpdateListener extends Listener {
@@ -37,14 +37,15 @@ export class VoiceStateUpdateListener extends Listener {
                     if (previousVoiceChannel) {
                         let totalMember = (previousVoiceChannel as VoiceBasedChannel).members.size;
                         logger.debug(`${targetVoiceChannel.name} has ${totalMember} people inside`);
-                        if (totalMember !== 0) return;
-                        // destroy channel
-                        try {
-                            await guild.channels.delete(targetVoiceChannel);
-                        } catch (error) {
-                            logger.warn(`${targetVoiceChannel.name} has already deleted or non-existent or error`);
+                        if (totalMember === 0 && channelTrackingManager.has(`${guild.id}-${targetVoiceChannel.id}`)) {
+                            // destroy channel
+                            try {
+                                await guild.channels.delete(targetVoiceChannel);
+                            } catch (error) {
+                                logger.warn(`${targetVoiceChannel.name} has already deleted or non-existent or error`);
+                            }
+                            await deleteFromEphemeralVCManager(guild.id, previousVoiceChannelId);
                         }
-                        await deleteFromEphemeralVCManager(guild.id, previousVoiceChannelId);
                     }
                 }
             }
@@ -92,6 +93,7 @@ export class VoiceStateUpdateListener extends Listener {
                     let totalMember = (previousVoiceChannel as VoiceBasedChannel).members.size;
                     logger.debug(`${targetVoiceChannel.name} has ${totalMember} people inside`);
                     if (totalMember !== 0) return;
+                    if (!channelTrackingManager.has(`${guild.id}-${targetVoiceChannel.id}`)) return;
                     // destroy channel
                     try {
                         await guild.channels.delete(targetVoiceChannel);
