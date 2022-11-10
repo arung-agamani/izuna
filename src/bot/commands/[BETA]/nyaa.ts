@@ -15,7 +15,7 @@ interface NyaaItems {
     downloads: number;
 }
 
-const AlphanumericRegex = /^[\w\s]+$/gi;
+const AlphanumericRegex = /^[\w\s]+$/;
 
 export class NyaaCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -71,6 +71,10 @@ export class NyaaCommand extends Command {
                     };
                     items.push(item);
                 }
+            }
+            if (items.length === 0) {
+                await message.channel.send("Search result returns nothing...");
+                return;
             }
             const paginatedMessage = new PaginatedMessage();
             for (let i = 0; i < items.length; i += 5) {

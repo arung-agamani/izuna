@@ -8,19 +8,25 @@ import { getGoogleClient } from "../../../lib/google";
 
 type LavalinkLoadType = "TRACK_LOADED" | "PLAYLIST_LOADED" | "SEARCH_RESULT" | "NO_MATCHES" | "LOAD_FAILED";
 
-const youtubeVideoRegex = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/gm;
-const youtubePlaylistRegex = /(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:playlist|list|embed)(?:\.php)?(?:\?.*list=|\/))([a-zA-Z0-9\-_]+)/gm;
+const youtubeVideoRegex = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/;
+const youtubePlaylistRegex = /(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:playlist|list|embed)(?:\.php)?(?:\?.*list=|\/))([a-zA-Z0-9\-_]+)/;
 const driveRegex = /\/file\/d\/([^\/]+)/;
+const hmsRegex = /[hms]+/g;
+const timestampRegex = /\&t=([0-9A-Za-z]+)/;
+
+// comm : r.exec("https://www.youtube.com/watch?v=9eB1Tp8Li-c&t=17m39s")[1].replaceAll(hms2,":").split(":").slice(0, -1).reverse().reduce((acc, curr, idx) => acc + Number(curr)*Math.pow(60,idx), 0)
 export class PlayMusicCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
             name: "play",
+            flags: ["s", "seek"],
             description: "Plays music",
         });
     }
 
     public async messageRun(message: Message, args: Args) {
+        logger.debug("Entire message: " + message.content);
         if (!message.guildId) {
             await message.channel.send("This command only works in servers");
             return;
@@ -30,14 +36,32 @@ export class PlayMusicCommand extends Command {
             return;
         }
         // search the stuff
+        const isSeeking = args.getFlags("s", "seek");
         const searchQuery = await args.rest("string");
+        if (isSeeking) {
+            logger.debug("Seeking is active for input string: " + searchQuery);
+        } else {
+            logger.debug("NOT ACTIVE");
+        }
         // is youtube video?
         const youtubeRegexRes = youtubeVideoRegex.exec(searchQuery);
         const youtubePlaylistRes = youtubePlaylistRegex.exec(searchQuery);
         let videoId = "";
         let playlistId = "";
+        let targetTimestamp = 0;
         if (youtubeRegexRes && youtubeRegexRes[5]) {
+            logger.debug("Is inside youtubeRegexRes=true");
             videoId = youtubeRegexRes[5];
+            if (isSeeking) {
+                targetTimestamp = timestampRegex
+                    .exec(searchQuery)![1]!
+                    .replaceAll(hmsRegex, ":")
+                    .split(":")
+                    .slice(0, -1)
+                    .reverse()
+                    .reduce((acc, curr, idx) => acc + Number(curr) * Math.pow(60, idx), 0);
+                logger.debug("Timestamp set to " + targetTimestamp);
+            }
         }
         if (youtubePlaylistRes && youtubePlaylistRes[1]) {
             playlistId = youtubePlaylistRes[1];
@@ -62,6 +86,11 @@ export class PlayMusicCommand extends Command {
             searchRes = await lavalinkNode.rest.resolve(playlistId);
         } else if (youtubeRegexRes) {
             searchRes = await lavalinkNode.rest.resolve(videoId);
+            if (isSeeking) {
+                searchRes!.tracks[0]!.info.position = targetTimestamp * 1000;
+                logger.debug(`Search set with seeking flag. Timestamp : ${targetTimestamp}`);
+                logger.debug(`searchRes.tracks[0].info.position = ${searchRes!.tracks[0]!.info.position}`);
+            }
         } else if (driveRegex.exec(searchQuery)) {
             const fileId = driveRegex.exec(searchQuery)![1]!;
             const drive = getGoogleClient();
@@ -74,8 +103,10 @@ export class PlayMusicCommand extends Command {
                 "**[Warning]** That looks like a Google Drive link.\nThis feature is currently unstable and you might encounter unplayable track case (especially after track finish).\nIn case of unplayable track, please requeue the track and delete old unplayable track."
             );
         } else if (HttpUrlRegex.exec(searchQuery)) {
+            logger.debug("Is inside HttpUrlRegex=true, line 106");
             searchRes = await lavalinkNode.rest.resolve(searchQuery);
         } else {
+            logger.debug("Is inside standard ytsearch=true, line 109");
             searchRes = await lavalinkNode.rest.resolve(`ytsearch: ${searchQuery}`);
         }
 
@@ -130,7 +161,12 @@ export class PlayMusicCommand extends Command {
                         newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]?.info.length! / 1000
                     )}`
                 );
-                newMusicGuildInfo.player.playTrack({ track: newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]?.track! });
+                newMusicGuildInfo.player.playTrack({
+                    track: newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]?.track!,
+                    options: {
+                        startTime: newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]?.info.position!,
+                    },
+                });
                 newMusicGuildInfo.isPlaying = true;
                 musicManager.set(message.guildId!, newMusicGuildInfo);
             });
@@ -152,14 +188,16 @@ export class PlayMusicCommand extends Command {
         }
         switch (searchRes.loadType as LavalinkLoadType) {
             case "TRACK_LOADED":
+                logger.debug(`LoadType: ${searchRes.loadType} for query ${searchQuery}`);
                 musicGuildInfo?.queue.push(searchRes.tracks[0]!);
                 await message.channel.send(
                     `Track loaded. ${searchRes.tracks[0]?.info.title} | Duration: ${fancyTimeFormat(searchRes.tracks[0]?.info.length! / 1000)} | Pos: ${
                         musicGuildInfo.queue.length
-                    }`
+                    }. | Timestamp: ${fancyTimeFormat(searchRes.tracks[0]!.info.position / 1000)}`
                 );
                 break;
             case "PLAYLIST_LOADED":
+                logger.debug(`LoadType: ${searchRes.loadType} for query ${searchQuery}`);
                 const tracks = searchRes.tracks;
                 musicGuildInfo?.queue.push(...tracks);
                 let msg = "";
@@ -169,6 +207,7 @@ export class PlayMusicCommand extends Command {
                 await message.channel.send(msg);
                 break;
             case "SEARCH_RESULT":
+                logger.debug(`LoadType: ${searchRes.loadType} for query ${searchQuery}`);
                 musicGuildInfo?.queue.push(searchRes.tracks[0]!);
                 await message.channel.send("Search result for: " + searchQuery);
                 await message.channel.send(
@@ -178,13 +217,19 @@ export class PlayMusicCommand extends Command {
                 );
                 break;
             case "NO_MATCHES":
+                logger.debug(`LoadType: ${searchRes.loadType} for query ${searchQuery}`);
                 await message.channel.send("No result found... Hmm...");
                 return;
         }
         // play the head
         if (!musicGuildInfo.isPlaying) {
             const poppedTrack = musicGuildInfo.queue[musicGuildInfo.currentPosition]!;
-            await musicGuildInfo.player.playTrack({ track: poppedTrack.track });
+            await musicGuildInfo.player.playTrack({
+                track: poppedTrack.track,
+                options: {
+                    startTime: poppedTrack.info.position,
+                },
+            });
             await message.channel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
             musicGuildInfo.isPlaying = true;
         }

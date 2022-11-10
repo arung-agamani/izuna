@@ -1,7 +1,7 @@
 import { Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import { MessageEmbed } from "discord.js";
-import musicManager from "../../../lib/musicQueue";
+import musicManager, { getShoukakuManager } from "../../../lib/musicQueue";
 import { fancyTimeFormat } from "../../../lib/utils";
 // import prisma from "../../lib/prisma";
 import { PaginatedMessage } from "@sapphire/discord.js-utilities";
@@ -27,6 +27,16 @@ export class NowPlayingMusicCommand extends Command {
         const musicGuildInfo = musicManager.get(message.guildId!);
         if (!musicGuildInfo) {
             await message.channel.send("No bot in voice channel. Are you okay?");
+            return;
+        }
+        const shoukakuManager = getShoukakuManager();
+        if (!shoukakuManager) {
+            await message.channel.send("Music manager uninitizalied. Check your implementation, dumbass");
+            return;
+        }
+        const lavalinkNode = shoukakuManager.getNode();
+        if (!lavalinkNode) {
+            await message.channel.send("No music player node currently connected.");
             return;
         }
         if (musicGuildInfo.queue.length === 0) {
@@ -90,8 +100,17 @@ export class NowPlayingMusicCommand extends Command {
                 }
             }
         }
+        const embedMessage = new MessageEmbed();
+        const currentTrack = musicGuildInfo.queue[musicGuildInfo.currentPosition];
+        const npString = `${fancyTimeFormat(musicGuildInfo.player.position / 1000)} / ${fancyTimeFormat(currentTrack?.info.length! / 1000)}`;
+        embedMessage.setTitle("Closure: Now Playing...");
+        // embedMessage.setThumbnail(currentTrack?.info.uri!)
+        // embedMessage.setURL(currentTrack?.info.uri!)
+        embedMessage.addField(currentTrack?.info.title!, currentTrack?.info.uri!);
+        embedMessage.addField("Position", npString);
         let currentPage = Math.floor(musicGuildInfo.currentPosition / 10);
         paginatedMessage.setIndex(currentPage);
+        await message.channel.send({ embeds: [embedMessage] });
         await paginatedMessage.run(message);
         return;
     }
