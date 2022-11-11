@@ -1,5 +1,5 @@
 import { Command } from "@sapphire/framework";
-import type { Message } from "discord.js";
+import { Formatters, Message } from "discord.js";
 import { MessageEmbed } from "discord.js";
 import musicManager, { getShoukakuManager } from "../../../lib/musicQueue";
 import { fancyTimeFormat } from "../../../lib/utils";
@@ -110,6 +110,14 @@ export class NowPlayingMusicCommand extends Command {
         embedMessage.addField("Position", npString);
         let currentPage = Math.floor(musicGuildInfo.currentPosition / 10);
         paginatedMessage.setIndex(currentPage);
+        paginatedMessage.setWrongUserInteractionReply((targetUser) => ({
+            content: `Even if you fiddle with my buttons, my heart belongs to ${Formatters.userMention(targetUser.id)}-sama alone.`,
+            ephemeral: true,
+            allowedMentions: {
+                users: [],
+                roles: [],
+            },
+        }));
         await message.channel.send({ embeds: [embedMessage] });
         await paginatedMessage.run(message);
         return;

@@ -1,5 +1,5 @@
 import { Command, Args } from "@sapphire/framework";
-import { Message, MessageEmbed } from "discord.js";
+import { Formatters, Message, MessageEmbed } from "discord.js";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { PaginatedMessage } from "@sapphire/discord.js-utilities";
@@ -88,6 +88,14 @@ export class NyaaCommand extends Command {
                 }
                 paginatedMessage.addPageEmbed(page);
             }
+            paginatedMessage.setWrongUserInteractionReply((targetUser) => ({
+                content: `Even if you fiddle with my buttons, my heart belongs to ${Formatters.userMention(targetUser.id)}-sama alone.`,
+                ephemeral: true,
+                allowedMentions: {
+                    users: [],
+                    roles: [],
+                },
+            }));
             await paginatedMessage.run(message);
         } catch (error) {
             console.error(error);
