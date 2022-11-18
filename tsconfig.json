@@ -101,5 +101,5 @@
         "skipLibCheck": true /* Skip type checking all .d.ts files. */
     },
     "extends": "@tsconfig/node16-strictest-esm/tsconfig.json",
-    "exclude": ["web", "build", "test.js"]
+    "exclude": ["web", "build", "test.js", "test.ts"]
 }

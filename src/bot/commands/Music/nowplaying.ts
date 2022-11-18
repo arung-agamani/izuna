@@ -104,8 +104,6 @@ export class NowPlayingMusicCommand extends Command {
         const currentTrack = musicGuildInfo.queue[musicGuildInfo.currentPosition];
         const npString = `${fancyTimeFormat(musicGuildInfo.player.position / 1000)} / ${fancyTimeFormat(currentTrack?.info.length! / 1000)}`;
         embedMessage.setTitle("Closure: Now Playing...");
-        // embedMessage.setThumbnail(currentTrack?.info.uri!)
-        // embedMessage.setURL(currentTrack?.info.uri!)
         embedMessage.addField(currentTrack?.info.title!, currentTrack?.info.uri!);
         embedMessage.addField("Position", npString);
         let currentPage = Math.floor(musicGuildInfo.currentPosition / 10);

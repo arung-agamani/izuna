@@ -14,11 +14,16 @@ async function createBotApp() {
         partials: ["USER", "CHANNEL"],
     });
     const nodes = [
+        // {
+        //     name: "local",
+        //     // url: "closure-lavalink:2333",
+        //     url: "airi.howlingmoon.dev:2333",
+        //     auth: "youshallnotpass",
+        // },
         {
             name: "local",
-            // url: "closure-lavalink:2333",
-            url: "airi.howlingmoon.dev:2333",
-            auth: "youshallnotpass",
+            url: "kureya.howlingmoon.dev:14045",
+            auth: process.env["KUREYA_LAVALINK_PASSWORD"]!,
         },
     ];
     await client.login(process.env["DISCORD_BOT_TOKEN"]);
@@ -26,7 +31,6 @@ async function createBotApp() {
         const manager = new Shoukaku(new Connectors.DiscordJS(client), nodes);
         setShoukakuManager(manager);
         // await manager.connect();
-
         manager.on("error", (_, err) => {
             logger.error(`Shoukaku error.`);
             logger.error(err);

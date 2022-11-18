@@ -133,5 +133,5 @@ dist
 build
 *.db
 
-test.js
+test.[tj]s
 Dockerfile.test
