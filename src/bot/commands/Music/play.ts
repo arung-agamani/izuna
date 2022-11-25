@@ -25,7 +25,7 @@ export class PlayMusicCommand extends Command {
         });
     }
 
-    public async messageRun(message: Message, args: Args) {
+    public override async messageRun(message: Message, args: Args) {
         logger.debug("Entire message: " + message.content);
         if (!message.guildId) {
             await message.channel.send("This command only works in servers");

@@ -1,4 +1,4 @@
-import { Command } from "@sapphire/framework";
+import { ChatInputCommand, Command } from "@sapphire/framework";
 import { Message, MessageEmbed } from "discord.js";
 import { google } from "googleapis";
 import { closureGoogleOauthTracker } from "../../lib/google";
@@ -12,7 +12,29 @@ export class TestCommand extends Command {
         });
     }
 
-    public async messageRun(message: Message) {
+    public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
+        registry.registerChatInputCommand(
+            (builder) => {
+                builder
+                    .setName("test")
+                    .setDescription("A test playground")
+                    .addStringOption((opt) => opt.setName("echo").setDescription("Message to echo").setRequired(true));
+            },
+            {
+                idHints: ["closure-test", "1043216731168051241"],
+                guildIds: ["688349293970849812", "339763195554299904"],
+            }
+        );
+    }
+
+    public override async chatInputRun(interaction: Command.ChatInputInteraction) {
+        const message = interaction.options.getString("echo", true);
+        return interaction.reply({
+            content: message,
+        });
+    }
+
+    public override async messageRun(message: Message) {
         await message.channel.send("...echoing requiem");
         const userGoogleOAuthState = closureGoogleOauthTracker.get(message.author.id);
         if (!userGoogleOAuthState) {

@@ -14,7 +14,7 @@ export class DelReminderCommand extends Command {
         });
     }
 
-    public async messageRun(message: Message, args: Args) {
+    public override async messageRun(message: Message, args: Args) {
         if (!config.betaTesters.includes(message.author.id)) return;
         const id = await args.pick("string");
 

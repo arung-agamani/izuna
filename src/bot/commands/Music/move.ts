@@ -11,7 +11,7 @@ export class MoveQueueItemCommand extends Command {
         });
     }
 
-    public async messageRun(message: Message, args: Args) {
+    public override async messageRun(message: Message, args: Args) {
         if (!message.guildId) {
             await message.channel.send("This command only works in servers");
             return;

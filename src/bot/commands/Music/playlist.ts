@@ -1,4 +1,4 @@
-import { Args, Command } from "@sapphire/framework";
+import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import type { Track } from "shoukaku";
 import musicManager, { getShoukakuManager, MusicGuildInfo } from "../../../lib/musicQueue";
@@ -24,7 +24,59 @@ export class PlaylistMusicCommand extends Command {
         });
     }
 
-    public async messageRun(message: Message, args: Args) {
+    public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
+        registry.registerChatInputCommand(
+            (builder) => {
+                builder
+                    .setName("playlist")
+                    .setDescription("Manage playlist with Closure")
+                    .addSubcommand((subcommand) =>
+                        subcommand
+                            .setName("list")
+                            .setDescription("List playlists")
+                            .addBooleanOption((opt) => opt.setName("youtube").setDescription("Include Youtube when listing. Must be authenticated first"))
+                    )
+                    .addSubcommand((subcommand) =>
+                        subcommand
+                            .setName("load")
+                            .setDescription("Load playlist")
+                            .addStringOption((opt) =>
+                                opt
+                                    .setName("resourceid")
+                                    .setDescription("Resource identifier to load. Can be playlist name stored on Closure or Youtube Playlist ID")
+                                    .setRequired(true)
+                            )
+                    );
+            },
+            {
+                idHints: ["closure-playlist", "1043234989992583338"],
+                guildIds: ["339763195554299904"],
+            }
+        );
+    }
+
+    public override async chatInputRun(interaction: Command.ChatInputInteraction) {
+        const action = interaction.options.getSubcommand();
+        if (action === "list") {
+            const includeYoutube = interaction.options.getBoolean("youtube");
+            if (includeYoutube) {
+                await interaction.reply({
+                    content: `Listing with youtube. WIP`,
+                });
+            } else {
+                await interaction.reply({
+                    content: `Listing without youtube. WIP`,
+                });
+            }
+        } else if (action === "load") {
+            const resource = interaction.options.getString("resourceid");
+            await interaction.reply({
+                content: `Loading resource with ID: ${resource}. WIP`,
+            });
+        }
+    }
+
+    public override async messageRun(message: Message, args: Args) {
         if (!message.guildId) {
             await message.channel.send("This command only works in servers");
             return;

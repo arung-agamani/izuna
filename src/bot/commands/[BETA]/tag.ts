@@ -12,7 +12,7 @@ export class TagCommand extends Command {
         });
     }
 
-    public async messageRun(message: Message, args: Args) {
+    public override async messageRun(message: Message, args: Args) {
         if (
             !(
                 message.channel.type === "DM" ||

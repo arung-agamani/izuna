@@ -13,7 +13,7 @@ export class HelpCommand extends Command {
         });
     }
 
-    public async messageRun(message: Message, args: Args) {
+    public override async messageRun(message: Message, args: Args) {
         try {
             const arg1 = await args.rest("string");
             const command = this.container.stores.get("commands").get(arg1);

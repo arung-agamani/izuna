@@ -12,16 +12,17 @@ async function createBotApp() {
         intents: ["GUILDS", "GUILD_MESSAGES", "DIRECT_MESSAGES", "DIRECT_MESSAGE_TYPING", "GUILD_VOICE_STATES"],
         regexPrefix: config.botPrefix,
         partials: ["USER", "CHANNEL"],
+        loadMessageCommandListeners: true,
     });
     const nodes = [
-        // {
-        //     name: "local",
-        //     // url: "closure-lavalink:2333",
-        //     url: "airi.howlingmoon.dev:2333",
-        //     auth: "youshallnotpass",
-        // },
         {
             name: "local",
+            url: "closure-lavalink:2333",
+            // url: "airi.howlingmoon.dev:2333",
+            auth: "youshallnotpass",
+        },
+        {
+            name: "kureya",
             url: "kureya.howlingmoon.dev:14045",
             auth: process.env["KUREYA_LAVALINK_PASSWORD"]!,
         },

@@ -14,7 +14,7 @@ export class ReminderCommand extends Command {
         });
     }
 
-    public async messageRun(message: Message, args: Args) {
+    public override async messageRun(message: Message, args: Args) {
         if (!(message.channel.type === "DM" || message.channel.type === "GUILD_TEXT")) return;
         if (!config.betaTesters.includes(message.author.id)) return;
         const cronString = await args.pick("string");

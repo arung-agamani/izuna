@@ -11,20 +11,13 @@ export class ServerInfoCommand extends Command {
         });
     }
 
-    public async messageRun(message: Message) {
+    public override async messageRun(message: Message) {
         const guildPreview = await message.guild?.fetchPreview();
         if (!guildPreview) {
-            await message.channel.send(
-                "Error when fetching guild preview. Not administrator?"
-            );
+            await message.channel.send("Error when fetching guild preview. Not administrator?");
             return;
         }
-        await message.channel.send(
-            `Server ID: ${guildPreview.id}\nCreated at: ${format(
-                guildPreview.createdAt,
-                "P"
-            )}`
-        );
+        await message.channel.send(`Server ID: ${guildPreview.id}\nCreated at: ${format(guildPreview.createdAt, "P")}`);
         return;
     }
 }

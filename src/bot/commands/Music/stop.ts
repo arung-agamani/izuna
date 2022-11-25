@@ -12,7 +12,7 @@ export class StopMusicCommand extends Command {
         });
     }
 
-    public async messageRun(message: Message) {
+    public override async messageRun(message: Message) {
         if (!message.guildId) {
             await message.channel.send("This command only works in servers");
             return;
