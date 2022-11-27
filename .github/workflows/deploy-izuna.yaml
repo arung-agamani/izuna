@@ -33,4 +33,5 @@ jobs:
                        -e GOOGLE_CLOSURE_API_KEY=${{ secrets.GOOGLE_CLOSURE_API_KEY}} \
                        -e GOOGLE_OAUTH_CLIENT_ID=${{ secrets.GOOGLE_OAUTH_CLIENT_ID}} \
                        -e GOOGLE_OAUTH_CLIENT_SECRET=${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET}} \
+                       -e RUN_BOT=1 -e RUN_WEB=1 \
                        -e AUTH_SECRET=${{ secrets.CLOSURE_AUTH_SECRET }} izuna-closure:latest
