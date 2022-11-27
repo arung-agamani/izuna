@@ -1,6 +1,5 @@
-import { isMessageInstance } from "@sapphire/discord.js-utilities";
 import { ChatInputCommand, Command } from "@sapphire/framework";
-import type { Message } from "discord.js";
+import { Message } from "discord.js";
 
 export class PingCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -25,7 +24,7 @@ export class PingCommand extends Command {
 
     public override async chatInputRun(interaction: Command.ChatInputInteraction) {
         const message = await interaction.reply({ content: "Ping?", ephemeral: true, fetchReply: true });
-        if (isMessageInstance(message)) {
+        if (message instanceof Message) {
             const diff = message.createdTimestamp - interaction.createdTimestamp;
             const ping = Math.round(this.container.client.ws.ping);
             return interaction.editReply(`Pong!!! Bot latency: ${ping}ms. API latency ${diff}ms`);
