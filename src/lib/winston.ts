@@ -14,7 +14,7 @@ const logger = winston.createLogger({
     format: winston.format.json(),
     transports: [
         new winston.transports.File({ filename: "log/error.log", level: "error" }),
-        new winston.transports.File({ filename: "log/combined.log", level: "debug" }),
+        new winston.transports.File({ filename: "log/combined.log", level: "info" }),
         new winston.transports.Console({
             format: winston.format.combine(
                 format.colorize({ all: true }),

@@ -15,12 +15,12 @@ async function createBotApp() {
         loadMessageCommandListeners: true,
     });
     const nodes = [
-        {
-            name: "local",
-            url: "closure-lavalink:2333",
-            // url: "airi.howlingmoon.dev:2333",
-            auth: "youshallnotpass",
-        },
+        // {
+        //     name: "local",
+        //     url: "closure-lavalink:2333",
+        //     // url: "airi.howlingmoon.dev:2333",
+        //     auth: "youshallnotpass",
+        // },
         {
             name: "kureya",
             url: "kureya.howlingmoon.dev:14045",
