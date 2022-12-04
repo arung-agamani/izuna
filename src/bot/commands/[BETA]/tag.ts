@@ -1,3 +1,4 @@
+import { Tag } from "@prisma/client";
 import { Args, Command } from "@sapphire/framework";
 import { Message, MessageEmbed } from "discord.js";
 import prisma from "../../../lib/prisma";
@@ -139,13 +140,10 @@ export class TagCommand extends Command {
                 where: {
                     guildId: isGuild ? message.guildId : "",
                 },
-                select: {
-                    name: true,
-                },
             });
             const embed = new MessageEmbed();
             embed.setTitle("Closure: Tags");
-            embed.setDescription(`Registered tags: \n ${tags.map((x) => `\`${x.name}\``).join(" ")}`);
+            embed.setDescription(`Registered tags: \n ${tags.map((x: Tag) => `\`${x.name}\``).join(" ")}`);
             await message.channel.send({ embeds: [embed] });
         } else {
             await message.channel.send("Unrecognized command");
