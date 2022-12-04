@@ -41,6 +41,7 @@
         "winston": "^3.8.1"
     },
     "devDependencies": {
+        "@tsconfig/node16": "^1.0.3",
         "@tsconfig/node16-strictest-esm": "^1.0.1",
         "@types/cron": "^2.0.0",
         "@types/node": "^17.0.41",
