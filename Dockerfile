@@ -1,4 +1,5 @@
 FROM node:16-buster-slim as builder
+SHELL ["/bin/bash", "-c"]
 WORKDIR /tmp
 COPY package.json tsconfig.json yarn.lock /tmp/
 RUN npm install
