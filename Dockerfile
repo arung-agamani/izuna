@@ -1,4 +1,4 @@
-FROM node:16-buster-slim as builder
+FROM node:16 as builder
 SHELL ["/bin/bash", "-c"]
 WORKDIR /tmp
 COPY package.json tsconfig.json yarn.lock /tmp/
