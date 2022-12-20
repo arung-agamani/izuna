@@ -57,6 +57,10 @@ async function createBotApp() {
             if (foundTag === "") {
                 return;
             }
+            const AlphanumericRegex = /^[A-Za-z0-9]+$/;
+            if (!AlphanumericRegex.test(foundTag)) {
+                return;
+            }
             let tag = null;
             if (message.inGuild()) {
                 tag = await prisma.tag.findFirst({

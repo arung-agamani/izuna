@@ -1,5 +1,5 @@
 import { Args, Command } from "@sapphire/framework";
-import { Message, MessageEmbed } from "discord.js";
+import { Formatters, Message, MessageEmbed } from "discord.js";
 import prisma from "../../../lib/prisma";
 
 export class TagCommand extends Command {
@@ -25,6 +25,11 @@ export class TagCommand extends Command {
         const arg1 = await args.pick("string");
         if (arg1 === "add") {
             const arg2 = await args.pick("string");
+            const AlphanumericRegex = /^[A-Za-z0-9]+$/;
+            if (!AlphanumericRegex.test(arg2)) {
+                await message.channel.send("Invalid tag validation. Please input only alphanumeric characters in single word.");
+                return;
+            }
             const attachments = Array.from(message.attachments.values());
             if (message.attachments.size === 0) {
                 const arg3 = await args.rest("string", { minimum: 1 });
@@ -144,6 +149,35 @@ export class TagCommand extends Command {
             embed.setTitle("Closure: Tags");
             embed.setDescription(`Registered tags: \n ${tags.map((x: any) => `\`${x.name}\``).join(" ")}`);
             await message.channel.send({ embeds: [embed] });
+        } else if (arg1 === "info") {
+            let arg2;
+            try {
+                arg2 = await args.pick("string");
+            } catch (error) {
+                await message.channel.send("Incorrect value for arg2. Please input tag name");
+                return;
+            }
+            const isGuild = message.inGuild();
+            const tag = await prisma.tag.findFirst({
+                where: {
+                    name: arg2,
+                    isGuild,
+                },
+            });
+            if (!tag) {
+                await message.channel.send(`There is no tag with name \`${arg2}\`.`);
+                return;
+            }
+            const embed = new MessageEmbed();
+            embed.setTitle(`Closure: Tag Info`);
+            embed.setDescription(`**${tag.name}**
+            Submitter: ${Formatters.userMention(tag.userId)}
+            Date added : ${tag.dateCreated.toLocaleDateString("id")}
+            Is Media? : ${tag.isMedia ? "True" : "False"}
+            Content: ${tag.message.length > 500 ? `${tag.message.slice(0, 499)}... _message truncated_` : tag.message}
+            `);
+            await message.channel.send({ embeds: [embed] });
+            return;
         } else {
             await message.channel.send("Unrecognized command");
             return;

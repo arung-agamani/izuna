@@ -103,9 +103,16 @@ export class NowPlayingMusicCommand extends Command {
         const embedMessage = new MessageEmbed();
         const currentTrack = musicGuildInfo.queue[musicGuildInfo.currentPosition];
         const npString = `${fancyTimeFormat(musicGuildInfo.player.position / 1000)} / ${fancyTimeFormat(currentTrack?.info.length! / 1000)}`;
-        embedMessage.setTitle("Closure: Now Playing...");
-        embedMessage.addField(currentTrack?.info.title!, currentTrack?.info.uri!);
-        embedMessage.addField("Position", npString);
+        if (musicGuildInfo.isPlaying) {
+            embedMessage.setTitle("Closure: Now Playing...");
+            embedMessage.addField(currentTrack?.info.title!, currentTrack?.info.uri!);
+            embedMessage.addField("Position", npString);
+            const estimatedToDone =
+                musicGuildInfo.queue.slice(musicGuildInfo.currentPosition).reduce((acc, val) => acc + val.info.length, 0) / 1000 -
+                musicGuildInfo.player.position / 1000;
+            embedMessage.addField("Estimated Playlist Time Left", fancyTimeFormat(estimatedToDone));
+            await message.channel.send({ embeds: [embedMessage] });
+        }
         let currentPage = Math.floor(musicGuildInfo.currentPosition / 10);
         paginatedMessage.setIndex(currentPage);
         paginatedMessage.setWrongUserInteractionReply((targetUser) => ({
@@ -116,7 +123,6 @@ export class NowPlayingMusicCommand extends Command {
                 roles: [],
             },
         }));
-        await message.channel.send({ embeds: [embedMessage] });
         await paginatedMessage.run(message);
         return;
     }
