@@ -178,6 +178,10 @@ export class TagCommand extends Command {
             `);
             await message.channel.send({ embeds: [embed] });
             return;
+        } else if (arg1 === "delete") {
+            // WIP
+            await message.channel.send("WIP command. :)");
+            return;
         } else {
             await message.channel.send("Unrecognized command");
             return;
