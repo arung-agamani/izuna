@@ -145,16 +145,39 @@ export class TagCommand extends Command {
                     guildId: isGuild ? message.guildId : "",
                 },
             });
-            const embed = new MessageEmbed();
-            embed.setTitle("Closure: Tags");
-            embed.setDescription(`Registered tags: \n ${tags.map((x: any) => `\`${x.name}\``).join(" ")}`);
-            await message.channel.send({ embeds: [embed] });
+            try {
+                const arg2 = await args.pick("string");
+                const AlphanumericRegex = /^[A-Za-z0-9]+$/;
+                if (!AlphanumericRegex.test(arg2)) {
+                    await message.channel.send("Invalid tag validation. Please input only alphanumeric characters in single word.");
+                    return;
+                }
+                const embed = new MessageEmbed();
+                embed.setTitle("Closure: Tags (search mode)");
+                embed.setDescription(
+                    `Registered tags similar with ${arg2}: \n ${tags
+                        .map((x: any) => `\`${x.name}\``)
+                        .filter((x) => x.match(new RegExp(arg2, "i")))
+                        .join(" ")}`
+                );
+                await message.channel.send({ embeds: [embed] });
+            } catch (error) {
+                const embed = new MessageEmbed();
+                embed.setTitle("Closure: Tags");
+                embed.setDescription(`Registered tags: \n ${tags.map((x: any) => `\`${x.name}\``).join(" ")}`);
+                await message.channel.send({ embeds: [embed] });
+            }
         } else if (arg1 === "info") {
             let arg2;
             try {
                 arg2 = await args.pick("string");
             } catch (error) {
                 await message.channel.send("Incorrect value for arg2. Please input tag name");
+                return;
+            }
+            const AlphanumericRegex = /^[A-Za-z0-9]+$/;
+            if (!AlphanumericRegex.test(arg2)) {
+                await message.channel.send("Invalid tag validation. Please input only alphanumeric characters in single word.");
                 return;
             }
             const isGuild = message.inGuild();
