@@ -157,7 +157,7 @@ export class TagCommand extends Command {
                 embed.setDescription(
                     `Registered tags similar with ${arg2}: \n ${tags
                         .map((x: any) => `\`${x.name}\``)
-                        .filter((x) => x.match(new RegExp(arg2, "i")))
+                        .filter((x: any) => x.match(new RegExp(arg2, "i")))
                         .join(" ")}`
                 );
                 await message.channel.send({ embeds: [embed] });
