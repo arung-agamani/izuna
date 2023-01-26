@@ -34,9 +34,10 @@ Running in development mode will not require Docker, but it's required to have `
 
 ### Environment variables.
 
-| Variable Name       | Type   | Description                         |
-| ------------------- | ------ | ----------------------------------- |
-| `DISCORD_BOT_TOKEN` | string | Token used to login to Discord bot. |
+| Variable Name       | Type   | Description                          |
+| ------------------- | ------ | ------------------------------------ |
+| `DISCORD_BOT_TOKEN` | string | Token used to login to Discord bot.  |
+| `NHPROXY_AUTH`      | string | Auth string used for nhproxy backend |
 
 ## Contributing
 
