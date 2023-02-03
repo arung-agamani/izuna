@@ -1,7 +1,8 @@
 import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import type { Track } from "shoukaku";
-import musicManager, { getShoukakuManager, MusicGuildInfo } from "../../../lib/musicQueue";
+import { getGoogleClient } from "../../../lib/google";
+import musicManager, { getShoukakuManager, isGdriveLazyLoad, LavalinkLazyLoad, MusicGuildInfo } from "../../../lib/musicQueue";
 import prisma from "../../../lib/prisma";
 import { fancyTimeFormat } from "../../../lib/utils";
 import logger from "../../../lib/winston";
@@ -9,7 +10,7 @@ import logger from "../../../lib/winston";
 interface Playlist {
     userId: string;
     guildId: string;
-    queue: Track[];
+    queue: (Track | LavalinkLazyLoad)[];
     dateCreated: Date;
     private: Boolean;
 }
@@ -127,12 +128,9 @@ export class PlaylistMusicCommand extends Command {
                     musicManager.set(message.guildId!, newMusicGuildInfo);
                     return;
                 }
-                await message.channel.send(
-                    `Track loaded. ${newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]?.info.title} | Duration: ${fancyTimeFormat(
-                        newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]?.info.length! / 1000
-                    )}`
-                );
-                newMusicGuildInfo.player.playTrack({ track: newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]?.track! });
+                let track = newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition] as any;
+                await message.channel.send(`Track loaded. ${track.info.title} | Duration: ${fancyTimeFormat(track.info.length! / 1000)}`);
+                newMusicGuildInfo.player.playTrack({ track: track?.track! });
                 newMusicGuildInfo.isPlaying = true;
                 musicManager.set(message.guildId!, newMusicGuildInfo);
             });
@@ -237,10 +235,30 @@ export class PlaylistMusicCommand extends Command {
                 musicGuildInfo.queue.push(...tracks);
                 await message.channel.send(`Loaded playlist ${arg2} to current queue`);
                 if (!musicGuildInfo.isPlaying) {
-                    const poppedTrack = musicGuildInfo.queue[musicGuildInfo.currentPosition]!;
-                    await musicGuildInfo.player.playTrack({ track: poppedTrack.track });
-                    await message.channel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
-                    musicGuildInfo.isPlaying = true;
+                    let poppedTrack = musicGuildInfo.queue[musicGuildInfo.currentPosition]!;
+                    if (isGdriveLazyLoad(poppedTrack)) {
+                        poppedTrack = poppedTrack as LavalinkLazyLoad;
+                        const searchTarget = await this.resolveGoogleDrive(poppedTrack.fileId);
+                        if (!searchTarget) {
+                            await message.channel.send("Failed to query from Google Drive");
+                            return;
+                        }
+                        let newPoppedTrack = await lavalinkNode.rest.resolve(searchTarget!);
+                        if (!newPoppedTrack) {
+                            await message.channel.send("Failed to resolve WebContentLink as Playable Track");
+                            return;
+                        }
+                        await musicGuildInfo.player.playTrack({
+                            track: newPoppedTrack.tracks[0].track,
+                        });
+                        await message.channel.send(`Now playing **${newPoppedTrack.tracks[0].info.title}**, if it works...`);
+                        musicGuildInfo.isPlaying = true;
+                    } else {
+                        poppedTrack = poppedTrack as Track;
+                        await musicGuildInfo.player.playTrack({ track: poppedTrack.track });
+                        await message.channel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
+                        musicGuildInfo.isPlaying = true;
+                    }
                 }
                 return;
             } else if (arg1 === "info") {
@@ -353,5 +371,14 @@ export class PlaylistMusicCommand extends Command {
             await message.channel.send("Please specify the operation. `save` or `load` or `info`");
             return;
         }
+    }
+
+    async resolveGoogleDrive(fileId: string) {
+        const drive = getGoogleClient();
+        const file = await drive.files.get({
+            fileId,
+            fields: "webContentLink",
+        });
+        return file.data.webContentLink;
     }
 }

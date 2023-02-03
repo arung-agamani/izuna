@@ -1,6 +1,7 @@
 import { Args, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import musicManager from "../../../lib/musicQueue";
+import { Track } from "shoukaku";
+import musicManager, { isGdriveLazyLoad, LavalinkLazyLoad } from "../../../lib/musicQueue";
 import { fancyTimeFormat } from "../../../lib/utils";
 // import logger from "../../../lib/winston";
 
@@ -65,7 +66,13 @@ export class SeekPlayerCommand extends Command {
                 await message.channel.send("Invalid string. Please input with format [hh:][mm:]ss");
                 return;
             }
-            if (pos * 1000 > musicGuildInfo.queue[musicGuildInfo.currentPosition]?.info.length!) {
+            let track = musicGuildInfo.queue[musicGuildInfo.currentPosition];
+            if (isGdriveLazyLoad(track)) {
+                track = track as LavalinkLazyLoad;
+                await message.channel.send("Cannot set seeking for GDrive track (yet)");
+                return;
+            }
+            if (pos * 1000 > (track as Track).info.length!) {
                 await message.channel.send("Out of range.");
                 return;
             }

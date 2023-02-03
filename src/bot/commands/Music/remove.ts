@@ -1,6 +1,7 @@
 import { Args, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import musicManager from "../../../lib/musicQueue";
+import { Track } from "shoukaku";
+import musicManager, { isGdriveLazyLoad, LavalinkLazyLoad } from "../../../lib/musicQueue";
 
 export class RemoveFromQueueCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -38,7 +39,13 @@ export class RemoveFromQueueCommand extends Command {
                 return;
             }
             const deletedTracks = musicGuildInfo.queue.splice(posToRemove - 1, 1);
-            await message.channel.send(`Removed track **${deletedTracks[0]?.info.title}** from the queue.`);
+            if (isGdriveLazyLoad(deletedTracks[0])) {
+                await message.channel.send(
+                    `Removed track (lazy-loaded Google Drive entry) **${(deletedTracks[0] as LavalinkLazyLoad).fileId}** from the queue`
+                );
+                return;
+            }
+            await message.channel.send(`Removed track **${(deletedTracks[0] as Track)?.info.title}** from the queue.`);
             return;
         } catch (error) {
             await message.channel.send("Error on command. Please put non-zero positive integer");

@@ -1,12 +1,11 @@
 import { Args, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import { HttpUrlRegex } from "@sapphire/discord-utilities";
-import musicManager, { MusicGuildInfo, getShoukakuManager } from "../../../lib/musicQueue";
+import musicManager, { MusicGuildInfo, getShoukakuManager, LavalinkLoadType, LavalinkLazyLoad } from "../../../lib/musicQueue";
 import logger from "../../../lib/winston";
 import { fancyTimeFormat } from "../../../lib/utils";
 import { getGoogleClient } from "../../../lib/google";
-
-type LavalinkLoadType = "TRACK_LOADED" | "PLAYLIST_LOADED" | "SEARCH_RESULT" | "NO_MATCHES" | "LOAD_FAILED";
+import { LavalinkResponse, Track } from "shoukaku";
 
 const youtubeVideoRegex = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/;
 const youtubePlaylistRegex = /(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:playlist|list|embed)(?:\.php)?(?:\?.*list=|\/))([a-zA-Z0-9\-_]+)/;
@@ -81,7 +80,7 @@ export class PlayMusicCommand extends Command {
             return;
         }
 
-        let searchRes;
+        let searchRes: LavalinkResponse | LavalinkLazyLoad | null;
         if (youtubePlaylistRes) {
             searchRes = await lavalinkNode.rest.resolve(playlistId);
         } else if (youtubeRegexRes) {
@@ -96,12 +95,20 @@ export class PlayMusicCommand extends Command {
             const drive = getGoogleClient();
             const file = await drive.files.get({
                 fileId,
-                fields: "webContentLink",
             });
-            searchRes = await lavalinkNode.rest.resolve(file.data.webContentLink!);
-            await message.channel.send(
-                "**[Warning]** That looks like a Google Drive link.\nThis feature is currently unstable and you might encounter unplayable track case (especially after track finish).\nIn case of unplayable track, please requeue the track and delete old unplayable track."
-            );
+            // searchRes = await lavalinkNode.rest.resolve(file.data.webContentLink!);
+            // await message.channel.send(
+            //     "**[Warning]** That looks like a Google Drive link.\nThis feature is currently unstable and you might encounter unplayable track case (especially after track finish).\nIn case of unplayable track, please requeue the track and delete old unplayable track."
+            // );
+            searchRes = {
+                loadType: "LAZY_LOAD_GDRIVE",
+                fileId,
+                info: {
+                    title: file.data.name!,
+                    length: -1,
+                    uri: searchQuery,
+                },
+            };
         } else if (HttpUrlRegex.exec(searchQuery)) {
             logger.debug("Is inside HttpUrlRegex=true, line 106");
             searchRes = await lavalinkNode.rest.resolve(searchQuery);
@@ -147,26 +154,71 @@ export class PlayMusicCommand extends Command {
                     if (newMusicGuildInfo.isRepeat === "playlist") {
                         newMusicGuildInfo.currentPosition = 0;
                         await message.channel.send("Playlist loop is set. Resetting playhead to the beginning of the queue.");
-                        const poppedTrack = newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]!;
-                        newMusicGuildInfo.player.playTrack({ track: poppedTrack.track });
-                        await message.channel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
+                        let poppedTrack = newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]!;
+                        if ((<LavalinkLazyLoad>poppedTrack).fileId) {
+                            const searchTarget = await this.resolveGoogleDrive((<LavalinkLazyLoad>poppedTrack).fileId);
+                            if (!searchTarget) {
+                                await message.channel.send("Failed to query from Google Drive");
+                                return;
+                            }
+                            let newPoppedTrack = await lavalinkNode.rest.resolve(searchTarget!);
+                            if (!newPoppedTrack) {
+                                await message.channel.send("Failed to resolve WebContentLink as Playable Track");
+                                return;
+                            }
+                            await newMusicGuildInfo.player.playTrack({
+                                track: newPoppedTrack.tracks[0].track,
+                            });
+                            await message.channel.send(`Now playing **${newPoppedTrack.tracks[0].info.title}**, if it works...`);
+                            newMusicGuildInfo.isPlaying = true;
+                        } else {
+                            poppedTrack = poppedTrack as Track;
+                            await newMusicGuildInfo.player.playTrack({
+                                track: poppedTrack.track,
+                                options: {
+                                    startTime: poppedTrack.info.position,
+                                },
+                            });
+                            await message.channel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
+                            newMusicGuildInfo.isPlaying = true;
+                        }
                     } else {
                         newMusicGuildInfo.isPlaying = false;
                     }
                     musicManager.set(message.guildId!, newMusicGuildInfo);
                     return;
                 }
-                await message.channel.send(
-                    `Track loaded. ${newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]?.info.title} | Duration: ${fancyTimeFormat(
-                        newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]?.info.length! / 1000
-                    )}`
-                );
-                newMusicGuildInfo.player.playTrack({
-                    track: newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]?.track!,
-                    options: {
-                        startTime: newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]?.info.position!,
-                    },
-                });
+
+                // play the track or smth
+                let currentTrack = newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition];
+                if ((<LavalinkLazyLoad>currentTrack).fileId) {
+                    currentTrack = currentTrack as LavalinkLazyLoad;
+                    const searchTarget = await this.resolveGoogleDrive(currentTrack.fileId);
+                    if (!searchTarget) {
+                        await message.channel.send("Failed to query from Google Drive");
+                        return;
+                    }
+                    let newPoppedTrack = await lavalinkNode.rest.resolve(searchTarget!);
+                    if (!newPoppedTrack) {
+                        await message.channel.send("Failed to resolve WebContentLink as Playable Track");
+                        return;
+                    }
+                    await newMusicGuildInfo.player.playTrack({
+                        track: newPoppedTrack.tracks[0].track,
+                    });
+                    await message.channel.send(`Now playing **${newPoppedTrack.tracks[0].info.title}**, if it works...`);
+                    newMusicGuildInfo.isPlaying = true;
+                } else {
+                    currentTrack = currentTrack as Track;
+                    await message.channel.send(`Track loaded. ${currentTrack.info.title} | Duration: ${fancyTimeFormat(currentTrack.info.length! / 1000)}`);
+                    newMusicGuildInfo.player.playTrack({
+                        track: currentTrack.track!,
+                        options: {
+                            startTime: currentTrack.info.position!,
+                        },
+                    });
+                }
+
                 newMusicGuildInfo.isPlaying = true;
                 musicManager.set(message.guildId!, newMusicGuildInfo);
             });
@@ -187,7 +239,15 @@ export class PlayMusicCommand extends Command {
             musicGuildInfo = thisGuildInfo;
         }
         switch (searchRes.loadType as LavalinkLoadType) {
+            case "LAZY_LOAD_GDRIVE":
+                searchRes = searchRes as LavalinkLazyLoad;
+                musicGuildInfo.queue.push(searchRes);
+                await message.channel.send(
+                    `Track loaded. ${searchRes.info.title} | Pos: ${musicGuildInfo.queue.length}\nThis track will be lazy-loaded on it's turn.`
+                );
+                break;
             case "TRACK_LOADED":
+                searchRes = searchRes as LavalinkResponse;
                 logger.debug(`LoadType: ${searchRes.loadType} for query ${searchQuery}`);
                 musicGuildInfo?.queue.push(searchRes.tracks[0]!);
                 await message.channel.send(
@@ -197,6 +257,7 @@ export class PlayMusicCommand extends Command {
                 );
                 break;
             case "PLAYLIST_LOADED":
+                searchRes = searchRes as LavalinkResponse;
                 logger.debug(`LoadType: ${searchRes.loadType} for query ${searchQuery}`);
                 const tracks = searchRes.tracks;
                 musicGuildInfo?.queue.push(...tracks);
@@ -207,6 +268,7 @@ export class PlayMusicCommand extends Command {
                 await message.channel.send(msg);
                 break;
             case "SEARCH_RESULT":
+                searchRes = searchRes as LavalinkResponse;
                 logger.debug(`LoadType: ${searchRes.loadType} for query ${searchQuery}`);
                 musicGuildInfo?.queue.push(searchRes.tracks[0]!);
                 await message.channel.send("Search result for: " + searchQuery);
@@ -223,15 +285,43 @@ export class PlayMusicCommand extends Command {
         }
         // play the head
         if (!musicGuildInfo.isPlaying) {
-            const poppedTrack = musicGuildInfo.queue[musicGuildInfo.currentPosition]!;
-            await musicGuildInfo.player.playTrack({
-                track: poppedTrack.track,
-                options: {
-                    startTime: poppedTrack.info.position,
-                },
-            });
-            await message.channel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
-            musicGuildInfo.isPlaying = true;
+            let poppedTrack = musicGuildInfo.queue[musicGuildInfo.currentPosition]!;
+            if ((<LavalinkLazyLoad>poppedTrack).fileId) {
+                const searchTarget = await this.resolveGoogleDrive((<LavalinkLazyLoad>poppedTrack).fileId);
+                if (!searchTarget) {
+                    await message.channel.send("Failed to query from Google Drive");
+                    return;
+                }
+                let newPoppedTrack = await lavalinkNode.rest.resolve(searchTarget!);
+                if (!newPoppedTrack) {
+                    await message.channel.send("Failed to resolve WebContentLink as Playable Track");
+                    return;
+                }
+                await musicGuildInfo.player.playTrack({
+                    track: newPoppedTrack.tracks[0].track,
+                });
+                await message.channel.send(`Now playing **${newPoppedTrack.tracks[0].info.title}**, if it works...`);
+                musicGuildInfo.isPlaying = true;
+            } else {
+                poppedTrack = poppedTrack as Track;
+                await musicGuildInfo.player.playTrack({
+                    track: poppedTrack.track,
+                    options: {
+                        startTime: poppedTrack.info.position,
+                    },
+                });
+                await message.channel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
+                musicGuildInfo.isPlaying = true;
+            }
         }
+    }
+
+    async resolveGoogleDrive(fileId: string) {
+        const drive = getGoogleClient();
+        const file = await drive.files.get({
+            fileId,
+            fields: "webContentLink",
+        });
+        return file.data.webContentLink;
     }
 }
