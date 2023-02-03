@@ -1,3 +1,4 @@
+import { Tag } from "@prisma/client";
 import { Args, Command } from "@sapphire/framework";
 import { Formatters, Message, MessageEmbed } from "discord.js";
 import prisma from "../../../lib/prisma";
@@ -100,6 +101,7 @@ export class TagCommand extends Command {
                         where: {
                             guildId: message.guildId,
                             name: arg2,
+                            isGuild: true,
                         },
                     });
                     if (tag) {
@@ -108,6 +110,7 @@ export class TagCommand extends Command {
                             where: {
                                 guildId: message.guildId,
                                 name: arg2,
+                                isGuild: true,
                             },
                         });
                     } else {
@@ -119,6 +122,8 @@ export class TagCommand extends Command {
                     const tag = await prisma.tag.findFirst({
                         where: {
                             userId: message.author.id,
+                            isGuild: false,
+                            name: arg2,
                         },
                     });
                     if (tag) {
@@ -127,6 +132,7 @@ export class TagCommand extends Command {
                             where: {
                                 userId: message.author.id,
                                 name: arg2,
+                                isGuild: false,
                             },
                         });
                     } else {
@@ -140,11 +146,23 @@ export class TagCommand extends Command {
             }
         } else if (arg1 === "list") {
             const isGuild = message.inGuild();
-            const tags = await prisma.tag.findMany({
-                where: {
-                    guildId: isGuild ? message.guildId : "",
-                },
-            });
+            let tags: Tag[];
+            if (isGuild) {
+                tags = await prisma.tag.findMany({
+                    where: {
+                        guildId: message.guildId,
+                        isGuild: true,
+                    },
+                });
+            } else {
+                tags = await prisma.tag.findMany({
+                    where: {
+                        userId: message.author.id,
+                        isGuild: false,
+                    },
+                });
+            }
+
             try {
                 const arg2 = await args.pick("string");
                 const AlphanumericRegex = /^[A-Za-z0-9]+$/;
@@ -153,7 +171,7 @@ export class TagCommand extends Command {
                     return;
                 }
                 const embed = new MessageEmbed();
-                embed.setTitle("Closure: Tags (search mode)");
+                embed.setTitle(`Closure: Tags (search mode)${!isGuild ? " - (User-only)" : ""}`);
                 embed.setDescription(
                     `Registered tags similar with ${arg2}: \n ${tags
                         .map((x: any) => `\`${x.name}\``)
@@ -163,7 +181,7 @@ export class TagCommand extends Command {
                 await message.channel.send({ embeds: [embed] });
             } catch (error) {
                 const embed = new MessageEmbed();
-                embed.setTitle("Closure: Tags");
+                embed.setTitle(`Closure: Tags${!isGuild ? " (User-only)" : ""}`);
                 embed.setDescription(`Registered tags: \n ${tags.map((x: any) => `\`${x.name}\``).join(" ")}`);
                 await message.channel.send({ embeds: [embed] });
             }

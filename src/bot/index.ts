@@ -45,8 +45,8 @@ async function createBotApp() {
             await message.reply("Awoo!");
             return;
         }
-        if (message.content.split("#").length >= 3) {
-            const msgSplit = message.content.split("#");
+        if (message.content.split(process.env["NODE_ENV"] === "development" ? "&" : "#").length >= 3) {
+            const msgSplit = message.content.split(process.env["NODE_ENV"] === "development" ? "&" : "#");
             let foundTag = "";
             for (let i = 0; i < (msgSplit.length - 1) / 2; i++) {
                 if (msgSplit[2 * i + 1] !== "") {
@@ -62,17 +62,18 @@ async function createBotApp() {
                 return;
             }
             let tag = null;
-            if (message.inGuild()) {
+            tag = await prisma.tag.findFirst({
+                where: {
+                    userId: message.author.id,
+                    isGuild: false,
+                    name: foundTag,
+                },
+            });
+            if (!tag) {
                 tag = await prisma.tag.findFirst({
                     where: {
-                        guildId: message.guildId,
-                        name: foundTag,
-                    },
-                });
-            } else {
-                tag = await prisma.tag.findFirst({
-                    where: {
-                        userId: message.author.id,
+                        guildId: message.guildId || "",
+                        isGuild: true,
                         name: foundTag,
                     },
                 });
