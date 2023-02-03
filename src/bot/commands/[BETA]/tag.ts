@@ -220,8 +220,39 @@ export class TagCommand extends Command {
             return;
         } else if (arg1 === "delete") {
             // WIP
-            await message.channel.send("WIP command. :)");
-            return;
+            let arg2: string;
+            try {
+                arg2 = await args.pick("string");
+            } catch (error) {
+                await message.channel.send("No tag name provided.");
+                return;
+            }
+            const isGuild = message.inGuild();
+            if (isGuild) {
+                if (message.member?.permissions.has("ADMINISTRATOR") === false) {
+                    await message.channel.send(`This command is for admin only.`);
+                    return;
+                }
+                await prisma.tag.deleteMany({
+                    where: {
+                        guildId: message.guildId,
+                        name: arg2,
+                        isGuild: true,
+                    },
+                });
+                await message.channel.send(`Tag **${arg2}** has been deleted from this server`);
+                return;
+            } else {
+                await prisma.tag.deleteMany({
+                    where: {
+                        userId: message.author.id,
+                        name: arg2,
+                        isGuild: false,
+                    },
+                });
+                await message.channel.send(`Tag **${arg2}** has been deleted from this user`);
+                return;
+            }
         } else {
             await message.channel.send("Unrecognized command");
             return;
