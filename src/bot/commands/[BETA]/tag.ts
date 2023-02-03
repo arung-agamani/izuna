@@ -1,4 +1,3 @@
-import { Tag } from "@prisma/client";
 import { Args, Command } from "@sapphire/framework";
 import { Formatters, Message, MessageEmbed } from "discord.js";
 import prisma from "../../../lib/prisma";
@@ -146,7 +145,7 @@ export class TagCommand extends Command {
             }
         } else if (arg1 === "list") {
             const isGuild = message.inGuild();
-            let tags: Tag[];
+            let tags;
             if (isGuild) {
                 tags = await prisma.tag.findMany({
                     where: {
