@@ -1,5 +1,6 @@
 import { Args, Command } from "@sapphire/framework";
-import type { Message } from "discord.js";
+import { Channel } from "diagnostics_channel";
+import { ChannelType, Message } from "discord.js";
 import { config } from "../../../config";
 import prisma from "../../../lib/prisma";
 import reminderCollection, { restartReminderJob } from "../../../lib/reminder";
@@ -15,7 +16,7 @@ export class ReminderCommand extends Command {
     }
 
     public override async messageRun(message: Message, args: Args) {
-        if (!(message.channel.type === "DM" || message.channel.type === "GUILD_TEXT")) return;
+        if (!(message.channel.type === ChannelType.DM || message.channel.type === ChannelType.GuildText)) return;
         if (!config.betaTesters.includes(message.author.id)) return;
         const cronString = await args.pick("string");
         const msg = await args.pick("string");
@@ -38,7 +39,7 @@ export class ReminderCommand extends Command {
                 uid: message.author.id,
                 cronString,
                 message: msg,
-                channelType: message.channel.type === "DM" ? "DM" : "CHANNEL",
+                channelType: message.channel.type === ChannelType.DM ? "DM" : "CHANNEL",
                 guildId: message.guildId || "",
                 channelId: message.channelId,
             },
@@ -48,7 +49,7 @@ export class ReminderCommand extends Command {
             uid: message.author.id,
             cronString,
             message: msg,
-            channelType: message.channel.type === "DM" ? "DM" : "CHANNEL",
+            channelType: message.channel.type === ChannelType.DM ? "DM" : "CHANNEL",
             guildId: message.guildId,
             channelId: message.channelId,
         });

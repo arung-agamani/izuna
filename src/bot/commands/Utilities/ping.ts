@@ -22,12 +22,12 @@ export class PingCommand extends Command {
         );
     }
 
-    public override async chatInputRun(interaction: Command.ChatInputInteraction) {
+    public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
         const message = await interaction.reply({ content: "Ping?", ephemeral: true, fetchReply: true });
         if (message instanceof Message) {
             const diff = message.createdTimestamp - interaction.createdTimestamp;
             const ping = Math.round(this.container.client.ws.ping);
-            return interaction.editReply(`Pong!!! Bot latency: ${ping}ms. API latency ${diff}ms`);
+            return interaction.editReply(`Pong!!! Bot latency: ${ping}ms. API latency ${diff}ms.`);
         }
 
         return interaction.editReply("Failed to retrieve ping :(");

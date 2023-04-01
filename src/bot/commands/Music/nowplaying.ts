@@ -1,6 +1,6 @@
 import { Command } from "@sapphire/framework";
-import { Formatters, Message } from "discord.js";
-import { MessageEmbed } from "discord.js";
+import { Message, userMention } from "discord.js";
+import { EmbedBuilder } from "discord.js";
 import musicManager, { getShoukakuManager } from "../../../lib/musicQueue";
 import { fancyTimeFormat } from "../../../lib/utils";
 // import prisma from "../../lib/prisma";
@@ -48,7 +48,7 @@ export class NowPlayingMusicCommand extends Command {
         const paginatedMessage = new PaginatedMessage();
         let i = 0;
         if (queue.length < 10) {
-            const page = new MessageEmbed();
+            const page = new EmbedBuilder();
             page.setTitle("Now playing queue...");
             let msg = "";
             for (const track of queue) {
@@ -100,23 +100,23 @@ export class NowPlayingMusicCommand extends Command {
                 }
             }
         }
-        const embedMessage = new MessageEmbed();
+        const embedMessage = new EmbedBuilder();
         const currentTrack = musicGuildInfo.queue[musicGuildInfo.currentPosition];
         const npString = `${fancyTimeFormat(musicGuildInfo.player.position / 1000)} / ${fancyTimeFormat(currentTrack?.info.length! / 1000)}`;
         if (musicGuildInfo.isPlaying) {
             embedMessage.setTitle("Closure: Now Playing...");
-            embedMessage.addField(currentTrack?.info.title!, currentTrack?.info.uri!);
-            embedMessage.addField("Position", npString);
+            embedMessage.addFields({ name: currentTrack?.info.title!, value: currentTrack?.info.uri! });
+            embedMessage.addFields({ name: "Position", value: npString });
             const estimatedToDone =
                 musicGuildInfo.queue.slice(musicGuildInfo.currentPosition).reduce((acc, val) => acc + val.info.length, 0) / 1000 -
                 musicGuildInfo.player.position / 1000;
-            embedMessage.addField("Estimated Playlist Time Left", fancyTimeFormat(estimatedToDone));
+            embedMessage.addFields({ name: "Estimated Playlist Time Left", value: fancyTimeFormat(estimatedToDone) });
             await message.channel.send({ embeds: [embedMessage] });
         }
         let currentPage = Math.floor(musicGuildInfo.currentPosition / 10);
         paginatedMessage.setIndex(currentPage);
         paginatedMessage.setWrongUserInteractionReply((targetUser) => ({
-            content: `Even if you fiddle with my buttons, my heart belongs to ${Formatters.userMention(targetUser.id)}-sama alone.`,
+            content: `Even if you fiddle with my buttons, my heart belongs to ${userMention(targetUser.id)}-sama alone.`,
             ephemeral: true,
             allowedMentions: {
                 users: [],

@@ -34,7 +34,7 @@ export class GoogleLoginCommand extends Command {
         );
     }
 
-    public override async chatInputRun(interaction: Command.ChatInputInteraction) {
+    public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
         const message = interaction.options.getString("service", true);
         if (message === "google") {
             const userOauthState = closureGoogleOauthTracker.get(interaction.user.id);

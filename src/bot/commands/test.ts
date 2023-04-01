@@ -1,5 +1,5 @@
 import { ChatInputCommand, Command } from "@sapphire/framework";
-import { Message, MessageEmbed } from "discord.js";
+import { Message, EmbedBuilder } from "discord.js";
 import { google } from "googleapis";
 import { closureGoogleOauthTracker } from "../../lib/google";
 
@@ -27,10 +27,17 @@ export class TestCommand extends Command {
         );
     }
 
-    public override async chatInputRun(interaction: Command.ChatInputInteraction) {
+    public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
         const message = interaction.options.getString("echo", true);
+        const embed = new EmbedBuilder();
+        embed.setTitle("Howling Blog").setURL("https://blog.howlingmoon.dev");
+        embed.setDescription(`Howling Blog is a website created by Closure's author.
+        It contains many good things, ||and also weeb things||.
+        Did you know that Closure's repo is called [izuna](https://github.com/arung-agamani/izuna)?
+        ||It's also a secret that Closure's author has art account over [twitter](https://twitter.com/shirayuk1haruka)`);
         return interaction.reply({
             content: message,
+            embeds: [embed],
         });
     }
 
@@ -51,15 +58,15 @@ export class TestCommand extends Command {
             mine: true,
             part: ["contentDetails", "snippet"],
         });
-        const messageEmbed = new MessageEmbed();
-        messageEmbed.setTitle("Closure: List of User's Playlist");
+        const embed = new EmbedBuilder();
+        embed.setTitle("Closure: List of User's Playlist");
         if (!res.data.items || res.data.items.length === 0) {
             await message.channel.send("Searched through your Youtube account but found no playlist.");
             return;
         }
         for (const playlist of res.data.items!) {
-            messageEmbed.addField(playlist.snippet?.title || "", `ID: ${playlist.id}`);
+            embed.addFields({ name: playlist.snippet?.title || "", value: `ID: ${playlist.id}` });
         }
-        await message.channel.send({ embeds: [messageEmbed] });
+        await message.channel.send({ embeds: [embed] });
     }
 }

@@ -1,6 +1,6 @@
 import { Args, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import { MessageEmbed } from "discord.js";
+import { EmbedBuilder } from "discord.js";
 
 type CategoryMap = Map<string, Set<string>>;
 
@@ -21,15 +21,15 @@ export class HelpCommand extends Command {
                 await message.channel.send(`Command \`${arg1}\` not found.`);
                 return;
             }
-            const helpMessageEmbed = new MessageEmbed();
-            helpMessageEmbed.setTitle(`Help Section - ${arg1}`);
-            helpMessageEmbed.addField("Name", command.name);
-            if (command.aliases.length > 0) helpMessageEmbed.addField("Aliases", command.aliases.map((x) => `\`${x}\``).join(" "));
-            helpMessageEmbed.addField("Description", command.description);
+            const helpEmbedBuilder = new EmbedBuilder();
+            helpEmbedBuilder.setTitle(`Help Section - ${arg1}`);
+            helpEmbedBuilder.addFields({ name: "Name", value: command.name });
+            if (command.aliases.length > 0) helpEmbedBuilder.addFields({ name: "Aliases", value: command.aliases.map((x) => `\`${x}\``).join(" ") });
+            helpEmbedBuilder.addFields({ name: "Description", value: command.description });
             if (command.detailedDescription === "") {
-                helpMessageEmbed.addField("Details", "No info");
-            } else helpMessageEmbed.addField("Details", command.detailedDescription.toString());
-            await message.channel.send({ embeds: [helpMessageEmbed] });
+                helpEmbedBuilder.addFields({ name: "Details", value: "No info" });
+            } else helpEmbedBuilder.addFields({ name: "Details", value: command.detailedDescription.toString() });
+            await message.channel.send({ embeds: [helpEmbedBuilder] });
             return;
         } catch (error) {
             const commandIter = this.container.stores.get("commands").entries();
@@ -48,20 +48,20 @@ export class HelpCommand extends Command {
                     }
                 }
             }
-            const helpMessageEmbed = new MessageEmbed();
-            helpMessageEmbed.setTitle("Help Section");
+            const helpEmbedBuilder = new EmbedBuilder();
+            helpEmbedBuilder.setTitle("Help Section");
             for (const [category, categorySet] of Array.from(categories.entries())) {
                 let description = "";
                 for (const command of categorySet) {
                     description += `\`${command}\` `;
                 }
-                helpMessageEmbed.addField(`**${category}**`, description);
+                helpEmbedBuilder.addFields({ name: `**${category}**`, value: description });
             }
-            helpMessageEmbed.setDescription("Use `closure help [command-name]` for further detail on each command.");
-            helpMessageEmbed.setTimestamp().setFooter({
+            helpEmbedBuilder.setDescription("Use `closure help [command-name]` for further detail on each command.");
+            helpEmbedBuilder.setTimestamp().setFooter({
                 text: "Eggs",
             });
-            await message.channel.send({ embeds: [helpMessageEmbed] });
+            await message.channel.send({ embeds: [helpEmbedBuilder] });
         }
     }
 }

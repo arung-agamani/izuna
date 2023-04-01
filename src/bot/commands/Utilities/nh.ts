@@ -1,6 +1,6 @@
 import { Command, Args, ChatInputCommand } from "@sapphire/framework";
 import axios from "axios";
-import { Message, MessageEmbed } from "discord.js";
+import { Message, EmbedBuilder } from "discord.js";
 import * as cheerio from "cheerio";
 import logger from "../../../lib/winston";
 
@@ -52,7 +52,7 @@ export class NhCommand extends Command {
         );
     }
 
-    public override async chatInputRun(interaction: Command.ChatInputInteraction) {
+    public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
         const nukecode = interaction.options.getInteger("nukecode", true);
         if (nukecode < 600000 && nukecode > 2) {
             await interaction.reply({
@@ -135,7 +135,7 @@ export class NhCommand extends Command {
                     const $ = cheerio.load(data);
                     const jsonString = $("pre").text();
                     const jsonData = JSON.parse(jsonString) as NHRes;
-                    const embed = new MessageEmbed();
+                    const embed = new EmbedBuilder();
                     embed.setTitle(jsonData.title.japanese);
                     embed.setDescription(`English: **${jsonData.title.english}**`);
                     embed.setFields([

@@ -56,7 +56,7 @@ export class PlaylistMusicCommand extends Command {
         );
     }
 
-    public override async chatInputRun(interaction: Command.ChatInputInteraction) {
+    public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
         const action = interaction.options.getSubcommand();
         if (action === "list") {
             const includeYoutube = interaction.options.getBoolean("youtube");

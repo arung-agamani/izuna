@@ -1,5 +1,5 @@
 import { Args, Command } from "@sapphire/framework";
-import { Message, MessageEmbed } from "discord.js";
+import { Message, EmbedBuilder } from "discord.js";
 import { google, youtube_v3 } from "googleapis";
 import { closureGoogleOauthTracker } from "../../lib/google";
 
@@ -31,8 +31,8 @@ export class TestSlashCommand extends Command {
             part: ["snippet"],
             maxResults: 50,
         });
-        const messageEmbed = new MessageEmbed();
-        messageEmbed.setTitle("Closure: List of User's Playlist Items");
+        const embed = new EmbedBuilder();
+        embed.setTitle("Closure: List of User's Playlist Items");
         if (!res.data.items || res.data.items.length === 0) {
             await message.channel.send("Searched through that playlist and no items? wtf");
             return;
@@ -51,8 +51,8 @@ export class TestSlashCommand extends Command {
             if (res.data.items && res.data.items.length > 0) container.push(...res.data.items!);
         }
         for (const playlist of container) {
-            messageEmbed.addField(playlist.snippet?.title || "", `https://www.youtube.com/watch?v=${playlist.snippet?.resourceId?.videoId}`);
+            embed.addFields({ name: playlist.snippet?.title || "", value: `https://www.youtube.com/watch?v=${playlist.snippet?.resourceId?.videoId}` });
         }
-        await message.channel.send({ embeds: [messageEmbed] });
+        await message.channel.send({ embeds: [embed] });
     }
 }

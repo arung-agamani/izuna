@@ -20,16 +20,16 @@ import { init as initReminderFromDb, restartReminderJob } from "./lib/reminder";
 import prisma from "./lib/prisma";
 import { closureGoogleOauthState, closureGoogleOauthTracker } from "./lib/google";
 
-if (process.env["NODE_ENV"] === "development") {
-    logger.info("Application is running in development mode");
-    dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
-} else {
-    logger.info(`Application initiated at ${new Date().toLocaleString()}`);
-    logger.info("Application is running in production mode");
-}
+// if (process.env["NODE_ENV"] === "development") {
+//     logger.info("Application is running in development mode");
+//     dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
+//     console.log(process.env);
+// } else {
+//     logger.info(`Application initiated at ${new Date().toLocaleString()}`);
+//     logger.info("Application is running in production mode");
+// }
 
 let botClient: SapphireClient;
-
 if (config.runBot) {
     (async () => {
         botClient = await createBot();
@@ -41,7 +41,7 @@ if (config.runBot) {
     })();
 }
 
-if (config.runWeb) {
+/* if (config.runWeb) {
     const server = fastify();
     server.register(fastifyStatic, {
         root: path.resolve(__dirname, "..", "web", "dist"),
@@ -319,7 +319,7 @@ if (config.runWeb) {
         logger.info(`Server is listening at ${address}`);
         server.swagger();
     });
-}
+} */
 
 declare module "fastify" {
     interface FastifyInstance {

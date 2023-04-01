@@ -1,5 +1,5 @@
 import { Command, Args } from "@sapphire/framework";
-import { Formatters, Message, MessageEmbed } from "discord.js";
+import { Formatters, Message, EmbedBuilder } from "discord.js";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { PaginatedMessage } from "@sapphire/discord.js-utilities";
@@ -78,13 +78,15 @@ export class NyaaCommand extends Command {
             }
             const paginatedMessage = new PaginatedMessage();
             for (let i = 0; i < items.length; i += 5) {
-                const page = new MessageEmbed();
+                const page = new EmbedBuilder();
                 page.setTitle("Nyaa.si quick search");
                 for (let j = i; j < i + 5; j++) {
-                    page.addField(
-                        items[j]!.title,
-                        `https://nyaa.si${items[j]!.torrentLink} \nSeeds: ${items[j]!.seeds} | Leech: ${items[j]!.leech} | Downloads: ${items[j]!.downloads}`
-                    );
+                    page.addFields({
+                        name: items[j]!.title,
+                        value: `https://nyaa.si${items[j]!.torrentLink} \nSeeds: ${items[j]!.seeds} | Leech: ${items[j]!.leech} | Downloads: ${
+                            items[j]!.downloads
+                        }`,
+                    });
                 }
                 paginatedMessage.addPageEmbed(page);
             }

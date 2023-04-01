@@ -1,5 +1,5 @@
 import { Listener } from "@sapphire/framework";
-import type { VoiceState, VoiceBasedChannel } from "discord.js";
+import { VoiceState, VoiceBasedChannel, ChannelType, VoiceChannel } from "discord.js";
 import { joinToCreateVoiceChatManager, channelTrackingManager, deleteFromEphemeralVCManager, addToEphemeralVCManager } from "../../lib/channelTracker";
 import logger from "../../lib/winston";
 
@@ -34,8 +34,8 @@ export class VoiceStateUpdateListener extends Listener {
                 }
                 if (targetVoiceChannel) {
                     const previousVoiceChannel = await guild.channels.cache.get(previousVoiceChannelId);
-                    if (previousVoiceChannel) {
-                        let totalMember = (previousVoiceChannel as VoiceBasedChannel).members.size;
+                    if (previousVoiceChannel && previousVoiceChannel instanceof VoiceChannel) {
+                        let totalMember = previousVoiceChannel.members.size;
                         logger.debug(`${targetVoiceChannel.name} has ${totalMember} people inside`);
                         if (totalMember === 0 && channelTrackingManager.has(`${guild.id}-${targetVoiceChannel.id}`)) {
                             // destroy channel
@@ -57,13 +57,9 @@ export class VoiceStateUpdateListener extends Listener {
             let createdVoiceChannel;
             const channelNameToCreate = `${user.displayName}'s Channel`;
             if (category) {
-                createdVoiceChannel = await category.createChannel(channelNameToCreate, {
-                    type: "GUILD_VOICE",
-                });
+                createdVoiceChannel = await category.children.create({ name: channelNameToCreate, type: ChannelType.GuildVoice });
             } else {
-                createdVoiceChannel = await guild.channels.create(channelNameToCreate, {
-                    type: "GUILD_VOICE",
-                });
+                createdVoiceChannel = await guild.channels.create({ name: channelNameToCreate, type: ChannelType.GuildVoice });
             }
             logger.debug(`${createdVoiceChannel.name} voice channel is created`);
             await addToEphemeralVCManager(guild.id, createdVoiceChannel.id);
@@ -89,8 +85,8 @@ export class VoiceStateUpdateListener extends Listener {
             }
             if (targetVoiceChannel) {
                 const previousVoiceChannel = await guild.channels.fetch(previousVoiceChannelId);
-                if (previousVoiceChannel) {
-                    let totalMember = (previousVoiceChannel as VoiceBasedChannel).members.size;
+                if (previousVoiceChannel && previousVoiceChannel instanceof VoiceChannel) {
+                    let totalMember = previousVoiceChannel.members.size;
                     logger.debug(`${targetVoiceChannel.name} has ${totalMember} people inside`);
                     if (totalMember !== 0) return;
                     if (!channelTrackingManager.has(`${guild.id}-${targetVoiceChannel.id}`)) return;

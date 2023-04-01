@@ -5,14 +5,19 @@ import { setShoukakuManager } from "../lib/musicQueue";
 import logger from "../lib/winston";
 import prisma from "../lib/prisma";
 import { channelTrackingManager, deleteFromEphemeralVCManager, initializeChannelTrackingManager, initializeJoinToCreateVCManager } from "../lib/channelTracker";
-import type { VoiceBasedChannel } from "discord.js";
+import { GatewayIntentBits, Partials, VoiceBasedChannel } from "discord.js";
+import "@sapphire/plugin-hmr/register";
 
 async function createBotApp() {
     const client = new SapphireClient({
-        intents: ["GUILDS", "GUILD_MESSAGES", "DIRECT_MESSAGES", "DIRECT_MESSAGE_TYPING", "GUILD_VOICE_STATES"],
+        // intents: ["GUILDS", "GUILD_MESSAGES", "DIRECT_MESSAGES", "DIRECT_MESSAGE_TYPING", "GUILD_VOICE_STATES"],
+        intents: ["Guilds", "GuildMessages", "DirectMessages", "DirectMessages", "DirectMessageTyping", "GuildVoiceStates", "MessageContent"],
         regexPrefix: config.botPrefix,
-        partials: ["USER", "CHANNEL"],
+        partials: [Partials.User, Partials.Channel],
         loadMessageCommandListeners: true,
+        hmr: {
+            enabled: process.env["NODE_ENV"] === "development",
+        },
     });
     const nodes = [
         // {
@@ -29,6 +34,7 @@ async function createBotApp() {
     ];
     await client.login(process.env["DISCORD_BOT_TOKEN"]);
     if (!process.env["MUTE"] && process.env["MUTE"] !== "1") {
+        logger.info("Initializing Shoukaku connector");
         const manager = new Shoukaku(new Connectors.DiscordJS(client), nodes);
         setShoukakuManager(manager);
         // await manager.connect();

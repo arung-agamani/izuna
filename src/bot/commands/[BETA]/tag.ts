@@ -1,5 +1,5 @@
 import { Args, Command } from "@sapphire/framework";
-import { Formatters, Message, MessageEmbed } from "discord.js";
+import { Formatters, Message, EmbedBuilder, ChannelType, PermissionFlagsBits } from "discord.js";
 import prisma from "../../../lib/prisma";
 
 export class TagCommand extends Command {
@@ -15,10 +15,10 @@ export class TagCommand extends Command {
     public override async messageRun(message: Message, args: Args) {
         if (
             !(
-                message.channel.type === "DM" ||
-                message.channel.type === "GUILD_TEXT" ||
-                message.channel.type === "GUILD_PUBLIC_THREAD" ||
-                message.channel.type === "GUILD_PRIVATE_THREAD"
+                message.channel.type === ChannelType.DM ||
+                message.channel.type === ChannelType.GuildText ||
+                message.channel.type === ChannelType.PublicThread ||
+                message.channel.type === ChannelType.PrivateThread
             )
         )
             return;
@@ -169,7 +169,7 @@ export class TagCommand extends Command {
                     await message.channel.send("Invalid tag validation. Please input only alphanumeric characters in single word.");
                     return;
                 }
-                const embed = new MessageEmbed();
+                const embed = new EmbedBuilder();
                 embed.setTitle(`Closure: Tags (search mode)${!isGuild ? " - (User-only)" : ""}`);
                 embed.setDescription(
                     `Registered tags similar with ${arg2}: \n ${tags
@@ -179,7 +179,7 @@ export class TagCommand extends Command {
                 );
                 await message.channel.send({ embeds: [embed] });
             } catch (error) {
-                const embed = new MessageEmbed();
+                const embed = new EmbedBuilder();
                 embed.setTitle(`Closure: Tags${!isGuild ? " (User-only)" : ""}`);
                 embed.setDescription(`Registered tags: \n ${tags.map((x: any) => `\`${x.name}\``).join(" ")}`);
                 await message.channel.send({ embeds: [embed] });
@@ -208,7 +208,7 @@ export class TagCommand extends Command {
                 await message.channel.send(`There is no tag with name \`${arg2}\`.`);
                 return;
             }
-            const embed = new MessageEmbed();
+            const embed = new EmbedBuilder();
             embed.setTitle(`Closure: Tag Info`);
             embed.setDescription(`**${tag.name}**
             Submitter: ${Formatters.userMention(tag.userId)}
@@ -229,7 +229,7 @@ export class TagCommand extends Command {
             }
             const isGuild = message.inGuild();
             if (isGuild) {
-                if (message.member?.permissions.has("ADMINISTRATOR") === false) {
+                if (message.member?.permissions.has(PermissionFlagsBits.Administrator) === false) {
                     await message.channel.send(`This command is for admin only.`);
                     return;
                 }

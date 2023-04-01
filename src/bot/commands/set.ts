@@ -1,5 +1,5 @@
 import { Args, Command } from "@sapphire/framework";
-import type { Message } from "discord.js";
+import { ChannelType, Message, PermissionFlagsBits } from "discord.js";
 import { addToJ2CVCManager } from "../../lib/channelTracker";
 
 export class SetCommand extends Command {
@@ -16,18 +16,21 @@ export class SetCommand extends Command {
             await message.channel.send("This command only works in servers");
             return;
         }
-        if (message.member?.permissions.has("ADMINISTRATOR") === false) {
+        if (message.member?.permissions.has(PermissionFlagsBits.Administrator) === false) {
             await message.channel.send("You need admin access.");
             return;
         }
         const arg1 = await args.pick("string");
         if (arg1 === "ephemeral-vc") {
-            if (!message.guild?.me?.permissions.has("MANAGE_CHANNELS") || !message.guild.me.permissions.has("MOVE_MEMBERS")) {
+            if (
+                !message.guild?.members.me?.permissions.has(PermissionFlagsBits.ManageChannels) ||
+                !message.guild?.members.me.permissions.has(PermissionFlagsBits.MoveMembers)
+            ) {
                 await message.channel.send("I need `Manage Channels` and `Move Members` permissions for that");
                 return;
             }
             const arg2 = await args.rest("string");
-            const channel = message.guild?.channels.cache.find((channel) => channel.type === "GUILD_VOICE" && channel.name === arg2);
+            const channel = message.guild?.channels.cache.find((channel) => channel.type === ChannelType.GuildVoice && channel.name === arg2);
             if (!channel) {
                 await message.channel.send(`Voice channel \`${arg2}\` not found.`);
                 return;
