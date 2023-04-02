@@ -60,10 +60,10 @@ export class VNDBInteractionHandler extends InteractionHandler {
             );
             if (interaction.message instanceof Message) {
                 interaction.deferUpdate();
-                interaction.message.edit({ embeds: [embed], components: [infoActionRow] });
+                interaction.message.edit({ embeds: [embed], components: [infoActionRow], content: "" });
             } else {
                 interaction.deferUpdate();
-                await interaction.channel?.send({ embeds: [embed], components: [infoActionRow] });
+                await interaction.channel?.send({ embeds: [embed], components: [infoActionRow], content: "" });
             }
         } else if (parsedData.type === "chara") {
             const charaId = parsedData.id;
@@ -87,8 +87,8 @@ export class VNDBInteractionHandler extends InteractionHandler {
                     )
             );
             embed.setTitle(`Search returned ${charaInfo.results.length} character(s) Only showing top 5 result`);
-
-            return interaction.message.edit({ embeds: [embed], components: [actionRow] });
+            interaction.deferUpdate();
+            return interaction.message.edit({ embeds: [embed], components: [actionRow], content: "" });
         }
     }
 

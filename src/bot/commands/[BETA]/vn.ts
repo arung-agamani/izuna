@@ -220,9 +220,9 @@ export class VNDBCommand extends Command {
     }
 
     public censor(data: string) {
-        let out = data;
+        let out = data || "No description";
         // link
-        out = out.replace(/\[url=(\S+)\]([\w'’ -!]+)\[\/url\]/g, "[$2]($1)");
+        out = out.replace(/\[url=(\S+)\]([\w'’ \-~!]+)\[\/url\]/g, "[$2]($1)");
         // spoiler
         out = out.replace(/\[spoiler\]/gm, "||");
         out = out.replace(/\[\/spoiler\]/gm, "||");
