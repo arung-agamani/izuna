@@ -85,7 +85,8 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
             const filteredGuilds = guilds.filter((x) => {
                 if (
                     closureGuilds.findIndex(
-                        (y) => y.guildId === x.guildId && new PermissionsBitField(x.permissionInteger as any).has(PermissionsBitField.Flags.Administrator)
+                        (y: typeof closureGuilds[0]) =>
+                            y.guildId === x.guildId && new PermissionsBitField(x.permissionInteger as any).has(PermissionsBitField.Flags.Administrator)
                     ) > -1
                 )
                     return true;
