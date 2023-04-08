@@ -234,7 +234,7 @@ if (config.runWeb) {
             );
             reply
                 .setCookie("ninpou", signingToken, {
-                    domain: "localhost",
+                    domain: process.env["NODE_ENV"] === "development" ? "localhost" : "howlingmoon.dev",
                     path: "/",
                     secure: false,
                     httpOnly: true,
