@@ -21,6 +21,9 @@ const Navbar = () => {
                             <Link to="/closure" className="no-underline">
                                 <span className="py-4 px-2 text-green-500 border-b-4 border-green-500 font-semibold">Bot</span>
                             </Link>
+                            <Link to="/test" className="no-underline">
+                                <span className="py-4 px-2 text-green-500 border-b-4 border-green-500 font-semibold">Test</span>
+                            </Link>
                             <div className="flex-grow" />
                             <Link to="/login" className="no-underline">
                                 <span className="py-4 px-2 text-green-500 border-b-4 border-green-500 font-semibold">Login</span>

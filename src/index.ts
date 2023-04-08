@@ -20,15 +20,6 @@ import { init as initReminderFromDb, restartReminderJob } from "./lib/reminder";
 import prisma from "./lib/prisma";
 import { closureGoogleOauthState, closureGoogleOauthTracker } from "./lib/google";
 
-// if (process.env["NODE_ENV"] === "development") {
-//     logger.info("Application is running in development mode");
-//     dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
-//     console.log(process.env);
-// } else {
-//     logger.info(`Application initiated at ${new Date().toLocaleString()}`);
-//     logger.info("Application is running in production mode");
-// }
-
 let botClient: SapphireClient;
 if (config.runBot) {
     (async () => {
@@ -41,7 +32,7 @@ if (config.runBot) {
     })();
 }
 
-/* if (config.runWeb) {
+if (config.runWeb) {
     const server = fastify();
     server.register(fastifyStatic, {
         root: path.resolve(__dirname, "..", "web", "dist"),
@@ -153,7 +144,7 @@ if (config.runBot) {
         const [source, uid] = decodedState.split("-");
         logger.info(`Source: ${source} || UID: ${uid}`);
         if (source === "closure" && closureGoogleOauthState.has(state)) {
-            closureGoogleOauthTracker.set(uid || "", token);
+            closureGoogleOauthTracker.set(uid || "", token.token);
             closureGoogleOauthState.delete(state);
             return {
                 status: 200,
@@ -198,7 +189,7 @@ if (config.runBot) {
 
     server.register(oauthplugin, {
         name: "discordOAuth2",
-        scope: ["email", "identify"],
+        scope: ["email", "identify", "guilds", "guilds.members.read"],
         credentials: {
             client: {
                 id: process.env["DISCORD_OAUTH_CLIENT_ID"]!,
@@ -207,15 +198,15 @@ if (config.runBot) {
             auth: oauthplugin.DISCORD_CONFIGURATION,
         },
         startRedirectPath: "/api/auth/discord",
-        callbackUri: `/api/auth/discord/callback`,
+        callbackUri: `http://localhost:8000/api/auth/discord/callback`,
     });
 
     server.get("/api/auth/discord/callback", {}, async (req, reply) => {
         try {
             const token = await server.discordOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
-            console.log(token);
             const oauth = new discordOAuth();
-            const discordUser = await oauth.getUser(token.access_token);
+            const discordUser = await oauth.getUser(token.token.access_token);
+            logger.info(`User login from Discord for user ${discordUser.username}#${discordUser.discriminator}`);
             let user = await prisma.user.findUnique({
                 where: {
                     uid: discordUser.id,
@@ -234,9 +225,11 @@ if (config.runBot) {
             const signingToken = await reply.jwtSign(
                 {
                     id: user.id,
+                    user,
+                    token: token.token,
                 },
                 {
-                    expiresIn: "15m",
+                    expiresIn: "1h",
                 }
             );
             reply
@@ -258,55 +251,6 @@ if (config.runBot) {
         }
     });
 
-    server.get<{
-        Querystring: IQueryString;
-        Headers: IHeaders;
-    }>(
-        "/awoo",
-        {
-            schema: {
-                operationId: "awooRoute",
-                description: "awoo!",
-                tags: ["tierlist"],
-                summary: "api that awoos",
-                params: {
-                    $ref: "user#",
-                },
-
-                response: {
-                    201: {
-                        description: "success uwu",
-                        type: "object",
-                        properties: {
-                            status: { type: "number" },
-                            message: { type: "string" },
-                        },
-                    },
-                    default: {
-                        description: "default response",
-                        type: "object",
-                        properties: {
-                            status: { type: "number" },
-                            message: { type: "string" },
-                        },
-                    },
-                },
-            },
-        },
-        async (req, _res) => {
-            const { username, password } = req.query;
-            const awooHeader = req.headers["x-awoo-signature"];
-
-            return {
-                status: 200,
-                message: `you tried to login as ${username} using '${password}' as the password`,
-                headers: {
-                    "x-awoo-signature": awooHeader,
-                },
-            };
-        }
-    );
-
     server.setNotFoundHandler((_req, res) => {
         res.sendFile("index.html");
     });
@@ -319,11 +263,11 @@ if (config.runBot) {
         logger.info(`Server is listening at ${address}`);
         server.swagger();
     });
-} */
+}
 
 declare module "fastify" {
     interface FastifyInstance {
-        // googleOAuth2: OAuth2Namespace;
+        googleOAuth2: OAuth2Namespace;
         discordOAuth2: OAuth2Namespace;
         authenticate: (req: FastifyRequest, res: FastifyReply) => Promise<void>;
     }
@@ -335,4 +279,22 @@ declare module "@fastify/jwt" {
             id: number;
         };
     }
+}
+
+export interface FastifyDiscordOAuthBody {
+    user: {
+        id: number;
+        uid: string;
+        name: string;
+        email: string;
+        dateCreated: string;
+    };
+    token: {
+        access_token: string;
+        expires_in: number;
+        refresh_token: string;
+        scope: string;
+        token_type: string;
+        expires_at: string;
+    };
 }

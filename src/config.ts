@@ -20,8 +20,6 @@ export const config = {
     betaTesters: ["145558597424644097"],
 };
 
-console.log(process.env["RUN_BOT"] === "1");
-
 if (process.env["NODE_ENV"] === "development") {
     config.host = "127.0.0.1";
 }
