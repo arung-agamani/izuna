@@ -198,7 +198,7 @@ if (config.runWeb) {
             auth: oauthplugin.DISCORD_CONFIGURATION,
         },
         startRedirectPath: "/api/auth/discord",
-        callbackUri: `http://localhost:8000/api/auth/discord/callback`,
+        callbackUri: `${process.env["NODE_ENV"] === "development" ? "http://localhost:8000" : "https://izuna.howlingmoon.dev"}/api/auth/discord/callback`,
     });
 
     server.get("/api/auth/discord/callback", {}, async (req, reply) => {
