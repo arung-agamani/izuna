@@ -1,0 +1,98 @@
+import HelpCommand from "./HelpCommand.md";
+import PlaylistCommand from "./PlaylistCommand.md";
+import VNDBCommand from "./VNDBCommand.md";
+
+## What is Izuna?
+
+Izuna is a **Discord Bot** that mainly built as my hobby project in exploring web technologies. Every functionalities that I'm building follows the same pattern: to make something that I want to use as well. Therefore, as lots of my leisure activities revolves around getting entertainment in ACG (Anime, Comic, Games), expect features in strong relation to those things.
+
+Invite Izuna (or Closure) to your server!
+[Invite! まねく！](https://discord.com/api/oauth2/authorize?client_id=705449558024388648&permissions=274881178688&scope=bot%20applications.commands)
+
+## Who is Izuna?
+
+<div className="flex flex-col md:flex-row">
+    <img
+        src="https://howling-blog-uploads.s3.ap-southeast-1.amazonaws.com/2023/4/10/izuna-portrait.webp.png"
+        alt="izuna sprit"
+        className="max-w-xs sm:max-w-md md:max-w-md md:mr-4 self-center"
+    />
+    <div className="md:ml-4">
+        Izuna is a character from mobile game "Blue Archive".
+        <br />
+        Her full name is Kuda Izuna (久田イズナ) and is a first-year high school student in Allied Hyakkiyako Academy in Kivotos. <br />
+        <br />
+        My main reason of using her name is purely because I love her character and I wish I have an energetic fox-girl tailing me while happily refering me as
+        "My Lord" or (主殿！).
+        <br />
+        <br />
+        It's really... just for personal satisfaction. But hey, it boosts my motivation to keep on programming, so that's never a bad thing, ay?
+    </div>
+</div>
+
+## Features
+
+This section contains the list of features currently implemented in Izuna
+
+<HelpCommand components={props.components} />
+
+### `music`
+
+Implements music bot functionality. Currently only in text message mode. Supports Youtube and external link (as long as it's publicly accessible **without authentication**).
+
+The bot implements playlist where tracks in playlist is preserved after it finished playing.
+Subcommands :
+
+-   play  
+    Play a music. Accepts Youtube link and regular HTTP URL.  
+    Examples
+
+    > `izuna play https://www.youtube.com/watch?v=dQw4w9WgXcQ`
+
+    This will play the link given.
+
+    > `izuna play suzuki konomi there is a reason`
+
+    This will search Youtube for all the query after the `play` command and play the top result.
+
+-   pause  
+    Pauses the current playlist. Use the same command or alias `resume` to play again.  
+    Examples
+
+    > `izuna pause`
+
+    This pauses the currently playing track. Calling `izuna pause` or
+
+    > `izuna resume`
+
+    will resume the player.
+
+-   stop  
+    Stops the entire playlist. This will wipe the entire playlist and exits the voice channel.
+    > `izuna stop`
+-   seek  
+    Seek to desired position of the current playing track. Accepts number (in seconds) or string with the `h` for hours, `m` for minutes, and `s` for seconds.  
+    Example :
+
+    > `izuna seek 240`
+
+    This will set the current playhead to second 240 of the track, or 4 minutes into the track.
+
+    > `izuna seek 3h25m1s`
+
+    This will set the current playhead to 3:25:01 position into the track. Useful for long videos.
+
+-   skip  
+    Skip currently playing track. If `jump` is previously called, will play the next track as specified in most recent `jump` position.
+    > `izuna skip`
+-   jump  
+    Set the next playhead position. If called when playlist ended, will instantly play the track in target position.
+
+    > `izuna jump 13`
+
+    This will set the next track to track 13 (1-based indexing).
+
+The bot will not leave the channel if there is nothing plays or no one in the voice channel as it's intentionally not implemented. I believe in playlist that shouldn't be ephemeral.
+
+<PlaylistCommand components={props.components} />
+<VNDBCommand components={props.components} />

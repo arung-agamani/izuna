@@ -1,5 +1,6 @@
 body {
     margin: 0;
+    background-color: rgb(255, 245, 246);
 }
 @tailwind base
 @tailwind components;

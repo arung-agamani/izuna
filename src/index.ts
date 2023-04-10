@@ -7,11 +7,9 @@ import fastifyJwt from "@fastify/jwt";
 import fastifyCookie from "@fastify/cookie";
 import oauthplugin, { OAuth2Namespace } from "@fastify/oauth2";
 import type { SapphireClient } from "@sapphire/framework";
-import dotenv from "dotenv";
 import path from "path";
 import discordOAuth from "discord-oauth2";
 
-import type { IHeaders, IQueryString } from "./interfaces/request";
 import apiv1Routes from "./routes/api";
 import { config } from "./config";
 import createBot from "./bot/index";

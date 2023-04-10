@@ -1,35 +1,29 @@
 import { AxiosResponse } from "axios";
 import axios from "../lib/axios";
-import React, { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
+import { useRecoilState } from "recoil";
+import { userAtom } from "../../state/user";
 
-interface UserData {
-    data: User;
+interface APIMeResponse {
+    data: {
+        name: string;
+        email: string;
+        dateCreated: Date;
+        id: number;
+        uid: string;
+    };
 }
-interface User {
-    name: string;
-    email: string;
-    dateCreated: Date;
-}
-
-const initialUser: User = {
-    name: "",
-    email: "",
-    dateCreated: new Date(),
-};
 
 const Main = () => {
-    const [user, setUser] = useState<User>(initialUser);
+    const [user, setUser] = useRecoilState(userAtom);
     const location = useLocation();
     useEffect(() => {
         (async () => {
-            const { data } = await axios.get<{}, AxiosResponse<UserData>>("/api/closure/user/me");
-            setUser(data.data);
+            if (user.loginType) return;
+            const { data } = await axios.get<{}, AxiosResponse<APIMeResponse>>("/api/closure/user/me");
+            setUser({ ...data.data, loginType: "DISCORD" });
         })();
-        // (async () => {
-        //     const { data } = await axios.get("/api/closure/user/reminder");
-        //     console.log(data);
-        // })();
     }, []);
     return (
         <div>
