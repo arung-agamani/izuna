@@ -7,7 +7,15 @@ jobs:
     deploy:
         runs-on: ubuntu-latest
         steps:
+            - uses: dorny/paths-filter@v2
+              id: changes
+              with:
+                  filters: |
+                      src:
+                        - 'src/**'
+                        - 'web/**'
             - name: Execute Server Command
+              if: steps.changes.outputs.src == 'true'
               uses: appleboy/ssh-action@master
               with:
                   host: ${{ secrets.AIRI_SSH_HOST }}
