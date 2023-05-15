@@ -265,6 +265,7 @@ export class PlayMusicCommand extends Command {
                 for (const track of tracks) {
                     msg += `Track loaded. ${track.info.title} | Duration: ${track.info.length}\n`;
                 }
+                if (msg.length > 2000) msg = msg.slice(0, 1997) + "...";
                 await message.channel.send(msg);
                 break;
             case "SEARCH_RESULT":
