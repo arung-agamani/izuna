@@ -22,7 +22,7 @@ const Tags = () => {
     return (
         <div>
             <p className="text-2xl">User owned tags count: {tags.length}</p>
-            <Filterer data={tags} advancedFilter shape={{ isMedia: true, isGuild: true }} targetField="name" out={setFilteredTags} />
+            <Filterer data={tags} advancedFilter shape={{ isMedia: true, isGuild: true, guildId: "" }} targetField="name" out={setFilteredTags} />
             {filteredTags.map((tag) => {
                 return <TagView className="mb-2" key={tag.id} {...tag} />;
             })}

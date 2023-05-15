@@ -1,13 +1,14 @@
 import HelpCommand from "./HelpCommand.md";
 import PlaylistCommand from "./PlaylistCommand.md";
 import VNDBCommand from "./VNDBCommand.md";
+import TagCommand from "./TagCommand.md";
 
 ## What is Izuna?
 
 Izuna is a **Discord Bot** that mainly built as my hobby project in exploring web technologies. Every functionalities that I'm building follows the same pattern: to make something that I want to use as well. Therefore, as lots of my leisure activities revolves around getting entertainment in ACG (Anime, Comic, Games), expect features in strong relation to those things.
 
 Invite Izuna (or Closure) to your server!
-[Invite! まねく！](https://discord.com/api/oauth2/authorize?client_id=705449558024388648&permissions=274881178688&scope=bot%20applications.commands)
+[Invite! 招待する！](https://discord.com/api/oauth2/authorize?client_id=705449558024388648&permissions=274881178688&scope=bot%20applications.commands)
 
 ## Who is Izuna?
 
@@ -36,7 +37,7 @@ This section contains the list of features currently implemented in Izuna
 
 <HelpCommand components={props.components} />
 
-### `music`
+### music
 
 Implements music bot functionality. Currently only in text message mode. Supports Youtube and external link (as long as it's publicly accessible **without authentication**).
 
@@ -47,11 +48,11 @@ Subcommands :
     Play a music. Accepts Youtube link and regular HTTP URL.  
     Examples
 
-    > `izuna play https://www.youtube.com/watch?v=dQw4w9WgXcQ`
+    > izuna play https://www.youtube.com/watch?v=dQw4w9WgXcQ
 
     This will play the link given.
 
-    > `izuna play suzuki konomi there is a reason`
+    > izuna play suzuki konomi there is a reason
 
     This will search Youtube for all the query after the `play` command and play the top result.
 
@@ -59,36 +60,36 @@ Subcommands :
     Pauses the current playlist. Use the same command or alias `resume` to play again.  
     Examples
 
-    > `izuna pause`
+    > izuna pause
 
     This pauses the currently playing track. Calling `izuna pause` or
 
-    > `izuna resume`
+    > izuna resume
 
     will resume the player.
 
 -   stop  
     Stops the entire playlist. This will wipe the entire playlist and exits the voice channel.
-    > `izuna stop`
+    > izuna stop
 -   seek  
     Seek to desired position of the current playing track. Accepts number (in seconds) or string with the `h` for hours, `m` for minutes, and `s` for seconds.  
     Example :
 
-    > `izuna seek 240`
+    > izuna seek 240
 
     This will set the current playhead to second 240 of the track, or 4 minutes into the track.
 
-    > `izuna seek 3h25m1s`
+    > izuna seek 3h25m1s
 
     This will set the current playhead to 3:25:01 position into the track. Useful for long videos.
 
 -   skip  
     Skip currently playing track. If `jump` is previously called, will play the next track as specified in most recent `jump` position.
-    > `izuna skip`
+    > izuna skip
 -   jump  
     Set the next playhead position. If called when playlist ended, will instantly play the track in target position.
 
-    > `izuna jump 13`
+    > izuna jump 13
 
     This will set the next track to track 13 (1-based indexing).
 
@@ -96,3 +97,4 @@ The bot will not leave the channel if there is nothing plays or no one in the vo
 
 <PlaylistCommand components={props.components} />
 <VNDBCommand components={props.components} />
+<TagCommand components={props.components} />

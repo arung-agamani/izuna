@@ -2,7 +2,7 @@
 
 Command signature
 
-> `izuna help [:subcommand]`
+> izuna help [:subcommand]
 
 Calling `izuna help` without subcommand will return list of all available commands.
 
@@ -10,6 +10,6 @@ User can further use the available commands listed as an argument to inspect the
 
 Example
 
-> `izuna help play`
+> izuna help play
 
 This command will print available instructions for `play` command.

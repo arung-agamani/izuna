@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useRecoilState } from "recoil";
-import logo from "../assets/izuna-halo.png";
+import logo from "../assets/favicon_izuna_icon.png";
 import { userAtom } from "../state/user";
 
 const Navbar = () => {
@@ -26,7 +26,7 @@ const Navbar = () => {
                                 <span className="py-4 px-2 text-green-500 border-b-4 border-green-500 font-semibold">Bot</span>
                             </Link>
                             <Link to="/test" className="no-underline">
-                                <span className="py-4 px-2 text-green-500 border-b-4 border-green-500 font-semibold">Test</span>
+                                <span className="py-4 px-2 text-green-500 border-b-4 border-green-500 font-semibold">Test Components</span>
                             </Link>
                             <div className="flex-grow" />
                             <Link to="/login" className="no-underline">

@@ -34,10 +34,17 @@ Running in development mode will not require Docker, but it's required to have `
 
 ### Environment variables.
 
-| Variable Name       | Type   | Description                          |
-| ------------------- | ------ | ------------------------------------ |
-| `DISCORD_BOT_TOKEN` | string | Token used to login to Discord bot.  |
-| `NHPROXY_AUTH`      | string | Auth string used for nhproxy backend |
+| Variable Name                 | Type   | Description                                        |
+| ----------------------------- | ------ | -------------------------------------------------- |
+| `DISCORD_BOT_TOKEN`           | string | Token used to login to Discord bot.                |
+| `NHPROXY_AUTH`                | string | Auth string used for nhproxy backend               |
+| `RUN_BOT`                     | int    | Run bot portion. 0 for false, 1 for true           |
+| `RUN_WEB`                     | int    | Run web dashboard portion. 0 for false, 1 for true |
+| `KUREYA_LAVALINK_PASSWORD`    | string | Password for lavalink server over kureya server    |
+| `DATABASE_URL`                | string | Remote database url                                |
+| `DISCORD_OAUTH_CLIENT_ID`     | string | Discord Application OAuth Client ID                |
+| `DISCORD_OAUTH_CLIENT_SECRET` | string | Discord Application OAuth Client Secret            |
+| `AUTH_SECRET`                 | string | JWT Secret                                         |
 
 ## Contributing
 

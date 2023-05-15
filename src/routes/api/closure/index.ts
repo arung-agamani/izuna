@@ -67,6 +67,44 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
         });
     });
 
+    fastify.get("/user/me/guildsAll", { onRequest: [fastify.authenticate] }, async (req, res) => {
+        const { user, token } = fastify.jwt.decode<FastifyDiscordOAuthBody>(req.cookies["ninpou"]!)!;
+        const oauth = new discordOauth2();
+        try {
+            const guilds = await getUserGuilds(user.uid, oauth, token.access_token);
+            if (!guilds)
+                return res.status(500).send({
+                    message: "Internal server error",
+                });
+            const guildsIds = guilds.map((x: GuildMembership) => x.guildId);
+            const closureGuilds = await prisma.tag.findMany({
+                where: {
+                    guildId: { in: guildsIds },
+                },
+            });
+            const filteredGuilds = guilds.filter((x) => {
+                if (
+                    closureGuilds.findIndex(
+                        (y: typeof closureGuilds[0]) =>
+                            y.guildId === x.guildId && new PermissionsBitField(x.permissionInteger as any).has(PermissionsBitField.Flags.SendMessages)
+                    ) > -1
+                )
+                    return true;
+                return false;
+            });
+            return res.send({
+                count: guilds.length,
+                guilds: filteredGuilds,
+            });
+        } catch (error) {
+            logger.error("Error occured when doing /user/me/guildsAll");
+            logger.error(error);
+            return res.status(500).send({
+                message: "Something went wrong",
+            });
+        }
+    });
+
     fastify.get("/user/me/guilds", { onRequest: [fastify.authenticate] }, async (req, res) => {
         const { user, token } = fastify.jwt.decode<FastifyDiscordOAuthBody>(req.cookies["ninpou"]!)!;
         const oauth = new discordOauth2();

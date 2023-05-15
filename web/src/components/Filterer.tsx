@@ -47,6 +47,29 @@ const Filterer: React.FC<Props> = ({ data, targetField, out, shape, advancedFilt
         const filtered = data.filter((x) => (x[targetField] as string).includes(value));
         out(filtered);
     };
+
+    const onAdvancedFilterChange = () => {
+        const fields: any = {};
+        for (const field of Object.keys(fieldFilter)) {
+            const inputEl = document.getElementById(field) as HTMLInputElement;
+            switch (inputEl.type) {
+                case "checkbox":
+                    fields[field] = inputEl.checked;
+                    break;
+                case "text":
+                    fields[field] = inputEl.value;
+                    break;
+                case "number":
+                    fields[field] = Number(inputEl.value);
+                    break;
+
+                default:
+                    fields[field] = inputEl.value;
+                    break;
+            }
+        }
+        console.log(fields);
+    };
     return (
         <Container>
             <input
@@ -67,7 +90,7 @@ const Filterer: React.FC<Props> = ({ data, targetField, out, shape, advancedFilt
                                         <label htmlFor="" className="mr-2">
                                             {field}
                                         </label>
-                                        <input type={"text"} />
+                                        <input type={"text"} id={field} onChange={onAdvancedFilterChange} />
                                     </div>
                                 );
                             case "number":
@@ -76,7 +99,7 @@ const Filterer: React.FC<Props> = ({ data, targetField, out, shape, advancedFilt
                                         <label htmlFor="" className="mr-2">
                                             {field}
                                         </label>
-                                        <input type={"number"} />
+                                        <input type={"number"} id={field} onChange={onAdvancedFilterChange} />
                                     </div>
                                 );
                             case "boolean":
@@ -85,7 +108,7 @@ const Filterer: React.FC<Props> = ({ data, targetField, out, shape, advancedFilt
                                         <label htmlFor="" className="mr-2">
                                             {field}
                                         </label>
-                                        <input type={"checkbox"} />
+                                        <input type={"checkbox"} id={field} onChange={onAdvancedFilterChange} />
                                     </div>
                                 );
                         }
