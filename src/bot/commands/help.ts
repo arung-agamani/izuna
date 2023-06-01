@@ -59,7 +59,7 @@ export class HelpCommand extends Command {
             }
             helpEmbedBuilder.setDescription("Use `closure help [command-name]` for further detail on each command.");
             helpEmbedBuilder.setTimestamp().setFooter({
-                text: "Eggs",
+                text: process.env["BUILD_REF"] || "Eggs",
             });
             await message.channel.send({ embeds: [helpEmbedBuilder] });
         }

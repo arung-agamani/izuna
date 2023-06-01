@@ -32,12 +32,15 @@ jobs:
                       git clone https://github.com/arung-agamani/izuna.git
                       cd izuna
                       git checkout izuna-master
+                      export GIT_COMMIT_MESSAGE="$(git log --format=%B -n 1 HEAD)"
+                      export GIT_COMMIT_HASH="$(git rev-parse HEAD)"
                       docker build . -t izuna-closure:latest
                       cd ..
                       rm -rf izuna
                       docker run -d -p 8001:8000 --name closure-runtime --network=closure-network \
                        --mount source=closure-logs,target=/usr/src/app/log \
-                       --restart on-failure:5
+                       --restart on-failure:5 \
+                       -e BUILD_REF="$GIT_COMMIT_HASH - $GIT_COMMIT_MESSAGE" \
                        -e DISCORD_BOT_TOKEN=${{ secrets.CLOSURE_BOT_TOKEN }} -e DATABASE_URL=${{ secrets.CLOSURE_DB_URL }} \
                        -e DISCORD_OAUTH_CLIENT_ID=${{ secrets.CLOSURE_DISCORD_OAUTH_CLIENT_ID}} \
                        -e DISCORD_OAUTH_CLIENT_SECRET=${{ secrets.CLOSURE_DISCORD_OAUTH_CLIENT_SECRET}} \
@@ -48,3 +51,5 @@ jobs:
                        -e NHPROXY_AUTH="${{ secrets.NHPROXY_AUTH }}" \
                        -e RUN_BOT=1 -e RUN_WEB=1 \
                        -e AUTH_SECRET=${{ secrets.CLOSURE_AUTH_SECRET }} izuna-closure:latest
+                      unset GIT_COMMIT_MESSAGE
+                      unset GIT_COMMIT_HASH
