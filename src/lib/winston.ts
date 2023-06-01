@@ -1,4 +1,5 @@
 import winston, { format } from "winston";
+import LokiTransport from "winston-loki";
 const colors = {
     error: "red",
     warn: "yellow",
@@ -22,6 +23,15 @@ const logger = winston.createLogger({
                 format.timestamp({ format: "YYYY-MM-DD HH:mm:ss:ms" }),
                 format.printf((info) => `${info["timestamp"]} [${info.level}] - ${info.message}`)
             ),
+        }),
+        new LokiTransport({
+            host: process.env["NODE_ENV"] === "development" ? "http://localhost:3100" : "http://loki:3100",
+            batching: false,
+            format: winston.format.combine(format.timestamp({ format: "YYYY-MM-DD HH:mm:ss:ms" }), format.label({ label: "closure" }), format.json()),
+            level: "debug",
+            labels: {
+                app: "closure",
+            },
         }),
     ],
 });
