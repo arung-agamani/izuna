@@ -10,11 +10,12 @@ const colors = {
 winston.addColors(colors);
 
 const logger = winston.createLogger({
-    level: "debug",
+    level: "info",
     format: winston.format.json(),
     transports: [
         new winston.transports.File({ filename: "log/error.log", level: "error" }),
         new winston.transports.File({ filename: "log/combined.log", level: "info" }),
+        new winston.transports.File({ filename: "log/debug.log", level: "debug" }),
         new winston.transports.Console({
             format: winston.format.combine(
                 format.colorize({ all: true }),
