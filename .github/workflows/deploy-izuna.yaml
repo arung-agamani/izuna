@@ -49,7 +49,10 @@ jobs:
                        -e GOOGLE_OAUTH_CLIENT_SECRET=${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET}} \
                        -e KUREYA_LAVALINK_PASSWORD=${{ secrets.KUREYA_LAVALINK_PASSWORD}} \
                        -e NHPROXY_AUTH="${{ secrets.NHPROXY_AUTH }}" \
-                       -e RUN_BOT=1 -e RUN_WEB=1 \
+                       -e RUN_BOT=1 -e RUN_WEB=1 -e USE_LOKI=true \
+                       -e LOKI_HOST=${{ secrets.LOKI_HOST }} \
+                       -e LOKI_USER=${{ secrets.LOKI_USER }} \
+                       -e LOKI_PASS=${{ secrets.LOKI_PASS }} \
                        -e AUTH_SECRET=${{ secrets.CLOSURE_AUTH_SECRET }} izuna-closure:latest
                       unset GIT_COMMIT_MESSAGE
                       unset GIT_COMMIT_HASH
