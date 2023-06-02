@@ -23,14 +23,17 @@ const logger = winston.createLogger({
                 format.timestamp({ format: "YYYY-MM-DD HH:mm:ss:ms" }),
                 format.printf((info) => `${info["timestamp"]} [${info.level}] - ${info.message}`)
             ),
+            level: "debug",
         }),
         new LokiTransport({
-            host: process.env["NODE_ENV"] === "development" ? "http://localhost:3100" : "http://loki:3100",
+            host: process.env["LOKI_HOST"]!,
+            basicAuth: `${process.env["LOKI_USER"]!}:${process.env["LOKI_PASS"]!}`,
             batching: false,
-            format: winston.format.combine(format.timestamp({ format: "YYYY-MM-DD HH:mm:ss:ms" }), format.label({ label: "closure" }), format.json()),
+            format: winston.format.combine(format.timestamp({ format: "YYYY-MM-DD HH:mm:ss:ms" }), format.json()),
             level: "debug",
             labels: {
                 app: "closure",
+                env: process.env["NODE_ENV"] === "development" ? "dev" : "prod",
             },
         }),
     ],

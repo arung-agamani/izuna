@@ -1,6 +1,7 @@
 import { Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import musicManager, { getShoukakuManager } from "../../../lib/musicQueue";
+import logger from "../../../lib/winston";
 // import prisma from "../../lib/prisma";
 
 export class StopMusicCommand extends Command {
@@ -13,6 +14,13 @@ export class StopMusicCommand extends Command {
     }
 
     public override async messageRun(message: Message) {
+        logger.debug({
+            message: `${this.name} command executed with message: ` + message.content,
+            label: {
+                source: "messageCommand",
+                handler: this.name,
+            },
+        });
         if (!message.guildId) {
             await message.channel.send("This command only works in servers");
             return;

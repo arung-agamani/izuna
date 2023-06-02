@@ -5,6 +5,7 @@ import musicManager, { getShoukakuManager } from "../../../lib/musicQueue";
 import { fancyTimeFormat } from "../../../lib/utils";
 // import prisma from "../../lib/prisma";
 import { PaginatedMessage } from "@sapphire/discord.js-utilities";
+import logger from "../../../lib/winston";
 export class NowPlayingMusicCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
@@ -16,6 +17,13 @@ export class NowPlayingMusicCommand extends Command {
     }
 
     public override async messageRun(message: Message) {
+        logger.debug({
+            message: `${this.name} command executed with message: ` + message.content,
+            label: {
+                source: "messageCommand",
+                handler: this.name,
+            },
+        });
         if (!message.guildId) {
             await message.channel.send("This command only works in servers");
             return;
