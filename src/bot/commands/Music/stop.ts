@@ -14,13 +14,6 @@ export class StopMusicCommand extends Command {
     }
 
     public override async messageRun(message: Message) {
-        logger.debug({
-            message: `${this.name} command executed with message: ` + message.content,
-            label: {
-                source: "messageCommand",
-                handler: this.name,
-            },
-        });
         if (!message.guildId) {
             await message.channel.send("This command only works in servers");
             return;

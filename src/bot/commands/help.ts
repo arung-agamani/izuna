@@ -15,13 +15,6 @@ export class HelpCommand extends Command {
     }
 
     public override async messageRun(message: Message, args: Args) {
-        logger.debug({
-            message: `${this.name} command executed with message: ` + message.content,
-            label: {
-                source: "messageCommand",
-                handler: this.name,
-            },
-        });
         try {
             const arg1 = await args.rest("string");
             const command = this.container.stores.get("commands").get(arg1);

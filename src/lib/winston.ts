@@ -8,7 +8,7 @@ const colors = {
     debug: "white",
 };
 
-winston.addColors(colors);
+// winston.addColors(colors);
 
 const logger = winston.createLogger({
     level: "info",

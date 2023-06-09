@@ -96,6 +96,14 @@ async function createBotApp() {
                         },
                     ],
                 });
+                logger.debug({
+                    message: `${tag.message} invoked`,
+                    label: {
+                        handler: "tag_index",
+                        source: "messageCreate",
+                        tag: tag.message,
+                    },
+                });
                 return;
             }
             await message.channel.send(`${tag.message}`);
