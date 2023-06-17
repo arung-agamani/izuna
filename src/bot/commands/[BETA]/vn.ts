@@ -4,6 +4,7 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import { PaginatedMessage } from "@sapphire/discord.js-utilities";
 import { Kana, getKanaInstance } from "../../../lib/kana";
+import { addInteractionEntry } from "../../../lib/interactionTimeout";
 
 export class VNDBCommand extends Command {
     kana: Kana;
@@ -62,7 +63,10 @@ export class VNDBCommand extends Command {
                     row.addComponents(button);
                     i++;
                 }
-                return interaction.reply({ content: msg, components: [row] });
+                const replyMessage = await interaction.reply({ content: msg, components: [row], fetchReply: true });
+                addInteractionEntry(replyMessage.id, () => {
+                    replyMessage.edit({ content: replyMessage.content, components: undefined });
+                });
             } else if (searchResult.results.length === 1) {
                 const vnInfo = await this.kana.vn.getInfo(["id", "=", searchResult.results[0].id]);
                 if (typeof vnInfo === "string") {
@@ -97,7 +101,10 @@ export class VNDBCommand extends Command {
                         .setCustomId("info-chara-" + entry.id)
                         .setStyle(ButtonStyle.Secondary)
                 );
-                return interaction.reply({ embeds: [embed], components: [infoActionRow] });
+                const replyMessage = await interaction.reply({ embeds: [embed], components: [infoActionRow], fetchReply: true });
+                addInteractionEntry(replyMessage.id, () => {
+                    replyMessage.edit({ embeds: replyMessage.embeds, components: undefined });
+                });
             } else {
                 return interaction.reply("No entries returned for that query");
             }
@@ -144,7 +151,10 @@ export class VNDBCommand extends Command {
                 );
                 embed.setTitle(`Search returned ${characters.results.length} character(s) Only showing top 5 result`);
 
-                return interaction.reply({ embeds: [embed], components: [actionRow] });
+                const replyMessage = await interaction.reply({ embeds: [embed], components: [actionRow], fetchReply: true });
+                addInteractionEntry(replyMessage.id, () => {
+                    replyMessage.edit({ embeds: replyMessage.embeds, components: undefined });
+                });
             }
         }
     }

@@ -3,6 +3,7 @@ import { EmbedBuilder, StringSelectMenuInteraction } from "discord.js";
 import { getKanaInstance, Kana } from "../../lib/kana";
 import { SearchCharacterResult } from "../../lib/kana/collections/chara";
 import logger from "../../lib/winston";
+import { debounceInteraction } from "../../lib/interactionTimeout";
 
 export class VNDBSelectInteractionHandler extends InteractionHandler {
     kana: Kana;
@@ -40,6 +41,7 @@ export class VNDBSelectInteractionHandler extends InteractionHandler {
         try {
             interaction.deferUpdate();
             interaction.message.edit({ embeds: [embed] });
+            debounceInteraction(interaction.message.id);
         } catch (error) {
             logger.error(error);
         }

@@ -13,6 +13,7 @@ import {
 import { getKanaInstance, Kana } from "../../lib/kana";
 import { SearchCharacterResult } from "../../lib/kana/collections/chara";
 import logger from "../../lib/winston";
+import { addInteractionEntry, debounceInteraction } from "../../lib/interactionTimeout";
 
 export class VNDBInteractionHandler extends InteractionHandler {
     kana: Kana;
@@ -61,9 +62,15 @@ export class VNDBInteractionHandler extends InteractionHandler {
             if (interaction.message instanceof Message) {
                 interaction.deferUpdate();
                 interaction.message.edit({ embeds: [embed], components: [infoActionRow], content: "" });
+                debounceInteraction(interaction.message.id);
             } else {
                 interaction.deferUpdate();
-                await interaction.channel?.send({ embeds: [embed], components: [infoActionRow], content: "" });
+                const sentMessage = await interaction.channel?.send({ embeds: [embed], components: [infoActionRow], content: "" });
+                if (sentMessage) {
+                    addInteractionEntry(sentMessage.id, () => {
+                        sentMessage.edit({ embeds: sentMessage.embeds, components: undefined });
+                    });
+                }
             }
         } else if (parsedData.type === "chara") {
             const charaId = parsedData.id;
@@ -88,7 +95,8 @@ export class VNDBInteractionHandler extends InteractionHandler {
             );
             embed.setTitle(`Search returned ${charaInfo.results.length} character(s) Only showing top 5 result`);
             interaction.deferUpdate();
-            return interaction.message.edit({ embeds: [embed], components: [actionRow], content: "" });
+            interaction.message.edit({ embeds: [embed], components: [actionRow], content: "" });
+            debounceInteraction(interaction.message.id);
         }
     }
 
@@ -131,6 +139,7 @@ export class VNDBInteractionHandler extends InteractionHandler {
         try {
             interaction.deferUpdate();
             interaction.message.edit({ embeds: [embed], components: [] });
+            debounceInteraction(interaction.message.id);
         } catch (error) {
             logger.error(error);
         }
