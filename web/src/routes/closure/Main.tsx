@@ -42,6 +42,7 @@ const Main = () => {
             }
         })();
     }, []);
+    if (!user.loginType) return null;
     return (
         <div>
             <p>

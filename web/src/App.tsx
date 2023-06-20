@@ -12,6 +12,7 @@ import Test from "./routes/Test";
 import "react-toastify/dist/ReactToastify.css";
 import { RecoilRoot } from "recoil";
 import Reminder from "./routes/closure/Reminder";
+import ReminderDetails from "./routes/closure/Reminder/Details";
 
 function App() {
     return (
@@ -26,7 +27,10 @@ function App() {
                             <Route index element={<p>Please select above menu</p>} />
                             <Route path="tags" element={<Tags />} />
                             <Route path="guilds" element={<Guilds />} />
-                            <Route path="reminder" element={<Reminder />} />
+                            <Route path="reminder">
+                                <Route index element={<Reminder />} />
+                                <Route path=":id" element={<ReminderDetails />} />
+                            </Route>
                             <Route path="*" element={<p>Menu non existent</p>} />{" "}
                         </Route>
                         <Route path="login" element={<Login />} />

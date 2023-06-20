@@ -4,6 +4,7 @@ import Cards from "../components/Cards";
 import Filterer from "../components/Filterer";
 import Listbox from "../components/Listbox";
 import TagView, { examples } from "../components/TagView";
+import TextInput from "../components/Input/TextInput";
 
 const guilds = [
     {
@@ -22,6 +23,8 @@ const Test = () => {
     return (
         <div>
             <h1>Testing Components Style and Functionality Page</h1>
+            <label htmlFor="">Inputs</label>
+            <TextInput label="Simple Text Input" name="name" />
             <label htmlFor="">Toast</label>
             <div>
                 <button

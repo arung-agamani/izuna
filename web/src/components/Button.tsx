@@ -1,7 +1,30 @@
-import React, { PropsWithChildren } from "react";
+import React, { PropsWithChildren, useRef } from "react";
 
-const Button: React.FC<PropsWithChildren> = ({ children }) => {
-    return <div className=" bg-blue-500 font-semibold text-2xl rounded-lg py-2 px-6 max-w-xs text-white my-4 mx-2">{children}</div>;
+interface Props {
+    disabled?: boolean;
+    onClick?: () => void;
+    submit?: boolean;
+}
+
+const Button: React.FC<PropsWithChildren<Props>> = ({ children, disabled, onClick, submit }) => {
+    const submitButtonRef = useRef<HTMLInputElement>(null);
+    const onClickHandler = () => {
+        onClick && onClick();
+        if (submit && submitButtonRef.current) {
+            submitButtonRef.current.click();
+        }
+    };
+    return (
+        <div
+            onClick={onClickHandler}
+            className={`${
+                disabled ? "bg-gray-500" : "bg-blue-500"
+            } hover:cursor-pointer font-semibold text-2xl rounded-lg py-2 px-6 max-w-xs text-white my-4 mx-2`}
+        >
+            {children}
+            <input type="submit" ref={submitButtonRef} className="hidden" />
+        </div>
+    );
 };
 
 export default Button;

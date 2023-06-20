@@ -10,7 +10,10 @@ axios.interceptors.response.use(
     },
     (err) => {
         if (err.response.status === 401) {
-            window.location.href = "/login";
+            const currentLocation = window.location.href;
+            const urlEncoded = encodeURIComponent(currentLocation);
+            const b64encoded = window.btoa(urlEncoded);
+            window.location.href = `/login?redirect=${b64encoded}`;
         } else {
             return Promise.reject(err);
         }

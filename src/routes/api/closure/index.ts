@@ -8,6 +8,16 @@ import * as tagsHandler from "./tag";
 import { PermissionsBitField } from "discord.js";
 import discordSession, { GuildMembership } from "../../../lib/session";
 
+import { z } from "zod";
+
+const ReminderUpdatePayload = z.object({
+    id: z.number(),
+    content: z.string(),
+    cron: z.string(),
+});
+
+type ReminderUpdatePayload = z.infer<typeof ReminderUpdatePayload>;
+
 export async function getUserGuilds(userId: string, oauth: discordOauth2, accessToken: string) {
     let guilds;
     guilds = discordSession.get(userId);
@@ -85,7 +95,7 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
             const filteredGuilds = guilds.filter((x) => {
                 if (
                     closureGuilds.findIndex(
-                        (y: typeof closureGuilds[0]) =>
+                        (y: (typeof closureGuilds)[0]) =>
                             y.guildId === x.guildId && new PermissionsBitField(x.permissionInteger as any).has(PermissionsBitField.Flags.SendMessages)
                     ) > -1
                 )
@@ -123,7 +133,7 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
             const filteredGuilds = guilds.filter((x) => {
                 if (
                     closureGuilds.findIndex(
-                        (y: typeof closureGuilds[0]) =>
+                        (y: (typeof closureGuilds)[0]) =>
                             y.guildId === x.guildId && new PermissionsBitField(x.permissionInteger as any).has(PermissionsBitField.Flags.Administrator)
                     ) > -1
                 )
@@ -162,6 +172,88 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
             };
         }
     );
+
+    fastify.get<{
+        Params: {
+            id: number;
+        };
+    }>("/user/reminder/:id", { onRequest: [] }, async (req, res) => {
+        try {
+            const decodedValue = fastify.jwt.decode<{ uid: string }>(req.cookies["ninpou"]!)!;
+            const userReminder = await prisma.reminder.findFirst({
+                where: {
+                    uid: decodedValue.uid,
+                    id: Number(req.params.id),
+                },
+            });
+            if (!userReminder) {
+                res.status(404).send({
+                    success: false,
+                    message: "Reminder not found",
+                });
+                return;
+            }
+
+            return {
+                success: true,
+                reminder: userReminder,
+            };
+        } catch (error) {
+            logger.error(`Error when fetching reminder with id ${req.params.id}`);
+            logger.error(error);
+            console.log(error);
+        }
+    });
+
+    fastify.post("/user/reminder", { onRequest: [] }, async (req, res) => {
+        try {
+            const decodedValue = fastify.jwt.decode<{ uid: string }>(req.cookies["ninpou"]!)!;
+            const { id, content, cron } = req.body as unknown as any;
+            const payload: ReminderUpdatePayload = { id, content, cron };
+
+            const validate = ReminderUpdatePayload.safeParse(payload);
+            if (!validate.success) {
+                res.status(400).send({
+                    success: false,
+                    message: "Validation error",
+                    error: validate.error,
+                });
+                return;
+            }
+
+            const reminder = await prisma.reminder.update({
+                where: {
+                    id: payload.id,
+                },
+                data: {
+                    cronString: payload.cron,
+                    message: payload.content,
+                },
+            });
+            if (!reminder) {
+                // throw record not found
+                res.status(404).send({
+                    success: false,
+                    message: "Reminder not found",
+                });
+                return;
+            }
+
+            return {
+                success: true,
+                message: "Reminder updated",
+                reminder,
+            };
+        } catch (error) {
+            logger.error("Error happened when updating reminder");
+            logger.error(error);
+            res.status(500);
+            return {
+                success: false,
+                message: "Internal server error",
+            };
+        }
+    });
 
     fastify.get("/tags/me", { onRequest: [fastify.authenticate] }, tagsHandler.get);
     fastify.patch("/tags/me/:id", { onRequest: [fastify.authenticate] }, tagsHandler.patch);
