@@ -270,6 +270,7 @@ if (config.runWeb) {
                 }
             );
             const redirectUrl = Buffer.from(parsedState.redirect, "base64").toString();
+            oauthSessionState.delete(state);
             reply
                 .setCookie("ninpou", signingToken, {
                     domain: process.env["NODE_ENV"] === "development" ? "localhost" : "howlingmoon.dev",
