@@ -25,11 +25,20 @@ const Navbar = () => {
                             <Link to="/closure" className="no-underline">
                                 <span className="py-4 px-2 text-green-500 border-b-4 border-green-500 font-semibold">Bot</span>
                             </Link>
-                            <Link to="/test" className="no-underline">
-                                <span className="py-4 px-2 text-green-500 border-b-4 border-green-500 font-semibold">Test Components</span>
-                            </Link>
+                            {import.meta.env.DEV && (
+                                <Link to="/test" className="no-underline">
+                                    <span className="py-4 px-2 text-green-500 border-b-4 border-green-500 font-semibold">Test Components</span>
+                                </Link>
+                            )}
                             <div className="flex-grow" />
-                            <Link to={`${user.loginType ? "/profile" : "/login"}`} className="no-underline">
+                            <Link
+                                to={
+                                    user.loginType
+                                        ? "/profile"
+                                        : { pathname: "/login", search: `?redirect=${window.btoa(encodeURIComponent(window.location.href))}` }
+                                }
+                                className="no-underline"
+                            >
                                 <span className="py-4 px-2 text-green-500 border-b-4 border-green-500 font-semibold">
                                     {user.loginType ? user.name : "Login"}
                                 </span>

@@ -208,7 +208,11 @@ if (config.runWeb) {
                 };
             }>
         ) => {
-            let state = JSON.stringify({ redirect: req.query.r || "/", initiator: req.query.i || "web" });
+            const stateObj = { redirect: req.query.r === "null" ? Buffer.from("/").toString("base64") : req.query.r, initiator: req.query.i || "web" };
+            // console.log("State obj: ", stateObj);
+            // console.log("Origin request: ", req.url)
+            // TODO: validate if request header has referer and it's from authorized referer
+            let state = JSON.stringify(stateObj);
             state = Buffer.from(state).toString("base64");
             oauthSessionState.add(state);
             return state;
@@ -227,10 +231,10 @@ if (config.runWeb) {
     server.get<{
         Querystring: {
             state: string;
+            error: string;
         };
     }>("/api/auth/discord/callback", {}, async (req, reply) => {
         try {
-            const token = await server.discordOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
             const state = req.query.state;
             if (!oauthSessionState.has(state)) {
                 reply.status(403).send({
@@ -241,6 +245,12 @@ if (config.runWeb) {
             }
             const decodedState = Buffer.from(state, "base64").toString();
             const parsedState = JSON.parse(decodedState) as { redirect: string; initiator: string };
+            const redirectUrl = Buffer.from(parsedState.redirect, "base64").toString();
+            // if (req.query.error && req.query.error === "access_denied") {
+            //     reply.redirect(decodeURIComponent(redirectUrl));
+            //     return;
+            // }
+            const token = await server.discordOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
             const oauth = new discordOAuth();
             const discordUser = await oauth.getUser(token.token.access_token);
             logger.info(`User login from Discord for user ${discordUser.username}`);
@@ -269,15 +279,14 @@ if (config.runWeb) {
                     expiresIn: "1h",
                 }
             );
-            const redirectUrl = Buffer.from(parsedState.redirect, "base64").toString();
             oauthSessionState.delete(state);
             reply
                 .setCookie("ninpou", signingToken, {
                     domain: process.env["NODE_ENV"] === "development" ? "localhost" : "howlingmoon.dev",
                     path: "/",
-                    secure: false,
+                    secure: true,
                     httpOnly: true,
-                    sameSite: false,
+                    sameSite: "strict",
                 })
                 .redirect(decodeURIComponent(redirectUrl));
         } catch (error) {

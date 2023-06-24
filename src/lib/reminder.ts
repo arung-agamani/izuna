@@ -31,13 +31,7 @@ export function restartReminderJob(bot: SapphireClient) {
             const newJob = new CronJob(
                 job[1].cronString,
                 () => {
-                    (
-                        bot.guilds.cache
-                            .get(job[1].guildId!)
-                            ?.channels.cache.get(
-                                job[1].channelId!
-                            ) as TextChannel
-                    )?.send(job[1].message);
+                    (bot.guilds.cache.get(job[1].guildId!)?.channels.cache.get(job[1].channelId!) as TextChannel)?.send(job[1].message);
                 },
                 null,
                 false,
@@ -65,9 +59,7 @@ export async function init() {
                 channelType: reminder.channelType,
             });
         }
-        logger.info(
-            `Loaded ${reminderCollection.size} reminders to collection`
-        );
+        logger.info(`Loaded ${reminderCollection.size} reminders to collection`);
     } catch (error) {
         logger.error(JSON.stringify(error));
     }
