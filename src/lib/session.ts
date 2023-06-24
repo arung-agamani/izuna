@@ -14,4 +14,6 @@ export interface SessionValue {
 
 const discordSession = new Map<string, GuildMembership[]>();
 
+export const oauthSessionState = new Set<string>();
+
 export default discordSession;

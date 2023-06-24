@@ -31,7 +31,7 @@ const Reminder = () => {
             <Outlet />
             {reminders &&
                 reminders.map((reminder) => (
-                    <Link to={`/closure/reminder/${reminder.id}`} key={reminder.id}>
+                    <Link to={`/closure/reminder/${reminder.id}`} key={reminder.id} className="no-underline">
                         <div className="px-4 py-2 text-slate-50 bg-slate-700 mb-2 hover:bg-slate-600 hover:cursor-pointer overflow-hidden">
                             <p className="text-lg">ID: {reminder.id}</p>
                             <p>

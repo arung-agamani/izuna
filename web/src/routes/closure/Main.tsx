@@ -29,7 +29,7 @@ const Main = () => {
         (async () => {
             if (user.loginType) return;
             {
-                const { data } = await axios.get<{}, AxiosResponse<APIMeResponse>>("/api/closure/user/me");
+                const { data } = await axios.get<{}, AxiosResponse<APIMeResponse>>("/api/closure/user/me", { withCredentials: true });
                 setUser({ ...data.data, loginType: "DISCORD" });
             }
             let cachedGuilds = localStorage.getItem("closure-guilds");
@@ -42,13 +42,13 @@ const Main = () => {
             }
         })();
     }, []);
-    if (!user.loginType) return null;
+    if (!user.loginType) return <p>Loading...</p>;
     return (
         <div>
             <p>
                 Main on Izuna/Closure. You are {user.name}. Total mutual servers with Izuna/Closure: {guilds.guilds && guilds.guilds.length}
             </p>
-            <div className="flex w-full justify-evenly">
+            <div className="flex w-full justify-evenly mx-[-0.5rem]">
                 {["Reminder", "Tags", "Playlists", "Guilds"].map((x) => (
                     <Link className="no-underline w-full mx-2 text-center font-semibold" to={x.toLowerCase()} key={x}>
                         <div

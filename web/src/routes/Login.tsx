@@ -10,7 +10,7 @@ const Login = () => {
         //         state: params.get("redirect"),
         //     },
         // });
-        window.location.href = `${loginUrl}?redirect=${params.get("redirect")}`;
+        window.location.href = `${import.meta.env.DEV ? `http://localhost:8000` : "https://izuna.howlingmoon.dev"}${loginUrl}?r=${params.get("redirect")}`;
     };
     return (
         <div>

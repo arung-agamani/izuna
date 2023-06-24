@@ -5,6 +5,10 @@ import Filterer from "../components/Filterer";
 import Listbox from "../components/Listbox";
 import TagView, { examples } from "../components/TagView";
 import TextInput from "../components/Input/TextInput";
+import TextAreaInput from "../components/Input/TextAreaInput";
+import { useForm } from "react-hook-form";
+import Button from "../components/Button";
+import Popover from "../components/Popover";
 
 const guilds = [
     {
@@ -19,12 +23,22 @@ const guilds = [
 
 const Test = () => {
     const [filtered, setFiltered] = useState(guilds);
-
+    const { handleSubmit, register } = useForm();
+    const submitHandler = (data: any) => {
+        toast.info(<p className=" whitespace-pre-wrap">{JSON.stringify(data, null, 4)}</p>);
+    };
     return (
         <div>
             <h1>Testing Components Style and Functionality Page</h1>
-            <label htmlFor="">Inputs</label>
-            <TextInput label="Simple Text Input" name="name" />
+            <label htmlFor="">Popover and Relative Drop Down</label>
+            <Popover />
+            <label htmlFor="">Inputs and Forms</label>
+            <form onSubmit={handleSubmit(submitHandler)}>
+                <TextInput label="Simple Text Input" {...register("textInput")} />
+                <TextAreaInput label="Simple Text Area Input" {...register("textAreaInput")} />
+                <Button submit>Submit</Button>
+            </form>
+
             <label htmlFor="">Toast</label>
             <div>
                 <button

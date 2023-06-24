@@ -17,6 +17,7 @@ import logger from "./lib/winston";
 import { init as initReminderFromDb, restartReminderJob } from "./lib/reminder";
 import prisma from "./lib/prisma";
 import { closureGoogleOauthState, closureGoogleOauthTracker } from "./lib/google";
+import { oauthSessionState } from "./lib/session";
 
 let botClient: SapphireClient;
 if (config.runBot) {
@@ -37,8 +38,12 @@ if (config.runWeb) {
     });
     server.register(fastifyRoutes);
     server.register(fastifyCors, {
-        origin: "*",
+        origin:
+            process.env["NODE_ENV"] === "development"
+                ? ["http://localhost:5173", "http://localhost:8000", "https://izuna.howlingmoon.dev"]
+                : ["https://izuna.howlingmoon.dev"],
         methods: ["GET", "POST", "OPTIONS"],
+        credentials: true,
     });
     server.register(fastifyJwt, {
         secret: process.env["AUTH_SECRET"]!,
@@ -195,16 +200,50 @@ if (config.runWeb) {
             },
             auth: oauthplugin.DISCORD_CONFIGURATION,
         },
+        generateStateFunction: (
+            req: FastifyRequest<{
+                Querystring: {
+                    r: string; // redirect link
+                    i: string; // initiator
+                };
+            }>
+        ) => {
+            let state = JSON.stringify({ redirect: req.query.r || "/", initiator: req.query.i || "web" });
+            state = Buffer.from(state).toString("base64");
+            oauthSessionState.add(state);
+            return state;
+        },
+        checkStateFunction: (returnedState: any, callback: any) => {
+            if (oauthSessionState.has(returnedState)) {
+                callback();
+                return;
+            }
+            callback(new Error("Invalid state"));
+        },
         startRedirectPath: "/api/auth/discord",
         callbackUri: `${process.env["NODE_ENV"] === "development" ? "http://localhost:8000" : "https://izuna.howlingmoon.dev"}/api/auth/discord/callback`,
     });
 
-    server.get("/api/auth/discord/callback", {}, async (req, reply) => {
+    server.get<{
+        Querystring: {
+            state: string;
+        };
+    }>("/api/auth/discord/callback", {}, async (req, reply) => {
         try {
             const token = await server.discordOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
+            const state = req.query.state;
+            if (!oauthSessionState.has(state)) {
+                reply.status(403).send({
+                    success: false,
+                    message: "誰だお前。。。",
+                });
+                return;
+            }
+            const decodedState = Buffer.from(state, "base64").toString();
+            const parsedState = JSON.parse(decodedState) as { redirect: string; initiator: string };
             const oauth = new discordOAuth();
             const discordUser = await oauth.getUser(token.token.access_token);
-            logger.info(`User login from Discord for user ${discordUser.username}#${discordUser.discriminator}`);
+            logger.info(`User login from Discord for user ${discordUser.username}`);
             let user = await prisma.user.findUnique({
                 where: {
                     uid: discordUser.id,
@@ -230,6 +269,7 @@ if (config.runWeb) {
                     expiresIn: "1h",
                 }
             );
+            const redirectUrl = Buffer.from(parsedState.redirect, "base64").toString();
             reply
                 .setCookie("ninpou", signingToken, {
                     domain: process.env["NODE_ENV"] === "development" ? "localhost" : "howlingmoon.dev",
@@ -238,7 +278,7 @@ if (config.runWeb) {
                     httpOnly: true,
                     sameSite: false,
                 })
-                .redirect("/");
+                .redirect(decodeURIComponent(redirectUrl));
         } catch (error) {
             console.log(error);
             logger.error(error);

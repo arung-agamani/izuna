@@ -22,7 +22,7 @@ const Button: React.FC<PropsWithChildren<Props>> = ({ children, disabled, onClic
             } hover:cursor-pointer font-semibold text-2xl rounded-lg py-2 px-6 max-w-xs text-white my-4 mx-2`}
         >
             {children}
-            <input type="submit" ref={submitButtonRef} className="hidden" />
+            {submit ? <input type="submit" ref={submitButtonRef} className="hidden" /> : null}
         </div>
     );
 };

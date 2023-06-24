@@ -1,7 +1,8 @@
 import ax from "axios";
 
 const axios = ax.create({
-    // baseURL: `http://127.0.0.1:8000`,
+    baseURL: import.meta.env.DEV ? `http://localhost:8000` : "https://izuna.howlingmoon.dev",
+    withCredentials: true,
 });
 
 axios.interceptors.response.use(

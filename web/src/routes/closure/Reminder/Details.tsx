@@ -1,10 +1,17 @@
-import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router-dom";
+import cronstrue from "cronstrue";
+// import cronparser from "cron-parser"
+import cronvalidate from "cron-validate";
+import { Cron } from "react-js-cron";
+import "react-js-cron/dist/styles.css";
+
+import axios from "../../lib/axios";
 import Button from "../../../components/Button";
 import TextInput from "../../../components/Input/TextInput";
 import { toast } from "react-toastify";
+import TextAreaInput from "../../../components/Input/TextAreaInput";
 
 interface Reminder {
     channelId: string;
@@ -31,11 +38,16 @@ const ReminderDetails = () => {
     const [reminder, setReminder] = useState<Reminder>(emptyReminder);
     const [hasSet, setHasSet] = useState<boolean>(false);
     const [isEditing, setIsEditing] = useState<boolean>(false);
+    const [cron, setCron] = useState<string>(reminder.cronString);
 
-    const { handleSubmit, register } = useForm();
+    const { handleSubmit, register, watch, getValues, setValue } = useForm();
 
     const onSubmit = async (data: any) => {
         try {
+            if (!cronvalidate(getValues("cron")).isValid()) {
+                toast.error("Invalid cron string. Please make it correct smh");
+                return;
+            }
             const res = await axios.post(`/api/closure/user/reminder`, {
                 ...data,
                 id: Number(id),
@@ -75,30 +87,43 @@ const ReminderDetails = () => {
             {isEditing ? (
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <Button onClick={() => setIsEditing(false)}>Cancel</Button>
-                    <Button /* onClick={() => setIsEditing(false)} */>Submit</Button>
-                    <TextInput {...register("content", { value: reminder.message })} label="Content" name="content" />
-                    <TextInput {...register("cron", { value: reminder.cronString })} label="Cron String" name="cronString" />
+                    <TextAreaInput {...register("content", { value: reminder.message })} label="Content" />
+                    <Cron
+                        value={cron}
+                        setValue={(val: string) => {
+                            setValue("cron", val);
+                            setCron(val);
+                        }}
+                    />
+                    <TextInput {...register("cron", { value: reminder.cronString })} label="Cron String" />
+                    <p>{cronvalidate(watch("cron")).isValid() ? "Valid cron string" : "Not a valid cron string"}</p>
                     <Button submit>Submit</Button>
                 </form>
             ) : (
                 <>
                     <Button onClick={() => setIsEditing(true)}>Edit Reminder</Button>
-                    <p className="text-xl">
-                        Content: <br />
-                        <span className="text-lg">{reminder.message}</span>
-                    </p>
+                    <p className="text-xl">Content (Raw)</p>
+                    <div className="text-lg bg-white px-4 py-2 w-full whitespace-pre-wrap">
+                        <span>{reminder.message}</span>
+                    </div>
                     <div>
                         <p className="text-xl">Content Preview</p>
                         {reminder.message.endsWith("mp4") ? (
                             <video src={reminder.message} className="w-auto max-w-full h-auto" controls />
-                        ) : reminder.message.endsWith("png") ? (
+                        ) : new RegExp("[png|jpg|jpeg|gif]$").test(reminder.message) ? (
                             <img src={reminder.message} className="w-auto max-w-full h-auto"></img>
-                        ) : null}
+                        ) : (
+                            <div className="text-lg bg-white px-4 py-2 w-full whitespace-pre-wrap">
+                                <span>{reminder.message}</span>
+                            </div>
+                        )}
                     </div>
-                    <p className="text-xl">
-                        Cron String: <br />
+                    <p className="text-xl">Cron String</p>
+                    <div className="text-lg bg-white px-4 py-2 w-full">
                         <span className="text-lg">{reminder.cronString}</span>
-                    </p>
+                        <br />
+                        <span className="text-lg">It means: {cronstrue.toString(reminder.cronString)}</span>
+                    </div>
                 </>
             )}
         </div>

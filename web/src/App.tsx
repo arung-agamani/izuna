@@ -13,6 +13,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { RecoilRoot } from "recoil";
 import Reminder from "./routes/closure/Reminder";
 import ReminderDetails from "./routes/closure/Reminder/Details";
+import ProfilePage from "./routes/profile/Profile";
 
 function App() {
     return (
@@ -35,6 +36,9 @@ function App() {
                         </Route>
                         <Route path="login" element={<Login />} />
                         <Route path="test" element={<Test />} />
+                        <Route path="profile">
+                            <Route index element={<ProfilePage />} />
+                        </Route>
                     </Routes>
                 </div>
             </div>

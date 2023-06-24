@@ -29,7 +29,7 @@ const Navbar = () => {
                                 <span className="py-4 px-2 text-green-500 border-b-4 border-green-500 font-semibold">Test Components</span>
                             </Link>
                             <div className="flex-grow" />
-                            <Link to="/login" className="no-underline">
+                            <Link to={`${user.loginType ? "/profile" : "/login"}`} className="no-underline">
                                 <span className="py-4 px-2 text-green-500 border-b-4 border-green-500 font-semibold">
                                     {user.loginType ? user.name : "Login"}
                                 </span>
