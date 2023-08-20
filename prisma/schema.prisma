@@ -63,3 +63,31 @@ model EphemeralVC {
   
   @@unique([guildId, channelId])
 }
+
+model PlayerSession {
+  guildId String @id
+  sessionId String?
+  resumeKey String?
+}
+
+model ReminderService {
+  id String @id @default(uuid())
+  name String
+  cron String
+  contents String
+  contentType ContentType
+  createdBy String
+  createdAt DateTime
+  updatedBy String?
+  updatedAt DateTime?
+  deleted Boolean @default(false)
+  deletedBy String?
+  deletedAt DateTime?
+}
+
+enum ContentType {
+  TEXT
+  MEDIA_IMAGE
+  MEDIA_VIDEO
+  MEDIA_FILE
+}

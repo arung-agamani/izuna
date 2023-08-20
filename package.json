@@ -31,6 +31,7 @@
         "cron": "^2.1.0",
         "cross-env": "^7.0.3",
         "date-fns": "^2.28.0",
+        "date-fns-tz": "^2.0.0",
         "discord-oauth2": "^2.10.0",
         "discord.js": "^14.8.0",
         "discord.js-pagination": "^1.0.3",
@@ -43,6 +44,7 @@
         "shoukaku": "3.3",
         "winston": "^3.8.1",
         "winston-loki": "^6.0.6",
+        "youtube-search-api": "^1.2.1",
         "zod": "^3.21.4"
     },
     "devDependencies": {

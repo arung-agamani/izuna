@@ -101,5 +101,5 @@
         "skipLibCheck": true /* Skip type checking all .d.ts files. */
     },
     "extends": "@tsconfig/node16/tsconfig.json",
-    "exclude": ["web", "build", "test.js", "test.ts"]
+    "exclude": ["web", "build", "scripts", "test.js", "test.ts"]
 }

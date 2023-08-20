@@ -1,5 +1,6 @@
 import type { VoiceBasedChannel } from "discord.js";
 import type { Player, Shoukaku, Track } from "shoukaku";
+import prisma from "./prisma";
 
 export type LavalinkLoadType = "TRACK_LOADED" | "PLAYLIST_LOADED" | "SEARCH_RESULT" | "NO_MATCHES" | "LOAD_FAILED" | "LAZY_LOAD_GDRIVE";
 export interface LavalinkLazyLoad {
@@ -46,5 +47,26 @@ export function setShoukakuManager(manager: Shoukaku) {
 export function isGdriveLazyLoad(thing: object) {
     if ((thing as LavalinkLazyLoad).fileId) return true;
     return false;
+}
+
+export function saveMusicManagerState(manager: Map<string, MusicGuildInfo>) {
+    manager.forEach(async (val, key) => {
+        await prisma.playerSession.upsert({
+            where: {
+                guildId: val.voiceChannel.guildId,
+                sessionId: val.player.connection.sessionId,
+            },
+            create: {
+                guildId: val.voiceChannel.guildId,
+                sessionId: val.player.connection.sessionId,
+                resumeKey: "",
+            },
+            update: {
+                guildId: val.voiceChannel.guildId,
+                sessionId: val.player.connection.sessionId,
+                resumeKey: "",
+            },
+        });
+    });
 }
 export default manager;

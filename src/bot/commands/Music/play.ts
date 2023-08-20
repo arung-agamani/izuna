@@ -122,6 +122,11 @@ export class PlayMusicCommand extends Command {
         }
         let musicGuildInfo = musicManager.get(message.guildId);
         if (!musicGuildInfo) {
+            logger.debug(`Supplied args: ${JSON.stringify({
+                guildId: message.guildId,
+                channelId: message.member.voice.channel.id,
+                shardId: 0,
+            })}`)
             const player = await lavalinkNode.joinChannel({
                 guildId: message.guildId,
                 channelId: message.member.voice.channel.id,

@@ -22,7 +22,7 @@ async function createBotApp() {
     const nodes = [
         // {
         //     name: "local",
-        //     url: "closure-lavalink:2333",
+        //     url: "localhost:2333",
         //     // url: "airi.howlingmoon.dev:2333",
         //     auth: "youshallnotpass",
         // },
@@ -35,12 +35,17 @@ async function createBotApp() {
     await client.login(process.env["DISCORD_BOT_TOKEN"]);
     if (!process.env["MUTE"] && process.env["MUTE"] !== "1") {
         logger.info("Initializing Shoukaku connector");
-        const manager = new Shoukaku(new Connectors.DiscordJS(client), nodes);
+        const manager = new Shoukaku(new Connectors.DiscordJS(client), nodes, {
+            resume: true,
+            resumeByLibrary: true,
+        });
+
         setShoukakuManager(manager);
         // await manager.connect();
         manager.on("error", (_, err) => {
             logger.error(`Shoukaku error.`);
             logger.error(err);
+            console.log(err);
         });
     }
     await initializeJoinToCreateVCManager();
