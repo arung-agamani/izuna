@@ -3,6 +3,12 @@ import type { Message } from "discord.js";
 import musicManager from "../../../lib/musicQueue";
 import logger from "../../../lib/winston";
 
+const aliases = {
+    single: ["one", "1", "single"],
+    playlist: ["all", "entire", "playlist"],
+    none: ["none", "0", "off", "disable"],
+};
+
 export class LoopQueueCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
@@ -29,13 +35,13 @@ export class LoopQueueCommand extends Command {
         }
         try {
             const loopMode = await args.pick("string");
-            if (loopMode === "all") {
+            if (aliases.playlist.includes(loopMode)) {
                 musicGuildInfo.isRepeat = "playlist";
                 await message.channel.send("Set the loop to **entire playlist**.");
-            } else if (loopMode === "one" || loopMode === "1" || loopMode === "single") {
+            } else if (aliases.single.includes(loopMode)) {
                 musicGuildInfo.isRepeat = "single";
                 await message.channel.send("Set the loop to **this** track only.");
-            } else if (loopMode === "none" || loopMode === "off") {
+            } else if (aliases.none.includes(loopMode)) {
                 musicGuildInfo.isRepeat = "no";
                 await message.channel.send("Track repeat has been disabled.");
             } else {

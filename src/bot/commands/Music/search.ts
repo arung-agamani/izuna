@@ -3,7 +3,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type Messag
 import musicManager from "../../../lib/musicQueue";
 import logger from "../../../lib/winston";
 // import prisma from "../../lib/prisma";
-const ytsearch = require("youtube-search-api")
+const ytsearch = require("youtube-search-api");
 
 export class SearchMusicCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -30,34 +30,31 @@ export class SearchMusicCommand extends Command {
         // }
         try {
             // get user input query
-            const query = await args.rest("string")
+            const query = await args.rest("string");
             // search query
-            logger.debug(query)
-            const result = await ytsearch.GetListByKeyword(query, false, 5, [{type: "video"}])
+            logger.debug(query);
+            const result = await ytsearch.GetListByKeyword(query, false, 5, [{ type: "video" }]);
             // show result as an interaction
-            const embed = new EmbedBuilder()
-            const row = new ActionRowBuilder<ButtonBuilder>()
-            const row2 = new ActionRowBuilder<ButtonBuilder>()
-            let msg = ""
+            const embed = new EmbedBuilder();
+            const row = new ActionRowBuilder<ButtonBuilder>();
+            const row2 = new ActionRowBuilder<ButtonBuilder>();
+            let msg = "";
             for (let i = 0; i < result.items.length; i++) {
-                msg += `${i + 1}. ${result.items[i].title}.\n`
-                row.addComponents(new ButtonBuilder()
-                    .setLabel(String(i+1))
-                    .setCustomId(`ytplay:${message.author.id}:${result.items[i].id}`)
-                    .setStyle(ButtonStyle.Primary)
-                )
+                msg += `${i + 1}. ${result.items[i].title}.\n`;
+                row.addComponents(
+                    new ButtonBuilder()
+                        .setLabel(String(i + 1))
+                        .setCustomId(`ytplay:${message.author.id}:${result.items[i].id}`)
+                        .setStyle(ButtonStyle.Primary)
+                );
             }
-            row2.addComponents(new ButtonBuilder()
-            .setLabel("X")
-            .setCustomId(`ytplay:${message.author.id}:CANCELATIONAWOO`)
-            .setStyle(ButtonStyle.Danger))
-            embed.setTitle("Closure Search Result")
-            embed.setDescription(msg)
-            
-            await message.channel.send({ embeds: [embed], components: [row, row2]})
-            
+            row2.addComponents(new ButtonBuilder().setLabel("X").setCustomId(`ytplay:${message.author.id}:CANCELATIONAWOO`).setStyle(ButtonStyle.Danger));
+            embed.setTitle("Izuna Search Result");
+            embed.setDescription(msg);
+
+            await message.channel.send({ embeds: [embed], components: [row, row2] });
         } catch (error) {
-            console.log(error)
+            console.log(error);
             await message.channel.send("Error on command. Put search term");
             return;
         }

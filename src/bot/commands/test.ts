@@ -59,7 +59,7 @@ export class TestCommand extends Command {
             part: ["contentDetails", "snippet"],
         });
         const embed = new EmbedBuilder();
-        embed.setTitle("Closure: List of User's Playlist");
+        embed.setTitle("Izuna: List of User's Playlist");
         if (!res.data.items || res.data.items.length === 0) {
             await message.channel.send("Searched through your Youtube account but found no playlist.");
             return;

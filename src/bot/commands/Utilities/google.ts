@@ -9,7 +9,7 @@ export class GoogleLoginCommand extends Command {
             ...options,
             name: "login",
             aliases: ["signin"],
-            description: "Login using OAuth2.0 to authorize Closure using external resources on your behalf.",
+            description: "Login using OAuth2.0 to authorize Izuna using external resources on your behalf.",
         });
     }
 
@@ -18,13 +18,9 @@ export class GoogleLoginCommand extends Command {
             (builder) => {
                 builder
                     .setName("login")
-                    .setDescription("Connect Closure to various services")
+                    .setDescription("Connect Izuna to various services")
                     .addStringOption((opt) =>
-                        opt
-                            .setName("service")
-                            .setDescription("Service to connect Closure with")
-                            .addChoices({ name: "Google", value: "google" })
-                            .setRequired(true)
+                        opt.setName("service").setDescription("Service to connect Izuna with").addChoices({ name: "Google", value: "google" }).setRequired(true)
                     );
             },
             {

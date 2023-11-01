@@ -170,7 +170,7 @@ export class TagCommand extends Command {
                     return;
                 }
                 const embed = new EmbedBuilder();
-                embed.setTitle(`Closure: Tags (search mode)${!isGuild ? " - (User-only)" : ""}`);
+                embed.setTitle(`Izuna: Tags (search mode)${!isGuild ? " - (User-only)" : ""}`);
                 embed.setDescription(
                     `Registered tags similar with ${arg2}: \n ${tags
                         .map((x: any) => `\`${x.name}\``)
@@ -180,7 +180,7 @@ export class TagCommand extends Command {
                 await message.channel.send({ embeds: [embed] });
             } catch (error) {
                 const embed = new EmbedBuilder();
-                embed.setTitle(`Closure: Tags${!isGuild ? " (User-only)" : ""}`);
+                embed.setTitle(`Izuna: Tags${!isGuild ? " (User-only)" : ""}`);
                 embed.setDescription(`Registered tags: \n ${tags.map((x: any) => `\`${x.name}\``).join(" ")}`);
                 await message.channel.send({ embeds: [embed] });
             }
@@ -209,7 +209,7 @@ export class TagCommand extends Command {
                 return;
             }
             const embed = new EmbedBuilder();
-            embed.setTitle(`Closure: Tag Info`);
+            embed.setTitle(`Izuna: Tag Info`);
             embed.setDescription(`**${tag.name}**
             Submitter: ${Formatters.userMention(tag.userId)}
             Date added : ${tag.dateCreated.toLocaleDateString("id")}

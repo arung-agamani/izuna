@@ -32,7 +32,7 @@ const logger = winston.createLogger({
             format: winston.format.combine(format.timestamp({ format: "YYYY-MM-DD HH:mm:ss:ms" }), format.json()),
             level: "debug",
             labels: {
-                app: "closure",
+                app: "izuna",
                 env: process.env["NODE_ENV"] === "development" ? "dev" : "prod",
             },
         }),

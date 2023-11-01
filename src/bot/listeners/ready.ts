@@ -12,12 +12,6 @@ export class ReadyListener extends Listener {
 
     public run(client: Client) {
         const botUser = client.user!;
-        botUser.setActivity(
-            `Type ${
-                process.env["NODE_ENV"] === "development"
-                    ? "cdev! help"
-                    : "closure! help"
-            } for getting help`
-        );
+        botUser.setActivity(`Type ${process.env["NODE_ENV"] === "development" ? "idev! help" : "izuna! help"} for getting help`);
     }
 }

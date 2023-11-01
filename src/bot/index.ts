@@ -5,12 +5,11 @@ import { setShoukakuManager } from "../lib/musicQueue";
 import logger from "../lib/winston";
 import prisma from "../lib/prisma";
 import { channelTrackingManager, deleteFromEphemeralVCManager, initializeChannelTrackingManager, initializeJoinToCreateVCManager } from "../lib/channelTracker";
-import { GatewayIntentBits, Partials, VoiceBasedChannel } from "discord.js";
+import { Partials, VoiceBasedChannel } from "discord.js";
 import "@sapphire/plugin-hmr/register";
 
 async function createBotApp() {
     const client = new SapphireClient({
-        // intents: ["GUILDS", "GUILD_MESSAGES", "DIRECT_MESSAGES", "DIRECT_MESSAGE_TYPING", "GUILD_VOICE_STATES"],
         intents: ["Guilds", "GuildMessages", "DirectMessages", "DirectMessages", "DirectMessageTyping", "GuildVoiceStates", "MessageContent"],
         regexPrefix: config.botPrefix,
         partials: [Partials.User, Partials.Channel],
@@ -41,11 +40,13 @@ async function createBotApp() {
         });
 
         setShoukakuManager(manager);
-        // await manager.connect();
         manager.on("error", (_, err) => {
             logger.error(`Shoukaku error.`);
             logger.error(err);
             console.log(err);
+        });
+        manager.on("ready", () => {
+            logger.info("Shoukaku manager is ready");
         });
     }
     await initializeJoinToCreateVCManager();

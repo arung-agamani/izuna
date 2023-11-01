@@ -32,7 +32,7 @@ export class TestSlashCommand extends Command {
             maxResults: 50,
         });
         const embed = new EmbedBuilder();
-        embed.setTitle("Closure: List of User's Playlist Items");
+        embed.setTitle("Izuna: List of User's Playlist Items");
         if (!res.data.items || res.data.items.length === 0) {
             await message.channel.send("Searched through that playlist and no items? wtf");
             return;

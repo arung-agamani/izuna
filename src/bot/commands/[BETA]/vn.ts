@@ -116,10 +116,10 @@ export class VNDBCommand extends Command {
                 return interaction.reply("No character found with given query");
                 //         const embed = new EmbedBuilder();
                 //         embed.setTitle("Howling Blog").setURL("https://blog.howlingmoon.dev");
-                //         embed.setDescription(`Howling Blog is a website created by Closure's author.
+                //         embed.setDescription(`Howling Blog is a website created by Izuna's author.
                 // It contains many good things, ||and also weeb things||.
-                // Did you know that Closure's repo is called [izuna](https://github.com/arung-agamani/izuna)?
-                // ||It's also a secret that Closure's author has art account over [twitter](https://twitter.com/shirayuk1haruka)||`);
+                // Did you know that Izuna's repo is called [izuna](https://github.com/arung-agamani/izuna)?
+                // ||It's also a secret that Izuna's author has art account over [twitter](https://twitter.com/shirayuk1haruka)||`);
                 //         return interaction.reply({
                 //             embeds: [embed],
                 //         });

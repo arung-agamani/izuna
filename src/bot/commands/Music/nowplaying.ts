@@ -105,7 +105,7 @@ export class NowPlayingMusicCommand extends Command {
         const currentTrack = musicGuildInfo.queue[musicGuildInfo.currentPosition];
         const npString = `${fancyTimeFormat(musicGuildInfo.player.position / 1000)} / ${fancyTimeFormat(currentTrack?.info.length! / 1000)}`;
         if (musicGuildInfo.isPlaying) {
-            embedMessage.setTitle("Closure: Now Playing...");
+            embedMessage.setTitle("Izuna: Now Playing...");
             embedMessage.addFields({ name: currentTrack?.info.title!, value: currentTrack?.info.uri! });
             embedMessage.addFields({ name: "Position", value: npString });
             const estimatedToDone =

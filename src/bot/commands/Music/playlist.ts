@@ -30,7 +30,7 @@ export class PlaylistMusicCommand extends Command {
             (builder) => {
                 builder
                     .setName("playlist")
-                    .setDescription("Manage playlist with Closure")
+                    .setDescription("Manage playlist with Izuna")
                     .addSubcommand((subcommand) =>
                         subcommand
                             .setName("list")
@@ -44,7 +44,7 @@ export class PlaylistMusicCommand extends Command {
                             .addStringOption((opt) =>
                                 opt
                                     .setName("resourceid")
-                                    .setDescription("Resource identifier to load. Can be playlist name stored on Closure or Youtube Playlist ID")
+                                    .setDescription("Resource identifier to load. Can be playlist name stored on Izuna or Youtube Playlist ID")
                                     .setRequired(true)
                             )
                     );
@@ -87,6 +87,7 @@ export class PlaylistMusicCommand extends Command {
             return;
         }
         const shoukakuManager = getShoukakuManager();
+        console.log(shoukakuManager);
         if (!shoukakuManager) {
             await message.channel.send("Music manager uninitizalied. Check your implementation, dumbass");
             return;

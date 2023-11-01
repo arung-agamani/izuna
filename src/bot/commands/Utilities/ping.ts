@@ -14,7 +14,7 @@ export class PingCommand extends Command {
     public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
         registry.registerChatInputCommand(
             (builder) => {
-                builder.setName("ping").setDescription("Ping Closure to check her health.");
+                builder.setName("ping").setDescription("Ping Izuna to check her health.");
             },
             {
                 idHints: ["1043209767402876938"],

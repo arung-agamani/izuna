@@ -58,7 +58,7 @@ export class HelpCommand extends Command {
                 }
                 helpEmbedBuilder.addFields({ name: `**${category}**`, value: description });
             }
-            helpEmbedBuilder.setDescription("Use `closure help [command-name]` for further detail on each command.");
+            helpEmbedBuilder.setDescription("Use `izuna help [command-name]` for further detail on each command.");
             helpEmbedBuilder.setTimestamp().setFooter({
                 text: process.env["BUILD_REF"] || "Eggs",
             });
