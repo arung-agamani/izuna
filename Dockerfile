@@ -22,6 +22,7 @@ RUN npm install
 COPY --from=builder /tmp/build ./build
 COPY --from=web-builder /tmp/dist ./web/dist
 COPY ./prisma ./prisma
+ENV NODE_ENV prod
 RUN npx prisma generate
 EXPOSE 8000
 CMD npm start

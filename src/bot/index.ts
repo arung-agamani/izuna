@@ -122,24 +122,24 @@ async function createBotApp() {
             const guildChannelPairs = Array.from(channelTrackingManager.entries());
             for (const [guildChannel] of guildChannelPairs) {
                 const [guildId, channelId] = guildChannel.split("-");
-                logger.debug(`Poll: Fetching guild ${guildId}`);
+                // logger.debug(`Poll: Fetching guild ${guildId}`);
                 let guild;
                 let channel;
                 try {
                     guild = await client.guilds.fetch(guildId!);
                 } catch (error) {
-                    logger.debug(`Poll: Fetching guild ${guildId} failed`);
+                    // logger.debug(`Poll: Fetching guild ${guildId} failed`);
                     continue;
                 }
-                logger.debug(`Poll: Fetching channel ${channelId}`);
+                // logger.debug(`Poll: Fetching channel ${channelId}`);
                 try {
                     channel = (await guild.channels.fetch(channelId!)) as VoiceBasedChannel;
                 } catch (error) {
-                    logger.debug(`Poll: Fetching channel ${channelId} failed`);
+                    // logger.debug(`Poll: Fetching channel ${channelId} failed`);
                     await deleteFromEphemeralVCManager(guildId!, channelId!);
                     continue;
                 }
-                logger.debug(`Poll: Checking ${guild.name}-${channel?.name} for it's members. Members: ${channel.members.size}`);
+                // logger.debug(`Poll: Checking ${guild.name}-${channel?.name} for it's members. Members: ${channel.members.size}`);
                 if (channel?.members.size === 0) {
                     try {
                         await guild.channels.delete(channelId!);
