@@ -1,8 +1,6 @@
-name: deploy-app
+name: deploy-app-manual
 on:
-    push:
-        branches:
-            - "izuna-master"
+    workflow_dispatch:
 
 jobs:
     deploy:
@@ -10,15 +8,7 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v2.7.0
-            - uses: dorny/paths-filter@v2
-              id: changes
-              with:
-                  filters: |
-                      src:
-                        - 'src/**'
-                        - 'web/**'
             - name: Execute Server Command
-              if: steps.changes.outputs.src == 'true'
               uses: appleboy/ssh-action@master
               with:
                   host: ${{ secrets.AIRI_SSH_HOST }}
