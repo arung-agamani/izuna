@@ -2,6 +2,14 @@ import logger from "./lib/winston";
 import dotenv from "dotenv";
 import path from "path";
 
+export function getEnv(name: string) {
+    let val = process.env[name];
+    if (val === undefined || val === null) {
+        throw new Error("Missing environment variable: " + name);
+    }
+    return val;
+}
+
 if (process.env["NODE_ENV"] === "development") {
     logger.info("Application is running in development mode");
     dotenv.config({ path: path.resolve(__dirname, "..", ".env") });
@@ -18,6 +26,7 @@ export const config = {
     domainPrefix: process.env["NODE_ENV"] === "development" ? `http://127.0.0.1:8000` : "https://izuna.howlingmoon.dev",
     ownerUsers: ["145558597424644097"],
     betaTesters: ["145558597424644097"],
+    botToken: getEnv("DISCORD_BOT_TOKEN"),
 };
 
 if (process.env["NODE_ENV"] === "development") {
