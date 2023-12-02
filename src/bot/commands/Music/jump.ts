@@ -11,6 +11,10 @@ export class RemoveFromQueueCommand extends Command {
             ...options,
             name: "jump",
             description: "Set the next play head to selected track number from queue",
+            detailedDescription: `Set the next play head to selected track number from playlist/queue.
+            This command won't immediately stop the current playing track.
+            The targeted track will be played after the current playing track ends.
+            This means that using "skip" command after this command will play the targeted track immediately.`,
         });
     }
 

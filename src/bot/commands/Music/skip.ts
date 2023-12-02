@@ -10,6 +10,8 @@ export class SkipMusicCommand extends Command {
             ...options,
             name: "skip",
             description: "Skip playing music",
+            detailedDescription: `Skip currently playing track.
+            If "jump" command is previously used, it will skip to the track targeted by the previous "jump" command.`,
         });
     }
 

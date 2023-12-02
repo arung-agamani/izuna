@@ -13,6 +13,8 @@ export class NowPlayingMusicCommand extends Command {
             name: "nowplaying",
             aliases: ["np", "queue", "q"],
             description: "Show now playing and queue",
+            detailedDescription: `Showing the now playing track and it's detailed information as well as the playlist.
+            It's as straightforward as it could be.`,
         });
     }
 

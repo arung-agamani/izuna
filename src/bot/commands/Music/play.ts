@@ -21,6 +21,8 @@ export class PlayMusicCommand extends Command {
             name: "play",
             flags: ["s", "seek"],
             description: "Plays music", // TODO: make better description
+            detailedDescription: `Play music using given search query (like how you would use the search function in Youtube directly), or through provided Youtube link.
+            Accepts only Youtube for now, Spotify or Soundcloud, or other sources will be considered when there is high demand.`,
         });
     }
 

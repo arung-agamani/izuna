@@ -7,7 +7,25 @@ export class TagCommand extends Command {
         super(context, {
             ...options,
             name: "tag",
-            description: "[BETA] Tag utility. Use `add` for adding and `delete` for deleting",
+            description: "Tag utility. Use `add` for adding and `delete` for deleting",
+            detailedDescription: `Tag utility.
+            This feature acts as unlimited media repository where you can save text information or media (image and video and even files) for preservation.
+            These information will has it's own "tag", which is callable by using the format "#[tag name]#" through text channel.
+            The position does not matter, as long as the format exist in the text, then the tag will be searched.
+            
+            There are two scopes for the tags :
+            Server-scoped.
+            Tags that are stored on server, by using the tag add command on any text channel reachable by the bot, will be scoped to the server only, which means tags are not shared between servers.
+            This makes everyone in the server able to use the tag.
+
+            User-scoped.
+            Tags that are scoped to the user. This is done by calling the "tag add" command directly to the bot's direct message (DM).
+            This makes the user able to use the tag on any server that also has the bot as it's member.
+
+            Calling any tag will first check if user has tag stored in user-scoped, then fallbacks to searching the server-scoped tags (if done in server).
+            If no tag is found, bot will respond with stating that there is no such tag.
+            
+            `,
             flags: ["delete", "d"],
         });
     }

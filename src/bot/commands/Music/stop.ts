@@ -10,6 +10,8 @@ export class StopMusicCommand extends Command {
             ...options,
             name: "stop",
             description: "Stop playing music",
+            detailedDescription: `Stop playing music AND leaves the voice channel.
+            This command will make the bot leave the voice channel and destroy the current playlist.`,
         });
     }
 

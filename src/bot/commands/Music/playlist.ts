@@ -22,6 +22,15 @@ export class PlaylistMusicCommand extends Command {
             name: "playlist",
             description: "Playlist utilities",
             flags: ["private", "p"],
+            detailedDescription: `Built-in playlist utility to create, manage, and play playlist.
+            The playlist will be stored in server context by default.
+            Subcommands are required. Available subcommands are :
+
+            save : Save the current playlist.
+            list : List available playlist. Will also show personal playlist by user who calls the command.
+            load : Load playlist. Will append all tracks into current playlist.
+            remove : Remove playlist by name.
+            `,
         });
     }
 
