@@ -1,5 +1,5 @@
-import { Command } from "@sapphire/framework";
-import type { Message } from "discord.js";
+import { ChatInputCommand, Command } from "@sapphire/framework";
+import type { Message, TextBasedChannel } from "discord.js";
 import musicManager from "../../../lib/musicQueue";
 import logger from "../../../lib/winston";
 // import prisma from "../../lib/prisma";
@@ -11,7 +11,39 @@ export class PauseMusicCommand extends Command {
             name: "pause",
             aliases: ["continue", "resume"],
             description: "Pause/continue playing music",
+            detailedDescription: `This command pause and resumes the currently playing music player in a server
+            It acts as simple toggle that will change the state to the opposite state.
+            It's... as straightforward is it could be.
+            But this won't make the player play if player reached the end of playlist and thus stopped.
+            You'll need to use the jump command. There might be plan to implement said feature in future.`,
         });
+    }
+
+    public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
+        registry.registerChatInputCommand((builder) => {
+            builder.setName("pause").setDescription("Pause/Resume currently playing track");
+        });
+    }
+
+    public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+        if (!interaction.guildId) {
+            await interaction.channel?.send("This command only works in servers");
+            return;
+        }
+        const textChannel = interaction.channel;
+        if (!textChannel) {
+            await interaction.channel!.send("Text channel is undefined. This issue has been reported (should be)");
+            return;
+        }
+        const voiceChannel = interaction.guild?.members.cache.get(interaction.member!.user.id)?.voice.channel;
+        if (!voiceChannel) {
+            await interaction.channel?.send("You must be in voice channel first.");
+            return;
+        }
+        const guildId = interaction.guildId;
+        await interaction.deferReply();
+        await this.pause(guildId, textChannel);
+        await interaction.followUp({ content: "Pause command complete", ephemeral: true });
     }
 
     public override async messageRun(message: Message) {
@@ -23,22 +55,21 @@ export class PauseMusicCommand extends Command {
             await message.channel.send("You must be in voice channel first.");
             return;
         }
-        const musicGuildInfo = musicManager.get(message.guildId!);
+        const guildId = message.guildId;
+        const textChannel = message.channel;
+
+        await this.pause(guildId, textChannel);
+    }
+
+    public async pause(guildId: string, textChannel: TextBasedChannel) {
+        const musicGuildInfo = musicManager.get(guildId);
         if (!musicGuildInfo) {
-            await message.channel.send("No bot in voice channel. Are you okay?");
+            await textChannel.send("No bot in voice channel. Are you okay?");
             return;
         }
         musicGuildInfo.player.setPaused(!musicGuildInfo.isPausing);
         musicGuildInfo.isPausing = !musicGuildInfo.isPausing;
-        await message.channel.send(musicGuildInfo.player.paused ? "Pausing..." : "Resuming...");
+        await textChannel.send(musicGuildInfo.player.paused ? "Pausing..." : "Resuming...");
         return;
-        // const shoukakuManager = getShoukakuManager();
-        // if (!shoukakuManager) {
-        //     await message.channel.send("Music manager uninitizalied. Check your implementation, dumbass");
-        //     return;
-        // }
-        // shoukakuManager.getNode()?.leaveChannel(message.guildId!);
-        // await message.channel.send("Leaving the voice channel");
-        // musicManager.delete(message.guildId!);
     }
 }
