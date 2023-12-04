@@ -35,7 +35,7 @@ export class StopMusicCommand extends Command {
             await message.channel.send("Music manager uninitizalied. Check your implementation, dumbass");
             return;
         }
-        shoukakuManager.getNode()?.leaveChannel(message.guildId!);
+        shoukakuManager.leaveVoiceChannel(message.guildId);
         await message.channel.send("Leaving the voice channel");
         musicManager.delete(message.guildId!);
     }

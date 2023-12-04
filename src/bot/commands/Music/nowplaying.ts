@@ -37,7 +37,8 @@ export class NowPlayingMusicCommand extends Command {
             await message.channel.send("Music manager uninitizalied. Check your implementation, dumbass");
             return;
         }
-        const lavalinkNode = shoukakuManager.getNode();
+        // @ts-ignore
+        const lavalinkNode = shoukakuManager.options.nodeResolver(shoukakuManager.nodes);
         if (!lavalinkNode) {
             await message.channel.send("No music player node currently connected.");
             return;

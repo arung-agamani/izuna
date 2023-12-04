@@ -14,8 +14,8 @@ import { getKanaInstance, Kana } from "../../lib/kana";
 import { SearchCharacterResult } from "../../lib/kana/collections/chara";
 import logger from "../../lib/winston";
 import { addInteractionEntry, debounceInteraction } from "../../lib/interactionTimeout";
-import musicManager, { LavalinkLoadType, MusicGuildInfo, getShoukakuManager } from "../../lib/musicQueue";
-import { LavalinkResponse, Track } from "shoukaku";
+import musicManager, { LavalinkLazyLoad, LavalinkLoadType, MusicGuildInfo, getShoukakuManager, shoukakuLoadType2String } from "../../lib/musicQueue";
+import { LavalinkResponse, LoadType, Track } from "shoukaku";
 import { fancyTimeFormat } from "../../lib/utils";
 
 export class SearchInteractionHandler extends InteractionHandler {
@@ -42,7 +42,8 @@ export class SearchInteractionHandler extends InteractionHandler {
             return;
         }
         // logger.debug("Music player initialized")
-        const lavalinkNode = shoukakuManager.getNode();
+        // @ts-ignore
+        const lavalinkNode = shoukakuManager.options.nodeResolver(shoukakuManager.nodes);
         if (!lavalinkNode) {
             await interaction.message.edit("No music player node currently connected.");
             return;
@@ -59,8 +60,14 @@ export class SearchInteractionHandler extends InteractionHandler {
             return;
         }
         // logger.debug("User is in the server's voice channel")
-        let searchRes = await lavalinkNode.rest.resolve(parsedData.ytId);
-        if ((searchRes?.loadType as LavalinkLoadType) === "LOAD_FAILED" || !searchRes) {
+        let searchRes: LavalinkResponse | undefined;
+        searchRes = await lavalinkNode.rest.resolve(parsedData.ytId);
+        if (!searchRes) {
+            logger.error(`Search result returns null: 185`);
+            await interaction.reply("Search result returns undefined. That's weird...");
+            return;
+        }
+        if (searchRes.loadType === LoadType.ERROR || !searchRes) {
             await interaction.message.edit("Failed to search that query. Try with different formatting, I guess?");
             return;
         }
@@ -72,7 +79,7 @@ export class SearchInteractionHandler extends InteractionHandler {
             //         channelId: member.voice.channel.id,
             //         shardId: 0,
             //     })}`)
-            const player = await lavalinkNode.joinChannel({
+            const player = await shoukakuManager.joinVoiceChannel({
                 guildId: member.guild.id,
                 channelId: member.voice.channel.id,
                 shardId: 0,
@@ -81,12 +88,12 @@ export class SearchInteractionHandler extends InteractionHandler {
             player.on("exception", (err) => {
                 logger.error("Shoukaku player error");
                 logger.error(err);
-                if (err.error === "This video is not available") {
+                if (err.exception.message === "This video is not available") {
                     interaction.message.edit("Skipping the track. Reason: This video is not available :(");
                 }
             });
             player.on("end", async (data) => {
-                if (data.reason === "REPLACED") return;
+                if (data.reason === "replaced") return;
                 const currentMusicGuildInfo = musicManager.get(interaction.message.guildId!);
                 if (!currentMusicGuildInfo) return;
                 const newMusicGuildInfo = { ...currentMusicGuildInfo };
@@ -108,7 +115,7 @@ export class SearchInteractionHandler extends InteractionHandler {
 
                         poppedTrack = poppedTrack as Track;
                         await newMusicGuildInfo.player.playTrack({
-                            track: poppedTrack.track,
+                            track: poppedTrack.encoded,
                             options: {
                                 startTime: poppedTrack.info.position,
                             },
@@ -130,7 +137,7 @@ export class SearchInteractionHandler extends InteractionHandler {
                     `Track loaded. ${currentTrack.info.title} | Duration: ${fancyTimeFormat(currentTrack.info.length! / 1000)}`
                 );
                 newMusicGuildInfo.player.playTrack({
-                    track: currentTrack.track!,
+                    track: currentTrack.encoded,
                     options: {
                         startTime: currentTrack.info.position!,
                     },
@@ -155,15 +162,16 @@ export class SearchInteractionHandler extends InteractionHandler {
             musicManager.set(interaction.message.guildId!, thisGuildInfo);
             musicGuildInfo = thisGuildInfo;
         }
-        switch (searchRes.loadType as LavalinkLoadType) {
-            case "TRACK_LOADED":
+        switch (searchRes.loadType) {
+            case LoadType.TRACK:
                 searchRes = searchRes as LavalinkResponse;
                 logger.debug(`LoadType: ${searchRes.loadType} for query ${parsedData.ytId}`);
-                musicGuildInfo?.queue.push(searchRes.tracks[0]!);
+                const track = searchRes.data as Track;
+                musicGuildInfo?.queue.push(track);
                 await interaction.message.channel.send(
-                    `Track loaded. ${searchRes.tracks[0]?.info.title} | Duration: ${fancyTimeFormat(searchRes.tracks[0]?.info.length! / 1000)} | Pos: ${
+                    `Track loaded. ${track.info.title} | Duration: ${fancyTimeFormat(track.info.length! / 1000)} | Pos: ${
                         musicGuildInfo.queue.length
-                    }. | Timestamp: ${fancyTimeFormat(searchRes.tracks[0]!.info.position / 1000)}`
+                    }. | Timestamp: ${fancyTimeFormat(track.info.position / 1000)}`
                 );
                 break;
         }
@@ -172,7 +180,7 @@ export class SearchInteractionHandler extends InteractionHandler {
 
             poppedTrack = poppedTrack as Track;
             await musicGuildInfo.player.playTrack({
-                track: poppedTrack.track,
+                track: poppedTrack.encoded,
                 options: {
                     startTime: poppedTrack.info.position,
                 },
