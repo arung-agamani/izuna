@@ -1,4 +1,4 @@
-FROM node:16 as builder
+FROM node:18 as builder
 SHELL ["/bin/bash", "-c"]
 WORKDIR /tmp
 COPY package.json tsconfig.json yarn.lock /tmp/
@@ -6,14 +6,14 @@ RUN npm install
 COPY ./src ./src
 RUN npm run build
 
-FROM node:16-buster-slim as web-builder
+FROM node:18-buster-slim as web-builder
 WORKDIR /tmp
 COPY web /tmp
 WORKDIR /tmp/web
 RUN yarn
 RUN yarn build
 
-FROM node:16-buster-slim
+FROM node:18-buster-slim
 LABEL org.opencontainers.image.source="https://github.com/arung-agamani/izuna"
 WORKDIR /usr/src/app
 COPY package.json ./
