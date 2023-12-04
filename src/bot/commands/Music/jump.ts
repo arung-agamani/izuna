@@ -11,6 +11,10 @@ export class RemoveFromQueueCommand extends Command {
             ...options,
             name: "jump",
             description: "Set the next play head to selected track number from queue",
+            detailedDescription: `Set the next play head to selected track number from playlist/queue.
+            This command won't immediately stop the current playing track.
+            The targeted track will be played after the current playing track ends.
+            This means that using "skip" command after this command will play the targeted track immediately.`,
         });
     }
 
@@ -51,7 +55,8 @@ export class RemoveFromQueueCommand extends Command {
                             await message.channel.send("Music manager uninitizalied. Check your implementation, dumbass");
                             return;
                         }
-                        const lavalinkNode = shoukakuManager.getNode();
+                        // @ts-ignore
+                        const lavalinkNode = shoukakuManager.options.nodeResolver(shoukakuManager.nodes);
                         if (!lavalinkNode) {
                             await message.channel.send("No music player node currently connected.");
                             return;
@@ -61,15 +66,16 @@ export class RemoveFromQueueCommand extends Command {
                             await message.channel.send("Failed to resolve WebContentLink as Playable Track");
                             return;
                         }
+                        const track = newPoppedTrack.data as Track;
                         await musicGuildInfo.player.playTrack({
-                            track: newPoppedTrack.tracks[0].track,
+                            track: track.encoded,
                         });
-                        await message.channel.send(`Now playing **${newPoppedTrack.tracks[0].info.title}**, if it works...`);
+                        await message.channel.send(`Now playing **${track.info.title}**, if it works...`);
                         musicGuildInfo.isPlaying = true;
                     } else {
                         poppedTrack = poppedTrack as Track;
                         await musicGuildInfo.player.playTrack({
-                            track: poppedTrack.track,
+                            track: poppedTrack.encoded,
                             options: {
                                 startTime: poppedTrack.info.position,
                             },

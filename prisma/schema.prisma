@@ -91,3 +91,10 @@ enum ContentType {
   MEDIA_VIDEO
   MEDIA_FILE
 }
+
+model DiscordSlashCommandIdMapping {
+  id String @id @default(uuid())
+  botId String
+  commandName String
+  idHints String[]
+}

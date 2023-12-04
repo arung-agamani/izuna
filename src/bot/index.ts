@@ -18,19 +18,20 @@ async function createBotApp() {
             enabled: process.env["NODE_ENV"] === "development",
         },
     });
-    const nodes = [
-        // {
-        //     name: "local",
-        //     url: "localhost:2333",
-        //     // url: "airi.howlingmoon.dev:2333",
-        //     auth: "youshallnotpass",
-        // },
-        {
+    const nodes = [];
+    if (process.env["NODE_ENV"] === "development") {
+        nodes.push({
+            name: "local",
+            url: "localhost:2333",
+            auth: "youshallnotpass",
+        });
+    } else {
+        nodes.push({
             name: "kureya",
             url: "kureya.howlingmoon.dev:14045",
             auth: process.env["KUREYA_LAVALINK_PASSWORD"]!,
-        },
-    ];
+        });
+    }
     await client.login(process.env["DISCORD_BOT_TOKEN"]);
     if (!process.env["MUTE"] && process.env["MUTE"] !== "1") {
         logger.info("Initializing Shoukaku connector");

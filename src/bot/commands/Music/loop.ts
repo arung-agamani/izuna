@@ -4,9 +4,9 @@ import musicManager from "../../../lib/musicQueue";
 import logger from "../../../lib/winston";
 
 const aliases = {
-    single: ["one", "1", "single"],
+    single: ["one", "1", "single", "this"],
     playlist: ["all", "entire", "playlist"],
-    none: ["none", "0", "off", "disable"],
+    none: ["none", "0", "off", "disable", "stop"],
 };
 
 export class LoopQueueCommand extends Command {
@@ -16,6 +16,17 @@ export class LoopQueueCommand extends Command {
             name: "loop",
             aliases: ["repeat"],
             description: `Loop through the queue in various ways.\nAvailable options: "all", "one", "1", "none"`,
+            detailedDescription: `Loop through the playlist. Requires one argument.
+            There are two looping method :
+            
+            Single-track loop. This will repeat only the currently playing track.
+            Playlist loop. This will reset the playhead to the beginning of playlist after it reached the end of playlist.
+            
+            Aliases for track loop mode :
+            single : "one", "1", "single", "this"
+            playlist: "all", "entire", "playlist"
+            
+            To turn off the looping, use one of the following argument : "none", "0", "off", "disable", "stop`,
         });
     }
 

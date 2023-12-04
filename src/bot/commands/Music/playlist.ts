@@ -22,6 +22,15 @@ export class PlaylistMusicCommand extends Command {
             name: "playlist",
             description: "Playlist utilities",
             flags: ["private", "p"],
+            detailedDescription: `Built-in playlist utility to create, manage, and play playlist.
+            The playlist will be stored in server context by default.
+            Subcommands are required. Available subcommands are :
+
+            save : Save the current playlist.
+            list : List available playlist. Will also show personal playlist by user who calls the command.
+            load : Load playlist. Will append all tracks into current playlist.
+            remove : Remove playlist by name.
+            `,
         });
     }
 
@@ -92,14 +101,15 @@ export class PlaylistMusicCommand extends Command {
             await message.channel.send("Music manager uninitizalied. Check your implementation, dumbass");
             return;
         }
-        const lavalinkNode = shoukakuManager.getNode();
+        // @ts-ignore
+        const lavalinkNode = shoukakuManager.options.nodeResolver(shoukakuManager.nodes);
         if (!lavalinkNode) {
             await message.channel.send("No music player node currently connected.");
             return;
         }
         let musicGuildInfo = musicManager.get(message.guildId!);
         if (!musicGuildInfo) {
-            const player = await lavalinkNode.joinChannel({
+            const player = await shoukakuManager.joinVoiceChannel({
                 guildId: message.guildId,
                 channelId: message.member.voice.channel.id,
                 shardId: 0,
@@ -107,12 +117,12 @@ export class PlaylistMusicCommand extends Command {
             player.on("exception", (err) => {
                 logger.error("Shoukaku player error");
                 logger.error(err);
-                if (err.error === "This video is not available") {
+                if (err.exception.message === "This video is not available") {
                     message.channel.send("Skipping the track. Reason: This video is not available :(");
                 }
             });
             player.on("end", async (data) => {
-                if (data.reason === "REPLACED") return;
+                if (data.reason === "replaced") return;
                 const currentMusicGuildInfo = musicManager.get(message.guildId!);
                 if (!currentMusicGuildInfo) return;
                 const newMusicGuildInfo = { ...currentMusicGuildInfo };
@@ -249,14 +259,15 @@ export class PlaylistMusicCommand extends Command {
                             await message.channel.send("Failed to resolve WebContentLink as Playable Track");
                             return;
                         }
+                        const track = newPoppedTrack.data as Track;
                         await musicGuildInfo.player.playTrack({
-                            track: newPoppedTrack.tracks[0].track,
+                            track: track.encoded,
                         });
-                        await message.channel.send(`Now playing **${newPoppedTrack.tracks[0].info.title}**, if it works...`);
+                        await message.channel.send(`Now playing **${track.info.title}**, if it works...`);
                         musicGuildInfo.isPlaying = true;
                     } else {
                         poppedTrack = poppedTrack as Track;
-                        await musicGuildInfo.player.playTrack({ track: poppedTrack.track });
+                        await musicGuildInfo.player.playTrack({ track: poppedTrack.encoded });
                         await message.channel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
                         musicGuildInfo.isPlaying = true;
                     }

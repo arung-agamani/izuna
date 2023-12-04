@@ -41,7 +41,7 @@
         "googleapis": "^108.0.0",
         "install": "^0.13.0",
         "lodash.debounce": "^4.0.8",
-        "shoukaku": "3.3",
+        "shoukaku": "https://github.com/shipgirlproject/Shoukaku.git",
         "winston": "^3.8.1",
         "winston-loki": "^6.0.6",
         "youtube-search-api": "^1.2.1",

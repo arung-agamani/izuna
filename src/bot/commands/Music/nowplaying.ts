@@ -13,6 +13,8 @@ export class NowPlayingMusicCommand extends Command {
             name: "nowplaying",
             aliases: ["np", "queue", "q"],
             description: "Show now playing and queue",
+            detailedDescription: `Showing the now playing track and it's detailed information as well as the playlist.
+            It's as straightforward as it could be.`,
         });
     }
 
@@ -35,7 +37,8 @@ export class NowPlayingMusicCommand extends Command {
             await message.channel.send("Music manager uninitizalied. Check your implementation, dumbass");
             return;
         }
-        const lavalinkNode = shoukakuManager.getNode();
+        // @ts-ignore
+        const lavalinkNode = shoukakuManager.options.nodeResolver(shoukakuManager.nodes);
         if (!lavalinkNode) {
             await message.channel.send("No music player node currently connected.");
             return;

@@ -9,6 +9,23 @@ export class MoveQueueItemCommand extends Command {
             ...options,
             name: "move",
             description: "Move selected track to new position",
+            detailedDescription: `Move selected track to new position. Requires two argument: track's position to move and desired track position.
+            Track will be moved in-place without carrying the play head position.
+            This means that moving currently playing track will not carry the play head, which effects to:
+            - Next track played will be the next increment of play head, or
+            - Next track played will be the next track targeted by jump command if not yet played.
+
+            Example:
+            Currently playing playlist: 
+            1. track1
+            2. track2 <- Play head
+            3. track3
+
+            Using "move 2 1" will result to:
+            1. track2
+            2. track1 <- Play head
+            3. track3
+            `,
         });
     }
 

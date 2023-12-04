@@ -43,7 +43,7 @@ version: "3"
 
 services:
     lavalink:
-        image: ghcr.io/lavalink-devs/lavalink:latest
+        image: ghcr.io/lavalink-devs/lavalink:4.0.0-alpine
         container_name: lavalink
         restart: unless-stopped
         environment:
@@ -57,3 +57,20 @@ services:
             - 2333 # lavalink exposes port 2333 to connect to for other containers (this is for documentation purposes only)
         ports:
             - 2333:2333 # you only need this if you want to make your lavalink accessible from outside of containers
+    db:
+        container_name: pg_container
+        image: postgres
+        restart: always
+        environment:
+            POSTGRES_USER: izuna
+            POSTGRES_PASSWORD: awooxizuna
+            POSTGRES_DB: postgres
+        ports:
+            - "5432:5432"
+        volumes:
+            - type: volume
+              source: pg_data
+              target: /var/lib/postgresql/data
+
+volumes:
+    pg_data:

@@ -11,6 +11,9 @@ export class RemoveFromQueueCommand extends Command {
             name: "remove",
             aliases: ["delete"],
             description: "Remove a certain track from music queue",
+            detailedDescription: `Remove a track from music queue based on track's position.
+            This command use 1-based indexing, which means first track will have track position 1, and so on.
+            You can use "nowplaying", "np", "queue", "q" command (which are all the same command) to check the current playlist.`,
         });
     }
 
