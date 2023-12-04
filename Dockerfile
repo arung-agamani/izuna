@@ -17,7 +17,7 @@ FROM node:16-buster-slim
 LABEL org.opencontainers.image.source="https://github.com/arung-agamani/izuna"
 WORKDIR /usr/src/app
 COPY package.json ./
-RUN apt-get update && apt-get install openssl -y
+RUN apt-get update && apt-get install openssl git -y
 RUN npm install
 COPY --from=builder /tmp/build ./build
 COPY --from=web-builder /tmp/dist ./web/dist
