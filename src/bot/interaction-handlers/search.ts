@@ -27,31 +27,31 @@ export class SearchInteractionHandler extends InteractionHandler {
     }
 
     public async run(interaction: ButtonInteraction, parsedData: InteractionHandler.ParseResult<this>) {
-        console.log(`Interaction handler for ${interaction.customId} being handled by SearchInteractionHandler`)
-        await interaction.deferUpdate()
+        logger.debug(`Interaction handler for ${interaction.customId} being handled by SearchInteractionHandler`);
+        await interaction.deferUpdate();
         // await interaction.message.edit({ embeds: [], components: [], content: `You've selected ${parsedData.ytId} for id`})
-        
+
         if (parsedData.ytId === "CANCELATIONAWOO") {
-            await interaction.message.edit({ embeds: [], components: [], content: "Canceled the interaction"})
-            return
+            await interaction.message.edit({ embeds: [], components: [], content: "Canceled the interaction" });
+            return;
         }
-        
-        const shoukakuManager = getShoukakuManager()
+
+        const shoukakuManager = getShoukakuManager();
         if (!shoukakuManager) {
-            await interaction.message.edit("Music manager is not yet initialized")
-            return
+            await interaction.message.edit("Music manager is not yet initialized");
+            return;
         }
         // logger.debug("Music player initialized")
-        const lavalinkNode = shoukakuManager.getNode()
+        const lavalinkNode = shoukakuManager.getNode();
         if (!lavalinkNode) {
-            await interaction.message.edit("No music player node currently connected.")
-            return
+            await interaction.message.edit("No music player node currently connected.");
+            return;
         }
         // logger.debug("Found connected music player node")
-        const member = interaction.guild?.members.cache.get(parsedData.userId)
+        const member = interaction.guild?.members.cache.get(parsedData.userId);
         if (!member) {
-            await interaction.message.edit("User is currently not in the server. Error on app on this part")
-            return
+            await interaction.message.edit("User is currently not in the server. Error on app on this part");
+            return;
         }
         // logger.debug("User is in the server")
         if (!member.voice.channel) {
@@ -59,19 +59,19 @@ export class SearchInteractionHandler extends InteractionHandler {
             return;
         }
         // logger.debug("User is in the server's voice channel")
-        let searchRes = await lavalinkNode.rest.resolve(parsedData.ytId)
+        let searchRes = await lavalinkNode.rest.resolve(parsedData.ytId);
         if ((searchRes?.loadType as LavalinkLoadType) === "LOAD_FAILED" || !searchRes) {
             await interaction.message.edit("Failed to search that query. Try with different formatting, I guess?");
             return;
         }
         // logger.debug("The load type of searchRes is not failed")
-        let musicGuildInfo = musicManager.get(interaction.message.guildId!)
+        let musicGuildInfo = musicManager.get(interaction.message.guildId!);
         if (!musicGuildInfo) {
-        //     logger.debug(`Supplied args: ${JSON.stringify({
-        //         guildId: member.guild.id,
-        //         channelId: member.voice.channel.id,
-        //         shardId: 0,
-        //     })}`)
+            //     logger.debug(`Supplied args: ${JSON.stringify({
+            //         guildId: member.guild.id,
+            //         channelId: member.voice.channel.id,
+            //         shardId: 0,
+            //     })}`)
             const player = await lavalinkNode.joinChannel({
                 guildId: member.guild.id,
                 channelId: member.voice.channel.id,
@@ -105,7 +105,7 @@ export class SearchInteractionHandler extends InteractionHandler {
                         newMusicGuildInfo.currentPosition = 0;
                         await interaction.message.channel.send("Playlist loop is set. Resetting playhead to the beginning of the queue.");
                         let poppedTrack = newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]!;
-                        
+
                         poppedTrack = poppedTrack as Track;
                         await newMusicGuildInfo.player.playTrack({
                             track: poppedTrack.track,
@@ -114,7 +114,7 @@ export class SearchInteractionHandler extends InteractionHandler {
                             },
                         });
                         await interaction.message.channel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
-                            newMusicGuildInfo.isPlaying = true;
+                        newMusicGuildInfo.isPlaying = true;
                     } else {
                         newMusicGuildInfo.isPlaying = false;
                     }
@@ -124,9 +124,11 @@ export class SearchInteractionHandler extends InteractionHandler {
 
                 // play the track or smth
                 let currentTrack = newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition];
-                
+
                 currentTrack = currentTrack as Track;
-                await interaction.message.channel.send(`Track loaded. ${currentTrack.info.title} | Duration: ${fancyTimeFormat(currentTrack.info.length! / 1000)}`);
+                await interaction.message.channel.send(
+                    `Track loaded. ${currentTrack.info.title} | Duration: ${fancyTimeFormat(currentTrack.info.length! / 1000)}`
+                );
                 newMusicGuildInfo.player.playTrack({
                     track: currentTrack.track!,
                     options: {
@@ -167,7 +169,7 @@ export class SearchInteractionHandler extends InteractionHandler {
         }
         if (!musicGuildInfo.isPlaying) {
             let poppedTrack = musicGuildInfo.queue[musicGuildInfo.currentPosition]!;
-            
+
             poppedTrack = poppedTrack as Track;
             await musicGuildInfo.player.playTrack({
                 track: poppedTrack.track,
@@ -180,20 +182,19 @@ export class SearchInteractionHandler extends InteractionHandler {
         }
 
         // safeguard
-        await interaction.message.delete()
+        await interaction.message.delete();
     }
 
     public async parse(interaction: ButtonInteraction) {
         logger.debug(`[search] Received interaction with custom id: ${interaction.customId}`);
         if (interaction.customId.startsWith("ytplay")) {
-            const vals = interaction.customId.split(":")
+            const vals = interaction.customId.split(":");
             return this.some({
                 userId: vals[1],
-                ytId: vals[2]
-            })
+                ytId: vals[2],
+            });
         } else {
-            return this.none()
+            return this.none();
         }
     }
-
 }

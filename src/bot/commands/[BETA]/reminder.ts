@@ -1,5 +1,4 @@
 import { Args, Command } from "@sapphire/framework";
-import { Channel } from "diagnostics_channel";
 import { ChannelType, Message } from "discord.js";
 import { config } from "../../../config";
 import prisma from "../../../lib/prisma";
