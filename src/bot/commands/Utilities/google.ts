@@ -25,7 +25,6 @@ export class GoogleLoginCommand extends Command {
             },
             {
                 idHints: ["closure-login", "1043216731168051241"],
-                guildIds: ["688349293970849812", "339763195554299904"],
             }
         );
     }
