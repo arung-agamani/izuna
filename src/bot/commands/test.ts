@@ -21,8 +21,8 @@ export class TestCommand extends Command {
                     .addStringOption((opt) => opt.setName("echo").setDescription("Message to echo").setRequired(true));
             },
             {
-                idHints: ["closure-test", "1043216731168051241"],
-                guildIds: ["688349293970849812", "339763195554299904"],
+                idHints: ["1043216731168051241"],
+                guildIds: ["339763195554299904"],
             }
         );
     }
