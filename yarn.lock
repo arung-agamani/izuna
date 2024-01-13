@@ -284,12 +284,12 @@
 
 "@napi-rs/snappy-linux-x64-gnu@7.1.1":
   version "7.1.1"
-  resolved "https://registry.yarnpkg.com/@napi-rs/snappy-linux-x64-gnu/-/snappy-linux-x64-gnu-7.1.1.tgz#a3509c8a27fa78dd548a2c1f61cae96699193822"
+  resolved "https://registry.npmjs.org/@napi-rs/snappy-linux-x64-gnu/-/snappy-linux-x64-gnu-7.1.1.tgz"
   integrity sha512-41DPoAUFAU9VNrj/96qKfStH2Xq88ZYIsSz8BlITDm2ScoeDGOGbmaWguCXU7I+bC2uKWTmUVMXKqk6tVY6LEg==
 
 "@napi-rs/snappy-linux-x64-musl@7.1.1":
   version "7.1.1"
-  resolved "https://registry.yarnpkg.com/@napi-rs/snappy-linux-x64-musl/-/snappy-linux-x64-musl-7.1.1.tgz#d68d9fa950b1053ad86e123cbec1ed4e5affea9d"
+  resolved "https://registry.npmjs.org/@napi-rs/snappy-linux-x64-musl/-/snappy-linux-x64-musl-7.1.1.tgz"
   integrity sha512-xR4hzFQqVq6J8Zf6XyUVtFJBaRgDyAQYUoBsCr92tZ7gI/0RlWCV6Q6JMO/wP5CSsvyFJIAtSUXXqlzIpw0GPA==
 
 "@napi-rs/snappy-win32-arm64-msvc@7.1.1":
@@ -304,7 +304,7 @@
 
 "@napi-rs/snappy-win32-x64-msvc@7.1.1":
   version "7.1.1"
-  resolved "https://registry.npmjs.org/@napi-rs/snappy-win32-x64-msvc/-/snappy-win32-x64-msvc-7.1.1.tgz"
+  resolved "https://registry.yarnpkg.com/@napi-rs/snappy-win32-x64-msvc/-/snappy-win32-x64-msvc-7.1.1.tgz#d30667e62057b8ec60a117722cc0662617330691"
   integrity sha512-Mu3yELySvzhBcNTVCq+hYxVh+lH3/KjoQ5HIEb3DDPoX0AGRTm3XZa+usq8pFWjl91Cgp9nWK+9lVSkCCIRaKA==
 
 "@nodelib/fs.scandir@2.1.5":
@@ -765,7 +765,7 @@ avvio@^8.1.3:
 
 axios@^0.21.0:
   version "0.21.4"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-0.21.4.tgz#c67b90dc0568e5c1cf2b0b858c43ba28e2eda575"
+  resolved "https://registry.npmjs.org/axios/-/axios-0.21.4.tgz"
   integrity sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==
   dependencies:
     follow-redirects "^1.14.0"
@@ -1056,7 +1056,7 @@ cssesc@^3.0.0:
 
 date-fns-tz@^2.0.0:
   version "2.0.0"
-  resolved "https://registry.yarnpkg.com/date-fns-tz/-/date-fns-tz-2.0.0.tgz#1b14c386cb8bc16fc56fe333d4fc34ae1d1099d5"
+  resolved "https://registry.npmjs.org/date-fns-tz/-/date-fns-tz-2.0.0.tgz"
   integrity sha512-OAtcLdB9vxSXTWHdT8b398ARImVwQMyjfYGkKD2zaGpHseG2UPHbHjXELReErZFxWdSLph3c2zOaaTyHfOhERQ==
 
 date-fns@^2.28.0:
@@ -1437,7 +1437,7 @@ fn.name@1.x.x:
 
 follow-redirects@^1.14.0:
   version "1.15.2"
-  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.15.2.tgz#b460864144ba63f2681096f274c4e57026da2c13"
+  resolved "https://registry.npmjs.org/follow-redirects/-/follow-redirects-1.15.2.tgz"
   integrity sha512-VQLG33o04KaQ8uYi2tVNbdrWp1QWxNNea+nmIB4EVM28v0hmP17z7aG1+wAkNzVq4KeXTq3221ye5qTJP91JwA==
 
 follow-redirects@^1.14.9:
@@ -1475,9 +1475,9 @@ fs.realpath@^1.0.0:
   integrity sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==
 
 fsevents@~2.3.2:
-  version "2.3.2"
-  resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-2.3.2.tgz#8a526f78b8fdf4623b709e0b975c52c24c02fd1a"
-  integrity sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==
+  version "2.3.3"
+  resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-2.3.3.tgz#cac6407785d03675a2a5e1a5305c697b347d90d6"
+  integrity sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==
 
 function-bind@^1.1.1:
   version "1.1.1"
@@ -2456,17 +2456,10 @@ shebang-regex@^3.0.0:
   resolved "https://registry.npmjs.org/shebang-regex/-/shebang-regex-3.0.0.tgz"
   integrity sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==
 
-shoukaku@3.3:
-  version "3.3.1"
-  resolved "https://registry.npmjs.org/shoukaku/-/shoukaku-3.3.1.tgz"
-  integrity sha512-oyM+fs+6CFjzIsespf6Ajp7780ZwKwMDV1mRnFzCex22MK4ydbIK3IlCY4KjWurgxJz+8DvLVL/8/Xw4NmpdqQ==
-  dependencies:
-    node-fetch "^2.6.7"
-    ws "^8.12.0"
-
-"shoukaku@https://github.com/shipgirlproject/Shoukaku.git":
-  version "4.0.0-dev"
-  resolved "https://github.com/shipgirlproject/Shoukaku.git#b2481e5c5ab3f7160681f95c14eb1ca36f47517a"
+shoukaku@^4.0.1:
+  version "4.0.1"
+  resolved "https://registry.npmjs.org/shoukaku/-/shoukaku-4.0.1.tgz"
+  integrity sha512-+Y94AnUFabCkE8O2Y3MSfnVmiiQ1MMVK/DO962Q23KPTWJkuqs+S/CPRQSOPWqo+ISq7teVxGJsSapwnJOrFgQ==
   dependencies:
     ws "^8.14.2"
 
@@ -2900,14 +2893,14 @@ wrappy@1:
   resolved "https://registry.npmjs.org/wrappy/-/wrappy-1.0.2.tgz"
   integrity sha1-tSQ9jz7BqjXxNkYFvA0QNuMKtp8=
 
-ws@^8.12.0, ws@^8.12.1:
+ws@^8.12.1:
   version "8.13.0"
   resolved "https://registry.npmjs.org/ws/-/ws-8.13.0.tgz"
   integrity sha512-x9vcZYTrFPC7aSIbj7sRCYo7L/Xb8Iy+pW0ng0wt2vCJv7M9HOMy0UoN3rr+IFC7hb7vXoqS+P9ktyLLLhO+LA==
 
 ws@^8.14.2:
   version "8.14.2"
-  resolved "https://registry.yarnpkg.com/ws/-/ws-8.14.2.tgz#6c249a806eb2db7a20d26d51e7709eab7b2e6c7f"
+  resolved "https://registry.npmjs.org/ws/-/ws-8.14.2.tgz"
   integrity sha512-wEBG1ftX4jcglPxgFCMJmZ2PLtSbJ2Peg6TmpJFTbe9GZYOQCDPdMYu/Tm0/bGZkw8paZnJY45J4K2PZrLYq8g==
 
 xtend@^4.0.0, xtend@^4.0.2:
@@ -2937,7 +2930,7 @@ yocto-queue@^0.1.0:
 
 youtube-search-api@^1.2.1:
   version "1.2.1"
-  resolved "https://registry.yarnpkg.com/youtube-search-api/-/youtube-search-api-1.2.1.tgz#c502302be17362658db402b7b45fe258a74b2d13"
+  resolved "https://registry.npmjs.org/youtube-search-api/-/youtube-search-api-1.2.1.tgz"
   integrity sha512-XipSI06g/fYOVolMQoXlVIeE9IjYQZPUFly17VNm5pkX590OIo7tJWaLKI25RBTdP9y0KGEToxliFtTy8hvMyA==
   dependencies:
     axios "^0.21.0"

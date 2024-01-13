@@ -221,9 +221,13 @@ export class PlayMusicCommand extends Command {
                 }
             });
             player.on("end", async (data) => {
+                // console.log(data);
                 if (data.reason === "replaced") return;
                 const currentMusicGuildInfo = musicManager.get(guildId!);
                 if (!currentMusicGuildInfo) return;
+                if (currentMusicGuildInfo.stopIssued) {
+                    return;
+                }
                 const newMusicGuildInfo = { ...currentMusicGuildInfo };
                 if (newMusicGuildInfo.isSkippingQueued) {
                     newMusicGuildInfo.isSkippingQueued = false;
@@ -321,6 +325,7 @@ export class PlayMusicCommand extends Command {
                 player: player,
                 isSkippingQueued: false,
                 skipPosition: 0,
+                stopIssued: false,
             };
             musicManager.set(guildId, thisGuildInfo);
             musicGuildInfo = thisGuildInfo;

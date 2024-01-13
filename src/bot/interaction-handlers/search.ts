@@ -158,6 +158,7 @@ export class SearchInteractionHandler extends InteractionHandler {
                 player: player,
                 isSkippingQueued: false,
                 skipPosition: 0,
+                stopIssued: false,
             };
             musicManager.set(interaction.message.guildId!, thisGuildInfo);
             musicGuildInfo = thisGuildInfo;

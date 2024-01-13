@@ -38,6 +38,7 @@ export interface MusicGuildInfo {
     isPlaying: boolean;
     player: Player;
     isSkippingQueued: boolean;
+    stopIssued: boolean;
     skipPosition: number;
 }
 

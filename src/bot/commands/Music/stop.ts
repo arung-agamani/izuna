@@ -29,13 +29,14 @@ export class StopMusicCommand extends Command {
             await message.channel.send("No bot in voice channel. Are you okay?");
             return;
         }
-        await musicGuildInfo.player.stopTrack();
+        // await musicGuildInfo.player.stopTrack();
         const shoukakuManager = getShoukakuManager();
         if (!shoukakuManager) {
             await message.channel.send("Music manager uninitizalied. Check your implementation, dumbass");
             return;
         }
-        shoukakuManager.leaveVoiceChannel(message.guildId);
+        musicGuildInfo.stopIssued = true;
+        await shoukakuManager.leaveVoiceChannel(message.guildId);
         await message.channel.send("Leaving the voice channel");
         musicManager.delete(message.guildId!);
     }
