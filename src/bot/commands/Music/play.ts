@@ -221,7 +221,7 @@ export class PlayMusicCommand extends Command {
                 }
             });
             player.on("end", async (data) => {
-                console.log(data);
+                // console.log(data);
                 if (data.reason === "replaced") return;
                 const currentMusicGuildInfo = musicManager.get(guildId!);
                 if (!currentMusicGuildInfo) return;
