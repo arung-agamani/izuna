@@ -31,9 +31,9 @@ export class SkipMusicCommand extends Command {
         }
         // check if there is a current playing track
         if (musicGuildInfo.isPlaying) {
-            musicGuildInfo.player.stopTrack();
-            musicGuildInfo.isPlaying = false;
             await message.channel.send("Skipping the current track");
+            await musicGuildInfo.player.stopTrack();
+            musicGuildInfo.isPlaying = false;
             return;
         } else {
             await message.channel.send("No track to skip.");

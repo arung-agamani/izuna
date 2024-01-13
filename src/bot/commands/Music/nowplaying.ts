@@ -115,6 +115,10 @@ export class NowPlayingMusicCommand extends Command {
                 musicGuildInfo.queue.slice(musicGuildInfo.currentPosition).reduce((acc, val) => acc + val.info.length, 0) / 1000 -
                 musicGuildInfo.player.position / 1000;
             embedMessage.addFields({ name: "Estimated Playlist Time Left", value: fancyTimeFormat(estimatedToDone) });
+            // embedMessage.addFields({ name: "State-ispausing", value: String(musicGuildInfo.isPausing) });
+            // embedMessage.addFields({ name: "State-isplaying", value: String(musicGuildInfo.isPlaying) });
+            // embedMessage.addFields({ name: "State-isskippingqueued", value: String(musicGuildInfo.isSkippingQueued) });
+            // embedMessage.addFields({ name: "State-isrepeat", value: String(musicGuildInfo.isRepeat) });
             await message.channel.send({ embeds: [embedMessage] });
         }
         let currentPage = Math.floor(musicGuildInfo.currentPosition / 10);

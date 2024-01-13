@@ -96,7 +96,7 @@ export class PlaylistMusicCommand extends Command {
             return;
         }
         const shoukakuManager = getShoukakuManager();
-        console.log(shoukakuManager);
+        // console.log(shoukakuManager);
         if (!shoukakuManager) {
             await message.channel.send("Music manager uninitizalied. Check your implementation, dumbass");
             return;
@@ -157,6 +157,7 @@ export class PlaylistMusicCommand extends Command {
                 player: player,
                 isSkippingQueued: false,
                 skipPosition: 0,
+                stopIssued: false,
             };
             musicManager.set(message.guildId, thisGuildInfo);
             musicGuildInfo = thisGuildInfo;
