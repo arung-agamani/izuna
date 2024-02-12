@@ -23,7 +23,7 @@ const logger = winston.createLogger({
                 format.timestamp({ format: "YYYY-MM-DD HH:mm:ss:ms" }),
                 format.printf((info) => `${info["timestamp"]} [${info.level}] - ${info.message}`)
             ),
-            level: "debug",
+            level: process.env["NODE_ENV"] === "development" ? "debug" : "info",
         }),
         new LokiTransport({
             host: process.env["LOKI_HOST"]!,

@@ -144,8 +144,15 @@ export class PlayMusicCommand extends Command {
 
         let searchRes: LavalinkResponse | LavalinkLazyLoad | undefined;
         if (youtubePlaylistRes) {
-            searchRes = await lavalinkNode.rest.resolve(playlistId);
+            logger.debug("Resolving as playlistId");
+            logger.debug(`playlistId: ${playlistId}`);
+            if (playlistId.startsWith("OLAK5uy")) {
+                searchRes = await lavalinkNode.rest.resolve(`https://www.youtube.com/playlist?list=${playlistId}`);
+            } else {
+                searchRes = await lavalinkNode.rest.resolve(playlistId);
+            }
         } else if (youtubeRegexRes) {
+            logger.debug("Resolving as videoId");
             searchRes = await lavalinkNode.rest.resolve(videoId);
             if (isSeeking) {
                 const track = searchRes!.data as Track;
@@ -154,6 +161,7 @@ export class PlayMusicCommand extends Command {
                 logger.debug(`searchRes.tracks[0].info.position = ${track.info.position}`);
             }
         } else if (driveRegex.exec(searchQuery)) {
+            logger.debug("Resolving as gdriveId");
             const fileId = driveRegex.exec(searchQuery)![1]!;
             const drive = getGoogleClient();
             const file = await drive.files.get({
@@ -173,9 +181,11 @@ export class PlayMusicCommand extends Command {
                 },
             };
         } else if (HttpUrlRegex.exec(searchQuery)) {
+            logger.debug("Resolving as httpId");
             logger.debug("Is inside HttpUrlRegex=true, line 106");
             searchRes = await lavalinkNode.rest.resolve(searchQuery);
         } else {
+            logger.debug("Resolving as searchId");
             logger.debug("Is inside standard ytsearch=true, line 109");
             searchRes = await lavalinkNode.rest.resolve(`ytsearch: ${searchQuery}`);
         }
