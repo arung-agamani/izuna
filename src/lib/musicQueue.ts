@@ -60,6 +60,10 @@ export function setShoukakuManager(manager: Shoukaku) {
     shoukakuManager = manager;
 }
 
+export function getMusicManager() {
+    return manager;
+}
+
 export function isGdriveLazyLoad(thing: object) {
     if ((thing as LavalinkLazyLoad).fileId) return true;
     return false;

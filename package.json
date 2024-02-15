@@ -41,6 +41,7 @@
         "googleapis": "^108.0.0",
         "install": "^0.13.0",
         "lodash.debounce": "^4.0.8",
+        "serializr": "^3.0.2",
         "shoukaku": "^4.0.1",
         "winston": "^3.8.1",
         "winston-loki": "^6.0.6",

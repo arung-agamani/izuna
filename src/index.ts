@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config();
 import fastify, { FastifyReply, FastifyRequest } from "fastify";
 import fastifyRoutes from "@fastify/routes";
 import fastifySwagger from "@fastify/swagger";
@@ -18,6 +20,7 @@ import { init as initReminderFromDb, restartReminderJob } from "./lib/reminder";
 import prisma from "./lib/prisma";
 import { closureGoogleOauthState, closureGoogleOauthTracker } from "./lib/google";
 import { oauthSessionState } from "./lib/session";
+import { getMusicManager, getShoukakuManager } from "./lib/musicQueue";
 
 let botClient: SapphireClient;
 if (config.runBot) {
@@ -31,6 +34,101 @@ if (config.runBot) {
     })();
 }
 
+process.on("SIGTERM", async () => {
+    console.log("SIGTERM received. Performing cleanup...");
+    const manager = getShoukakuManager();
+    const musicManager = getMusicManager();
+    if (!manager) {
+        console.log("No shoukaku manager found");
+        process.exit(0);
+    }
+    const promises: any[] = [];
+    musicManager.forEach((connectedGuild) => {
+        console.log(`Processing cleanup on guild connection ${connectedGuild.player.guildId}`);
+        const player = connectedGuild.player;
+        const playerData = player.data;
+        const connectionData = connectedGuild.player.node.manager.connections.get(playerData.guildId)!;
+        const p = prisma.playerSession.upsert({
+            where: {
+                guildId: playerData.guildId,
+            },
+            create: {
+                guildId: playerData.guildId,
+                sessionId: playerData.playerOptions.voice?.sessionId,
+                connectionData: JSON.stringify(connectionData),
+                playerData: JSON.stringify(playerData),
+            },
+            update: {
+                sessionId: playerData.playerOptions.voice?.sessionId,
+                connectionData: JSON.stringify(connectionData),
+                playerData: JSON.stringify(playerData),
+            },
+        });
+        promises.push(p);
+    });
+    Promise.allSettled(promises);
+    console.log("Done cleanup. Exiting...");
+    process.exit(0);
+});
+// and SIGINT on dev
+process.on("SIGINT", async () => {
+    console.log("SIGINT received. Performing cleanup...");
+    const manager = getShoukakuManager();
+    const musicManager = getMusicManager();
+    if (!manager) {
+        console.log("No shoukaku manager found");
+        process.exit(0);
+    }
+    for (const connectedGuild of musicManager.values()) {
+        console.log(`Processing cleanup on guild connection ${connectedGuild.player.guildId}`);
+        try {
+            const player = connectedGuild.player;
+            const playerData = player.data;
+            const connectionData = connectedGuild.player.node.manager.connections.get(playerData.guildId)!;
+            console.log("Pre write", {
+                guildId: connectedGuild.player.guildId,
+                sessionId: "",
+                connectionData: "",
+                playerData: "",
+            });
+            const p = await prisma.playerSession.upsert({
+                where: {
+                    guildId: playerData.guildId,
+                },
+                create: {
+                    guildId: playerData.guildId,
+                    sessionId: playerData.playerOptions.voice?.sessionId,
+                    connectionData: JSON.stringify({}),
+                    playerData: JSON.stringify(playerData),
+                },
+                update: {
+                    sessionId: playerData.playerOptions.voice?.sessionId,
+                    connectionData: JSON.stringify({}),
+                    playerData: JSON.stringify(playerData),
+                },
+            });
+            console.log("Post write haha");
+            // await message.channel.send(`Saving ${playerData.guildId}`);
+        } catch (error) {
+            console.log("Error happened when saving player data");
+            console.log(error);
+        }
+    }
+    console.log("Done cleanup. Exiting...");
+    process.exit(0);
+});
+// TODO: Properly serialize and deserialize required data
+/** Identified structure
+ * Node -> Need Manager and NodeOptions (for storing node).
+ * manager is runtime so save NodeOptoins
+ * Player -> Need guildId and Node
+ * Connection -> Need Manager and VoiceChannelOptions. Idk if this closely relate but it can be
+ * Basically try to rebuild the joinVoiceChannel function but without actually connecting to discord
+ * https://github.com/shipgirlproject/Shoukaku/blob/master/src/Shoukaku.ts#L247
+ * Just try to establish the required connection between client and Lavalink and let the rest run
+ *
+ * Also try to see if there is something needed on the other end (lavalink) aside from resuming session
+ */
 if (config.runWeb) {
     const server = fastify();
     server.register(fastifyStatic, {
