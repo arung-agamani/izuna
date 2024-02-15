@@ -67,7 +67,8 @@ model EphemeralVC {
 model PlayerSession {
   guildId String @id
   sessionId String?
-  resumeKey String?
+  connectionData String
+  playerData String
 }
 
 model ReminderService {

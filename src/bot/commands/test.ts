@@ -2,6 +2,9 @@ import { ChatInputCommand, Command } from "@sapphire/framework";
 import { Message, EmbedBuilder } from "discord.js";
 import { google } from "googleapis";
 import { closureGoogleOauthTracker } from "../../lib/google";
+import prisma from "../../lib/prisma";
+import { getMusicManager, getShoukakuManager } from "../../lib/musicQueue";
+import { serialize } from "serializr";
 
 export class TestCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -42,31 +45,47 @@ export class TestCommand extends Command {
     }
 
     public override async messageRun(message: Message) {
-        await message.channel.send("...echoing requiem");
-        const userGoogleOAuthState = closureGoogleOauthTracker.get(message.author.id);
-        if (!userGoogleOAuthState) {
-            await message.channel.send("You're not logged in");
-            return;
+        const manager = getShoukakuManager();
+        const musicManager = getMusicManager();
+        if (!manager) {
+            console.log("No shoukaku manager found");
+            process.exit(0);
         }
-        const oauthClient = new google.auth.OAuth2();
-        oauthClient.setCredentials({
-            access_token: userGoogleOAuthState.access_token,
-        });
-        const youtubeService = google.youtube("v3");
-        const res = await youtubeService.playlists.list({
-            auth: oauthClient,
-            mine: true,
-            part: ["contentDetails", "snippet"],
-        });
-        const embed = new EmbedBuilder();
-        embed.setTitle("Izuna: List of User's Playlist");
-        if (!res.data.items || res.data.items.length === 0) {
-            await message.channel.send("Searched through your Youtube account but found no playlist.");
-            return;
+        for (const connectedGuild of musicManager.values()) {
+            console.log(`Processing cleanup on guild connection ${connectedGuild.player.guildId}`);
+            try {
+                const player = connectedGuild.player;
+                const playerData = player.data;
+                const connectionData = connectedGuild.player.node.manager.connections.get(playerData.guildId)!;
+                console.log("Pre write", {
+                    guildId: connectedGuild.player.guildId,
+                    sessionId: "",
+                    connectionData: "",
+                    playerData: "",
+                });
+                const p = await prisma.playerSession.upsert({
+                    where: {
+                        guildId: playerData.guildId,
+                    },
+                    create: {
+                        guildId: playerData.guildId,
+                        sessionId: playerData.playerOptions.voice?.sessionId,
+                        connectionData: serialize(connectedGuild),
+                        playerData: JSON.stringify(playerData),
+                    },
+                    update: {
+                        sessionId: playerData.playerOptions.voice?.sessionId,
+                        connectionData: serialize(connectedGuild),
+                        playerData: JSON.stringify(playerData),
+                    },
+                });
+                console.log("Post write haha");
+                await message.channel.send(`Saving ${playerData.guildId}`);
+            } catch (error) {
+                console.log("Error happened when saving player data");
+                console.log(error);
+            }
         }
-        for (const playlist of res.data.items!) {
-            embed.addFields({ name: playlist.snippet?.title || "", value: `ID: ${playlist.id}` });
-        }
-        await message.channel.send({ embeds: [embed] });
+        await message.channel.send("Executing test");
     }
 }

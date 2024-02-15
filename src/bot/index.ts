@@ -1,5 +1,5 @@
 import { SapphireClient } from "@sapphire/framework";
-import { Shoukaku, Connectors } from "shoukaku";
+import { Shoukaku, Connectors, Player, Node, Connection } from "shoukaku";
 import { config } from "../config";
 import { setShoukakuManager } from "../lib/musicQueue";
 import logger from "../lib/winston";
@@ -49,6 +49,7 @@ async function createBotApp() {
         manager.on("ready", () => {
             logger.info("Shoukaku manager is ready");
         });
+        new Connection();
     }
     await initializeJoinToCreateVCManager();
     await initializeChannelTrackingManager();

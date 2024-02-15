@@ -223,6 +223,7 @@ export class PlayMusicCommand extends Command {
                 channelId: voiceChannel.id,
                 shardId: 0,
             });
+            await player.node.rest.updateSession(true, 300);
             player.on("exception", (err) => {
                 logger.error("Shoukaku player error");
                 logger.error(err);

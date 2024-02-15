@@ -2,6 +2,7 @@ import { Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import musicManager, { getShoukakuManager } from "../../../lib/musicQueue";
 import logger from "../../../lib/winston";
+import prisma from "../../../lib/prisma";
 // import prisma from "../../lib/prisma";
 
 export class StopMusicCommand extends Command {
@@ -37,6 +38,11 @@ export class StopMusicCommand extends Command {
         }
         musicGuildInfo.stopIssued = true;
         await shoukakuManager.leaveVoiceChannel(message.guildId);
+        await prisma.playerSession.deleteMany({
+            where: {
+                guildId: message.guildId,
+            },
+        });
         await message.channel.send("Leaving the voice channel");
         musicManager.delete(message.guildId!);
     }
