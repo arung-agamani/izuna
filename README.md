@@ -45,6 +45,10 @@ Running in development mode will not require Docker, but it's required to have `
 | `DISCORD_OAUTH_CLIENT_ID`     | string | Discord Application OAuth Client ID                |
 | `DISCORD_OAUTH_CLIENT_SECRET` | string | Discord Application OAuth Client Secret            |
 | `AUTH_SECRET`                 | string | JWT Secret                                         |
+| `S3_REGION`                   | string | S3 Region (Primary)                                |
+| `S3_BUCKET`                   | string | S3 Bucket Name                                     |
+| `S3_CLIENT_ID`                | string | AWS Access Key ID                                  |
+| `S3_CLIENT_SECRET`            | string | AWS Secret Key                                     |
 
 ## Contributing
 

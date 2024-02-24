@@ -49,7 +49,6 @@ async function createBotApp() {
         manager.on("ready", () => {
             logger.info("Shoukaku manager is ready");
         });
-        new Connection();
     }
     await initializeJoinToCreateVCManager();
     await initializeChannelTrackingManager();
