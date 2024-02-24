@@ -1,6 +1,11 @@
 import { Args, Command } from "@sapphire/framework";
 import { Formatters, Message, EmbedBuilder, ChannelType, PermissionFlagsBits } from "discord.js";
 import prisma from "../../../lib/prisma";
+import axios from "../../../lib/axios";
+import { uploadFile } from "../../../lib/s3client";
+import mime from "mime-types";
+
+const MAX_SIZE = 8 * 1024 * 1024;
 
 export class TagCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -104,12 +109,31 @@ export class TagCommand extends Command {
                 await message.channel.send(`Tag **${arg2}** registered`);
                 return;
             } else {
+                // TODO: Remove previous linked remote object in case of key mismatch
+                // Validate file size (max 8 MB)
+                const file = attachments[0];
+                if (file.size > MAX_SIZE) {
+                    await message.channel.send("Attachment size exceed the limit (8MB). Aborting...");
+                    return;
+                }
+                if (!file.contentType) {
+                    await message.channel.send("Cannot detect file type. Aborting...");
+                    return;
+                }
+                const scopeId = message.inGuild() ? message.guildId : message.author.id;
+                const remoteFile = await axios.get(file.url, { responseType: "arraybuffer" });
+                const buf = Buffer.from(remoteFile.data);
+                const remoteUrl = await uploadFile(scopeId, `${arg2}.${mime.extension(file.contentType)}`, buf, file.contentType);
+                if (!remoteUrl) {
+                    await message.channel.send("Failed to upload attachment to remote server.");
+                    return;
+                }
                 const data = {
                     name: arg2,
                     userId: message.author.id,
                     guildId: message.guildId || "",
                     dateCreated: new Date(),
-                    message: attachments[0]!.url,
+                    message: remoteUrl,
                     isMedia: true,
                     isGuild: message.inGuild(),
                 };

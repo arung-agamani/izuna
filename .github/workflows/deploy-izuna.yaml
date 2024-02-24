@@ -54,6 +54,10 @@ jobs:
                        -e LOKI_HOST=${{ secrets.LOKI_HOST }} \
                        -e LOKI_USER=${{ secrets.LOKI_USER }} \
                        -e LOKI_PASS=${{ secrets.LOKI_PASS }} \
+                       -e S3_REGION=${{ secrets.S3_REGION }} \
+                       -e S3_BUCKET=${{ secrets.S3_BUCKET }} \
+                       -e S3_CLIENT_ID=${{ secrets.S3_CLIENT_ID }} \
+                       -e S3_CLIENT_SECRET=${{ secrets.S3_CLIENT_SECRET }} \
                        -e AUTH_SECRET=${{ secrets.CLOSURE_AUTH_SECRET }} izuna-closure:latest
                       unset GIT_COMMIT_MESSAGE
                       unset GIT_COMMIT_HASH
