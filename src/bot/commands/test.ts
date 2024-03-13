@@ -4,7 +4,6 @@ import { google } from "googleapis";
 import { closureGoogleOauthTracker } from "../../lib/google";
 import prisma from "../../lib/prisma";
 import { getMusicManager, getShoukakuManager } from "../../lib/musicQueue";
-import { serialize } from "serializr";
 
 export class TestCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -45,47 +44,47 @@ export class TestCommand extends Command {
     }
 
     public override async messageRun(message: Message) {
-        const manager = getShoukakuManager();
-        const musicManager = getMusicManager();
-        if (!manager) {
-            console.log("No shoukaku manager found");
-            process.exit(0);
-        }
-        for (const connectedGuild of musicManager.values()) {
-            console.log(`Processing cleanup on guild connection ${connectedGuild.player.guildId}`);
-            try {
-                const player = connectedGuild.player;
-                const playerData = player.data;
-                const connectionData = connectedGuild.player.node.manager.connections.get(playerData.guildId)!;
-                console.log("Pre write", {
-                    guildId: connectedGuild.player.guildId,
-                    sessionId: "",
-                    connectionData: "",
-                    playerData: "",
-                });
-                const p = await prisma.playerSession.upsert({
-                    where: {
-                        guildId: playerData.guildId,
-                    },
-                    create: {
-                        guildId: playerData.guildId,
-                        sessionId: playerData.playerOptions.voice?.sessionId,
-                        connectionData: serialize(connectedGuild),
-                        playerData: JSON.stringify(playerData),
-                    },
-                    update: {
-                        sessionId: playerData.playerOptions.voice?.sessionId,
-                        connectionData: serialize(connectedGuild),
-                        playerData: JSON.stringify(playerData),
-                    },
-                });
-                console.log("Post write haha");
-                await message.channel.send(`Saving ${playerData.guildId}`);
-            } catch (error) {
-                console.log("Error happened when saving player data");
-                console.log(error);
-            }
-        }
+        // const manager = getShoukakuManager();
+        // const musicManager = getMusicManager();
+        // if (!manager) {
+        //     console.log("No shoukaku manager found");
+        //     process.exit(0);
+        // }
+        // for (const connectedGuild of musicManager.values()) {
+        //     console.log(`Processing cleanup on guild connection ${connectedGuild.player.guildId}`);
+        //     try {
+        //         const player = connectedGuild.player;
+        //         const playerData = player.data;
+        //         const connectionData = connectedGuild.player.node.manager.connections.get(playerData.guildId)!;
+        //         console.log("Pre write", {
+        //             guildId: connectedGuild.player.guildId,
+        //             sessionId: "",
+        //             connectionData: "",
+        //             playerData: "",
+        //         });
+        //         const p = await prisma.playerSession.upsert({
+        //             where: {
+        //                 guildId: playerData.guildId,
+        //             },
+        //             create: {
+        //                 guildId: playerData.guildId,
+        //                 sessionId: playerData.playerOptions.voice?.sessionId,
+        //                 connectionData: serialize(connectedGuild),
+        //                 playerData: JSON.stringify(playerData),
+        //             },
+        //             update: {
+        //                 sessionId: playerData.playerOptions.voice?.sessionId,
+        //                 connectionData: serialize(connectedGuild),
+        //                 playerData: JSON.stringify(playerData),
+        //             },
+        //         });
+        //         console.log("Post write haha");
+        //         await message.channel.send(`Saving ${playerData.guildId}`);
+        //     } catch (error) {
+        //         console.log("Error happened when saving player data");
+        //         console.log(error);
+        //     }
+        // }
         await message.channel.send("Executing test");
     }
 }

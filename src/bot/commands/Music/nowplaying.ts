@@ -55,8 +55,12 @@ export class NowPlayingMusicCommand extends Command {
             const page = new EmbedBuilder();
             page.setTitle("Now playing queue...");
             let msg = "";
-            for (const track of queue) {
-                msg += `${i + 1}. ${track.info.title} - Duration ${fancyTimeFormat(track.info.length! / 1000)}\n`;
+            for (let j = 0; j < queue.length; j++) {
+                if (musicGuildInfo.currentPosition === i) {
+                    msg += `**${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}**\n`;
+                } else {
+                    msg += `${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}\n`;
+                }
                 i++;
             }
             page.setDescription(msg);
