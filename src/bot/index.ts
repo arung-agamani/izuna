@@ -1,5 +1,5 @@
 import { SapphireClient } from "@sapphire/framework";
-import { Shoukaku, Connectors, Player, Node, Connection } from "shoukaku";
+import { Shoukaku, Connectors } from "shoukaku";
 import { config } from "../config";
 import { setShoukakuManager } from "../lib/musicQueue";
 import logger from "../lib/winston";
@@ -97,11 +97,12 @@ async function createBotApp() {
             }
             if (tag.isMedia) {
                 await message.channel.send({
-                    files: [
-                        {
-                            attachment: tag.message,
-                        },
-                    ],
+                    content: tag.message,
+                    // files: [
+                    //     {
+                    //         attachment: tag.message,
+                    //     },
+                    // ],
                 });
                 logger.debug({
                     message: `${tag.message} invoked`,
@@ -124,8 +125,7 @@ async function createBotApp() {
             for (const [guildChannel] of guildChannelPairs) {
                 const [guildId, channelId] = guildChannel.split("-");
                 // logger.debug(`Poll: Fetching guild ${guildId}`);
-                let guild;
-                let channel;
+                let guild, channel;
                 try {
                     guild = await client.guilds.fetch(guildId!);
                 } catch (error) {
