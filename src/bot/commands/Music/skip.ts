@@ -36,6 +36,11 @@ export class SkipMusicCommand extends Command {
             await ch.send("You must be in voice channel first.");
             return;
         }
+        const botVoiceChannel = interaction.guild?.members.cache.get(interaction.client.id!)?.voice.channel;
+        if (!vc.members.some((user) => user.id === interaction.client.id) && botVoiceChannel) {
+            await interaction.reply("You must be in the same voice channel with bot.");
+            return;
+        }
 
         const guildId = interaction.guildId;
         await interaction.deferReply();
@@ -52,6 +57,11 @@ export class SkipMusicCommand extends Command {
             await message.channel.send("You must be in voice channel first.");
             return;
         }
+        const botVoiceChannel = message.guild!.members.cache.get(message.client.id!)?.voice.channel;
+        if (!message.member?.voice.channel.members.some((user) => user.id === message.client.id) && botVoiceChannel) {
+            await message.channel.send("You must be in the same voice channel with bot.");
+            return;
+        }
         const guildId = message.guildId;
         const ch = message.channel;
         await this.skip(guildId, ch);
@@ -64,7 +74,7 @@ export class SkipMusicCommand extends Command {
             return;
         }
         if (musicGuildInfo.isPlaying) {
-            await textChannel.send("Skipping the current trackt");
+            await textChannel.send("Skipping the current track");
             await musicGuildInfo.player.stopTrack();
             musicGuildInfo.isPlaying = false;
             return;

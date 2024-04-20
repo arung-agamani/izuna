@@ -26,6 +26,11 @@ export class RemoveFromQueueCommand extends Command {
             await message.channel.send("You must be in voice channel first.");
             return;
         }
+        const botVoiceChannel = message.guild!.members.cache.get(message.client.id!)?.voice.channel;
+        if (!message.member?.voice.channel.members.some((user) => user.id === message.client.id) && botVoiceChannel) {
+            await message.channel.send("You must be in the same voice channel with bot.");
+            return;
+        }
         const musicGuildInfo = musicManager.get(message.guildId!);
         if (!musicGuildInfo) {
             await message.channel.send("No bot in voice channel. Are you okay?");

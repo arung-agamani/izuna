@@ -40,6 +40,11 @@ export class PauseMusicCommand extends Command {
             await interaction.channel?.send("You must be in voice channel first.");
             return;
         }
+        const botVoiceChannel = interaction.guild?.members.cache.get(interaction.client.id!)?.voice.channel;
+        if (!voiceChannel.members.some((user) => user.id === interaction.client.id) && botVoiceChannel) {
+            await interaction.reply("You must be in the same voice channel with bot.");
+            return;
+        }
         const guildId = interaction.guildId;
         await interaction.deferReply();
         await this.pause(guildId, textChannel);
@@ -53,6 +58,11 @@ export class PauseMusicCommand extends Command {
         }
         if (!message.member?.voice.channel) {
             await message.channel.send("You must be in voice channel first.");
+            return;
+        }
+        const botVoiceChannel = message.guild!.members.cache.get(message.client.id!)?.voice.channel;
+        if (!message.member?.voice.channel.members.some((user) => user.id === message.client.id) && botVoiceChannel) {
+            await message.channel.send("You must be in the same voice channel with bot.");
             return;
         }
         const guildId = message.guildId;

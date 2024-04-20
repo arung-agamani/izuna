@@ -40,7 +40,8 @@ export class SearchMusicCommand extends Command {
             await interaction.channel?.send("You must be in voice channel first.");
             return;
         }
-        if (!voiceChannel.members.some((user) => user.id === interaction.client.id)) {
+        const botVoiceChannel = interaction.guild?.members.cache.get(interaction.client.id!)?.voice.channel;
+        if (!voiceChannel.members.some((user) => user.id === interaction.client.id) && botVoiceChannel) {
             await interaction.reply("You must be in the same voice channel with bot.");
             return;
         }
@@ -52,7 +53,7 @@ export class SearchMusicCommand extends Command {
     }
 
     public override async messageRun(message: Message, args: Args) {
-        if (!message.guildId) {
+        if (!message.guildId || !message.guild) {
             await message.channel.send("This command only works in servers");
             return;
         }
@@ -60,7 +61,8 @@ export class SearchMusicCommand extends Command {
             await message.channel.send("You must be in voice channel first.");
             return;
         }
-        if (!message.member?.voice.channel.members.some((user) => user.id === message.client.id)) {
+        const botVoiceChannel = message.guild.members.cache.get(message.client.id!)?.voice.channel;
+        if (!message.member?.voice.channel.members.some((user) => user.id === message.client.id) && botVoiceChannel) {
             await message.channel.send("You must be in the same voice channel with bot.");
             return;
         }
