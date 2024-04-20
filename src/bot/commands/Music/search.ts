@@ -40,6 +40,10 @@ export class SearchMusicCommand extends Command {
             await interaction.channel?.send("You must be in voice channel first.");
             return;
         }
+        if (!voiceChannel.members.some((user) => user.id === interaction.client.id)) {
+            await interaction.reply("You must be in the same voice channel with bot.");
+            return;
+        }
         const query = interaction.options.getString("query", true);
         const authorId = interaction.user.id;
         await interaction.deferReply();
@@ -54,6 +58,10 @@ export class SearchMusicCommand extends Command {
         }
         if (!message.member?.voice.channel) {
             await message.channel.send("You must be in voice channel first.");
+            return;
+        }
+        if (!message.member?.voice.channel.members.some((user) => user.id === message.client.id)) {
+            await message.channel.send("You must be in the same voice channel with bot.");
             return;
         }
         const query = await args.rest("string");
