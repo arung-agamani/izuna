@@ -43,17 +43,21 @@ export class PlayMusicCommand extends Command {
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
         if (!interaction.guildId) {
-            await interaction.channel?.send("This command only works in servers");
+            await interaction.reply("This command only works in servers");
             return;
         }
         const textChannel = interaction.channel;
         if (!textChannel) {
-            await interaction.channel!.send("Text channel is undefined. This issue has been reported (should be)");
+            await interaction.reply("Text channel is undefined. This issue has been reported (should be)");
             return;
         }
         const voiceChannel = interaction.guild?.members.cache.get(interaction.member!.user.id)?.voice.channel;
         if (!voiceChannel) {
-            await interaction.channel?.send("You must be in voice channel first.");
+            await interaction.reply("You must be in voice channel first.");
+            return;
+        }
+        if (!voiceChannel.members.some((user) => user.id === interaction.client.id)) {
+            await interaction.reply("You must be in the same voice channel with bot.");
             return;
         }
         const query = interaction.options.getString("query", true);
@@ -73,6 +77,10 @@ export class PlayMusicCommand extends Command {
         }
         if (!message.member?.voice.channel) {
             await message.channel.send("You must be in voice channel first.");
+            return;
+        }
+        if (!message.member?.voice.channel.members.some((user) => user.id === message.client.id)) {
+            await message.channel.send("You must be in the same voice channel with bot.");
             return;
         }
         // search the stuff
