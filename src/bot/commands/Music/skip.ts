@@ -1,5 +1,5 @@
-import { Command } from "@sapphire/framework";
-import type { Message } from "discord.js";
+import { ChatInputCommand, Command } from "@sapphire/framework";
+import type { Message, TextBasedChannel } from "discord.js";
 import musicManager from "../../../lib/musicQueue";
 import logger from "../../../lib/winston";
 // import prisma from "../../lib/prisma";
@@ -15,6 +15,34 @@ export class SkipMusicCommand extends Command {
         });
     }
 
+    public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
+        registry.registerChatInputCommand((builder) => {
+            builder.setName("skip").setDescription("Skip currently playing track");
+        });
+    }
+
+    public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+        if (!interaction.guildId) {
+            await interaction.channel?.send("This command only works in servers");
+            return;
+        }
+        const ch = interaction.channel;
+        if (!ch) {
+            await interaction.channel!.send("Text channel is undefined. Hmm...");
+            return;
+        }
+        const vc = interaction.guild?.members.cache.get(interaction.member!.user.id)?.voice.channel;
+        if (!vc) {
+            await ch.send("You must be in voice channel first.");
+            return;
+        }
+
+        const guildId = interaction.guildId;
+        await interaction.deferReply();
+        await this.skip(guildId, ch);
+        await interaction.followUp({ content: "Skip command complete", ephemeral: true });
+    }
+
     public override async messageRun(message: Message) {
         if (!message.guildId) {
             await message.channel.send("This command only works in servers");
@@ -24,19 +52,24 @@ export class SkipMusicCommand extends Command {
             await message.channel.send("You must be in voice channel first.");
             return;
         }
-        const musicGuildInfo = musicManager.get(message.guildId!);
+        const guildId = message.guildId;
+        const ch = message.channel;
+        await this.skip(guildId, ch);
+    }
+
+    public async skip(guildId: string, textChannel: TextBasedChannel) {
+        const musicGuildInfo = musicManager.get(guildId);
         if (!musicGuildInfo) {
-            await message.channel.send("No bot in voice channel. Are you okay?");
+            await textChannel.send("No bot in voice channel.");
             return;
         }
-        // check if there is a current playing track
         if (musicGuildInfo.isPlaying) {
-            await message.channel.send("Skipping the current track");
+            await textChannel.send("Skipping the current trackt");
             await musicGuildInfo.player.stopTrack();
             musicGuildInfo.isPlaying = false;
             return;
         } else {
-            await message.channel.send("No track to skip.");
+            await textChannel.send("No track to skip");
             return;
         }
     }
