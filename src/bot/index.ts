@@ -19,18 +19,22 @@ async function createBotApp() {
         },
     });
     const nodes = [];
-    if (process.env["NODE_ENV"] === "development") {
-        nodes.push({
-            name: "local",
-            url: "localhost:2333",
-            auth: "youshallnotpass",
-        });
-    } else {
-        nodes.push({
-            name: "kureya",
-            url: "kureya.howlingmoon.dev:14045",
-            auth: process.env["KUREYA_LAVALINK_PASSWORD"]!,
-        });
+
+    const lavalinkNodeConfig = await fetch("https://files.howlingmoon.dev/lavalink.json").then((res) => res.json());
+    // if (process.env["NODE_ENV"] === "development") {
+    //     nodes.push({
+    //         name: "local",
+    //         url: "localhost:2333",
+    //         auth: "youshallnotpass",
+    //     });
+    // } else {
+    // nodes.push({
+    //     name: "kureya",
+    //     url: "kureya.howlingmoon.dev:14045",
+    //     auth: process.env["KUREYA_LAVALINK_PASSWORD"]!,
+    // });
+    for (const node of lavalinkNodeConfig) {
+        nodes.push(node);
     }
     await client.login(process.env["DISCORD_BOT_TOKEN"]);
     if (!process.env["MUTE"] && process.env["MUTE"] !== "1") {
