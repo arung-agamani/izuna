@@ -19,22 +19,11 @@ async function createBotApp() {
         },
     });
     const nodes = [];
-
-    const lavalinkNodeConfig = await fetch("https://files.howlingmoon.dev/lavalink.json").then((res) => res.json());
-    // if (process.env["NODE_ENV"] === "development") {
-    //     nodes.push({
-    //         name: "local",
-    //         url: "localhost:2333",
-    //         auth: "youshallnotpass",
-    //     });
-    // } else {
-    // nodes.push({
-    //     name: "kureya",
-    //     url: "kureya.howlingmoon.dev:14045",
-    //     auth: process.env["KUREYA_LAVALINK_PASSWORD"]!,
-    // });
-    for (const node of lavalinkNodeConfig) {
-        nodes.push(node);
+    if (config.lavalinkConfigPath) {
+        const lavalinkNodeConfig = await fetch(config.lavalinkConfigPath).then((res) => res.json());
+        for (const node of lavalinkNodeConfig) {
+            nodes.push(node);
+        }
     }
     await client.login(process.env["DISCORD_BOT_TOKEN"]);
     if (!process.env["MUTE"] && process.env["MUTE"] !== "1") {
@@ -102,11 +91,6 @@ async function createBotApp() {
             if (tag.isMedia) {
                 await message.channel.send({
                     content: tag.message,
-                    // files: [
-                    //     {
-                    //         attachment: tag.message,
-                    //     },
-                    // ],
                 });
                 logger.debug({
                     message: `${tag.message} invoked`,
@@ -128,23 +112,18 @@ async function createBotApp() {
             const guildChannelPairs = Array.from(channelTrackingManager.entries());
             for (const [guildChannel] of guildChannelPairs) {
                 const [guildId, channelId] = guildChannel.split("-");
-                // logger.debug(`Poll: Fetching guild ${guildId}`);
                 let guild, channel;
                 try {
                     guild = await client.guilds.fetch(guildId!);
                 } catch (error) {
-                    // logger.debug(`Poll: Fetching guild ${guildId} failed`);
                     continue;
                 }
-                // logger.debug(`Poll: Fetching channel ${channelId}`);
                 try {
                     channel = (await guild.channels.fetch(channelId!)) as VoiceBasedChannel;
                 } catch (error) {
-                    // logger.debug(`Poll: Fetching channel ${channelId} failed`);
                     await deleteFromEphemeralVCManager(guildId!, channelId!);
                     continue;
                 }
-                // logger.debug(`Poll: Checking ${guild.name}-${channel?.name} for it's members. Members: ${channel.members.size}`);
                 if (channel?.members.size === 0) {
                     try {
                         await guild.channels.delete(channelId!);

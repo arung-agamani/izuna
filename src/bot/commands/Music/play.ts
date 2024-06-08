@@ -13,7 +13,6 @@ const driveRegex = /\/file\/d\/([^\/]+)/;
 const hmsRegex = /[hms]+/g;
 const timestampRegex = /\&t=([0-9A-Za-z]+)/;
 
-// comm : r.exec("https://www.youtube.com/watch?v=9eB1Tp8Li-c&t=17m39s")[1].replaceAll(hms2,":").split(":").slice(0, -1).reverse().reduce((acc, curr, idx) => acc + Number(curr)*Math.pow(60,idx), 0)
 export class PlayMusicCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
@@ -211,6 +210,7 @@ export class PlayMusicCommand extends Command {
         logger.debug(`Search done through REST API returns type ${searchRes?.loadType}`);
         if ((searchRes.loadType as LavalinkLoadType) === "LOAD_FAILED" || !searchRes) {
             logger.debug(`187: LoadType: ${searchRes?.loadType}`);
+            logger.debug(searchRes);
             await textChannel.send("Failed to search that query. Try with different formatting, I guess?");
             return;
         }
