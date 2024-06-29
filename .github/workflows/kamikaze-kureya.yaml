@@ -1,8 +1,8 @@
 name: deploy-production
 on:
-    push:
-        branches:
-            - izuna-master
+    # push:
+    #     branches:
+    #         - izuna-master
     workflow_dispatch:
 
 jobs:
