@@ -51,7 +51,7 @@ jobs:
                       export GIT_COMMIT_MESSAGE="$(git log --format=%B -n 1 HEAD)"
                       export GIT_COMMIT_HASH="$(git rev-parse HEAD)"
                       docker compose -f ${ secrets.COMPOSE_FILE_PATH} \
-                        -e BUILD_REF: ${{GIT_COMMIT_HASH}} - ${{GIT_COMMIT_MESSAGE}} \
+                        -e BUILD_REF: $GIT_COMMIT_HASH - $GIT_COMMIT_MESSAGE \
                         -e COMMIT_HASH: ${{ secrets. github.ref }} \
                         -e DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN}} \
                         -e DATABASE_URL: ${{ secrets.DATABASE_URL}} \
