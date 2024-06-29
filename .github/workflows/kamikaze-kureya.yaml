@@ -48,11 +48,11 @@ jobs:
                   key: ${{ secrets.KUREYA_SSH_PRIVATE_KEY }}
                   script: |
                       echo "SSH into the server"
-                      export GIT_COMMIT_MESSAGE="$(git log --format=%B -n 1 HEAD)"
-                      export GIT_COMMIT_HASH="$(git rev-parse HEAD)"
+                      export GIT_COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
+                      export GIT_COMMIT_HASH="${{ github.sha }}"
                       docker compose -f ${ secrets.COMPOSE_FILE_PATH} \
                         -e BUILD_REF: $GIT_COMMIT_HASH - $GIT_COMMIT_MESSAGE \
-                        -e COMMIT_HASH: ${{ secrets. github.sha }} \
+                        -e COMMIT_HASH: ${{ github.sha }} \
                         -e DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN}} \
                         -e DATABASE_URL: ${{ secrets.DATABASE_URL}} \
                         -e DISCORD_OAUTH_CLIENT_ID: ${{ secrets.DISCORD_OAUTH_CLIENT_ID}} \
