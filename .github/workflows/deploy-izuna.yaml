@@ -1,8 +1,9 @@
 name: deploy-app
 on:
-    push:
-        branches:
-            - "izuna-master"
+    workflow_dispatch:
+    # push:
+    #     branches:
+    #         - "izuna-master"
 
 jobs:
     deploy:

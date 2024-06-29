@@ -1,5 +1,5 @@
 import { SapphireClient } from "@sapphire/framework";
-import { Shoukaku, Connectors } from "shoukaku";
+import { Shoukaku, Connectors, NodeOption } from "shoukaku";
 import { config } from "../config";
 import { setShoukakuManager } from "../lib/musicQueue";
 import logger from "../lib/winston";
@@ -18,10 +18,11 @@ async function createBotApp() {
             enabled: process.env["NODE_ENV"] === "development",
         },
     });
-    const nodes = [];
+    const nodes: NodeOption[] = [];
     if (config.lavalinkConfigPath) {
         const lavalinkNodeConfig = await fetch(config.lavalinkConfigPath).then((res) => res.json());
         for (const node of lavalinkNodeConfig) {
+            logger.info(`Added ${node.name} to lavalink node pool`);
             nodes.push(node);
         }
     }
