@@ -11,7 +11,16 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v3
+            - name: Check if there is change on certain paths
+              uses: dorny/paths-filter@v2
+              id: changes
+              with:
+                  filters: |
+                      src:
+                      - 'src/**'
+                      - 'web/**'
             - name: Docker Login
+              #   if: steps.changes.output.src == 'true'
               uses: docker/login-action@v2.1.0
               with:
                   registry: ghcr.io
@@ -19,12 +28,13 @@ jobs:
                   password: ${{ secrets.GHCR_ACCESS_TOKEN }}
 
             - name: Build and push Docker images
+              #   if: steps.changes.output.src == 'true'
               uses: docker/build-push-action@v3.2.0
               with:
                   context: .
                   file: Dockerfile
                   push: true
-                  tags: ghcr.io/arung-agamani/izuna:${{ github.sha }}
+                  tags: ghcr.io/arung-agamani/izuna:${{ github.sha }}, ghcr.io/arung-agamani/izuna:latest
     deploy:
         runs-on: ubuntu-latest
         needs: package
@@ -50,7 +60,7 @@ jobs:
                       echo "SSH into the server"
                       export GIT_COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
                       export GIT_COMMIT_HASH="${{ github.sha }}"
-                      docker compose -f ${ secrets.COMPOSE_FILE_PATH} \
+                      docker compose -f ${{ secrets.COMPOSE_FILE_PATH}} \
                         -e BUILD_REF: $GIT_COMMIT_HASH - $GIT_COMMIT_MESSAGE \
                         -e COMMIT_HASH: ${{ github.sha }} \
                         -e DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN}} \
