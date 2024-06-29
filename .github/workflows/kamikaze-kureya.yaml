@@ -24,7 +24,7 @@ jobs:
                   context: .
                   file: Dockerfile
                   push: true
-                  tags: ghcr.io/arung-agamani/izuna:${{ github.ref }}
+                  tags: ghcr.io/arung-agamani/izuna:${{ github.sha }}
     deploy:
         runs-on: ubuntu-latest
         needs: package
