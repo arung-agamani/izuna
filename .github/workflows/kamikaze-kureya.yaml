@@ -40,7 +40,7 @@ jobs:
                         - 'src/**'
                         - 'web/**'
             - name: Apply changes to remote server
-              if: steps.changes.output.src == 'true'
+              #   if: steps.changes.output.src == 'true'
               uses: appleboy/ssh-action@master
               with:
                   host: ${{ secrets.KUREYA_SSH_HOST }}
@@ -52,7 +52,7 @@ jobs:
                       export GIT_COMMIT_HASH="$(git rev-parse HEAD)"
                       docker compose -f ${ secrets.COMPOSE_FILE_PATH} \
                         -e BUILD_REF: $GIT_COMMIT_HASH - $GIT_COMMIT_MESSAGE \
-                        -e COMMIT_HASH: ${{ secrets. github.ref }} \
+                        -e COMMIT_HASH: ${{ secrets. github.sha }} \
                         -e DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN}} \
                         -e DATABASE_URL: ${{ secrets.DATABASE_URL}} \
                         -e DISCORD_OAUTH_CLIENT_ID: ${{ secrets.DISCORD_OAUTH_CLIENT_ID}} \
