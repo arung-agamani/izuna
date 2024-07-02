@@ -27,6 +27,7 @@ export const config = {
     ownerUsers: ["145558597424644097"],
     betaTesters: ["145558597424644097"],
     botToken: getEnv("DISCORD_BOT_TOKEN"),
+    lavalinkConfigPath: process.env["RUN_BOT"] === "1" ? getEnv("LAVALINK_CONFIG_PATH") : "",
 };
 
 if (process.env["NODE_ENV"] === "development") {
