@@ -11,15 +11,15 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v3
             - name: Check if there is change on certain paths
-              uses: dorny/paths-filter@v2
+              uses: dorny/paths-filter@v3
               id: changes
               with:
                   filters: |
                       src:
-                      - 'src/**'
-                      - 'web/**'
+                        - 'src/**'
+                        - 'web/**'
             - name: Docker Login
-              if: steps.changes.output.src == 'true'
+              if: steps.changes.outputs.src == 'true'
               uses: docker/login-action@v2.1.0
               with:
                   registry: ghcr.io
@@ -41,7 +41,7 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v3
             - name: Check if there is change on certain paths
-              uses: dorny/paths-filter@v2
+              uses: dorny/paths-filter@v3
               id: changes
               with:
                   filters: |
@@ -49,7 +49,7 @@ jobs:
                         - 'src/**'
                         - 'web/**'
             - name: Apply changes to remote server
-              if: steps.changes.output.src == 'true'
+              if: steps.changes.outputs.src == 'true'
               uses: appleboy/ssh-action@master
               with:
                   host: ${{ secrets.KUREYA_SSH_HOST }}
