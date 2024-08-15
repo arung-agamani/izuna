@@ -26,6 +26,7 @@
         "@sapphire/discord.js-utilities": "^6.0.4",
         "@sapphire/framework": "^4.2.2",
         "@sapphire/plugin-hmr": "^2.0.0",
+        "@sentry/node": "^8.26.0",
         "axios": "^0.27.2",
         "chalk": "v4",
         "cheerio": "^1.0.0-rc.12",

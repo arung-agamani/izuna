@@ -10,9 +10,18 @@ import "@sapphire/plugin-hmr/register";
 
 async function createBotApp() {
     const client = new SapphireClient({
-        intents: ["Guilds", "GuildMessages", "DirectMessages", "DirectMessages", "DirectMessageTyping", "GuildVoiceStates", "MessageContent"],
+        intents: [
+            "Guilds",
+            "GuildMessages",
+            "DirectMessages",
+            "DirectMessages",
+            "DirectMessageTyping",
+            "GuildVoiceStates",
+            "MessageContent",
+            "GuildMessageReactions",
+        ],
         regexPrefix: config.botPrefix,
-        partials: [Partials.User, Partials.Channel],
+        partials: [Partials.User, Partials.Channel, Partials.Reaction, Partials.Message],
         loadMessageCommandListeners: true,
         hmr: {
             enabled: process.env["NODE_ENV"] === "development",

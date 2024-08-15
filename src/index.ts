@@ -1,5 +1,12 @@
 import dotenv from "dotenv";
 dotenv.config();
+// Sentry Initialization
+import * as Sentry from "@sentry/node";
+Sentry.init({
+    dsn: process.env["SENTRY_DNS"],
+    tracesSampleRate: 1.0,
+    environment: process.env["NODE_ENV"] === "development" ? "development" : "production",
+});
 import fastify, { FastifyReply, FastifyRequest } from "fastify";
 import fastifyRoutes from "@fastify/routes";
 import fastifySwagger from "@fastify/swagger";
