@@ -27,7 +27,7 @@ jobs:
                   password: ${{ secrets.GHCR_ACCESS_TOKEN }}
 
             - name: Build and push Docker images
-              if: steps.changes.output.src == 'true'
+              if: steps.changes.outputs.src == 'true'
               uses: docker/build-push-action@v3.2.0
               with:
                   context: .
@@ -60,6 +60,6 @@ jobs:
                       export GIT_COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
                       export GIT_COMMIT_HASH="${{ github.sha }}"
                       BUILD_REF="$GIT_COMMIT_HASH - $GIT_COMMIT_MESSAGE" \
-                      COMMIT_HASH=${{ steps.changes.output.src == 'true' && github.sha || 'latest' }} \
+                      COMMIT_HASH=${{ steps.changes.outputs.src == 'true' && github.sha || 'latest' }} \
                       doppler run -- docker compose -f ${{ secrets.COMPOSE_FILE_PATH}} up --force-recreate -d izunabot
                       echo "Deploy done"
