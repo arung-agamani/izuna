@@ -4,10 +4,9 @@ import musicManager, { getShoukakuManager } from "../../../lib/musicQueue";
 import logger from "../../../lib/winston";
 import { config } from "../../../config";
 import { NodeOption } from "shoukaku";
-import fetch from "node-fetch";
-// import prisma from "../../lib/prisma";
+import { fetch } from "undici";
 
-export class PauseMusicCommand extends Command {
+export class RefreshPlayerCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
@@ -17,36 +16,6 @@ export class PauseMusicCommand extends Command {
             This command basically refreshes the connection.`,
         });
     }
-
-    // public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
-    //     registry.registerChatInputCommand(
-    //         (builder) => {
-    //             builder.setName("pause").setDescription("Pause/Resume currently playing track");
-    //         },
-    //         { idHints: ["1194230014053470278"] }
-    //     );
-    // }
-
-    // public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
-    //     if (!interaction.guildId) {
-    //         await interaction.channel?.send("This command only works in servers");
-    //         return;
-    //     }
-    //     const textChannel = interaction.channel;
-    //     if (!textChannel) {
-    //         await interaction.channel!.send("Text channel is undefined. This issue has been reported (should be)");
-    //         return;
-    //     }
-    //     const voiceChannel = interaction.guild?.members.cache.get(interaction.member!.user.id)?.voice.channel;
-    //     if (!voiceChannel) {
-    //         await interaction.channel?.send("You must be in voice channel first.");
-    //         return;
-    //     }
-    //     const guildId = interaction.guildId;
-    //     await interaction.deferReply();
-    //     await this.pause(guildId, textChannel);
-    //     await interaction.followUp({ content: "Pause command complete", ephemeral: true });
-    // }
 
     public override async messageRun(message: Message) {
         if (!message.guildId) {
@@ -76,7 +45,7 @@ export class PauseMusicCommand extends Command {
         await shoukaku.leaveVoiceChannel(guildId);
         musicManager.delete(guildId);
         const nodes: NodeOption[] = [];
-        const lavalinkNodeConfig = await fetch(config.lavalinkConfigPath).then((res) => res.json()) as any;
+        const lavalinkNodeConfig = (await fetch(config.lavalinkConfigPath).then((res) => res.json())) as any;
         for (const node of lavalinkNodeConfig) {
             logger.info(`Added ${node.name} to lavalink node pool`);
             nodes.push(node);
