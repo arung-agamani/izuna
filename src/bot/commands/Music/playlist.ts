@@ -262,13 +262,13 @@ export class PlaylistMusicCommand extends Command {
                         }
                         const track = newPoppedTrack.data as Track;
                         await musicGuildInfo.player.playTrack({
-                            track: track.encoded,
+                            track: { encoded: track.encoded },
                         });
                         await message.channel.send(`Now playing **${track.info.title}**, if it works...`);
                         musicGuildInfo.isPlaying = true;
                     } else {
                         poppedTrack = poppedTrack as Track;
-                        await musicGuildInfo.player.playTrack({ track: poppedTrack.encoded });
+                        await musicGuildInfo.player.playTrack({ track: { encoded: poppedTrack.encoded } });
                         await message.channel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
                         musicGuildInfo.isPlaying = true;
                     }

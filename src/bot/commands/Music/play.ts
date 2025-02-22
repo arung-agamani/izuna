@@ -265,34 +265,32 @@ export class PlayMusicCommand extends Command {
                         newMusicGuildInfo.currentPosition = 0;
                         await textChannel.send("Playlist loop is set. Resetting playhead to the beginning of the queue.");
                         let poppedTrack = newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]!;
-                        if ((<LavalinkLazyLoad>poppedTrack).fileId) {
-                            const searchTarget = await this.resolveGoogleDrive((<LavalinkLazyLoad>poppedTrack).fileId);
-                            if (!searchTarget) {
-                                await textChannel.send("Failed to query from Google Drive");
-                                return;
-                            }
-                            let newPoppedTrack = await lavalinkNode.rest.resolve(searchTarget!);
-                            if (!newPoppedTrack) {
-                                await textChannel.send("Failed to resolve WebContentLink as Playable Track");
-                                return;
-                            }
-                            const track = newPoppedTrack.data as Track;
-                            await newMusicGuildInfo.player.playTrack({
-                                track: track.encoded,
-                            });
-                            await textChannel.send(`Now playing **${track.info.title}**, if it works...`);
-                            newMusicGuildInfo.isPlaying = true;
-                        } else {
-                            poppedTrack = poppedTrack as Track;
-                            await newMusicGuildInfo.player.playTrack({
-                                track: poppedTrack.encoded,
-                                options: {
-                                    startTime: poppedTrack.info.position,
-                                },
-                            });
-                            await textChannel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
-                            newMusicGuildInfo.isPlaying = true;
-                        }
+                        // if ((<LavalinkLazyLoad>poppedTrack).fileId) {
+                        //     const searchTarget = await this.resolveGoogleDrive((<LavalinkLazyLoad>poppedTrack).fileId);
+                        //     if (!searchTarget) {
+                        //         await textChannel.send("Failed to query from Google Drive");
+                        //         return;
+                        //     }
+                        //     let newPoppedTrack = await lavalinkNode.rest.resolve(searchTarget!);
+                        //     if (!newPoppedTrack) {
+                        //         await textChannel.send("Failed to resolve WebContentLink as Playable Track");
+                        //         return;
+                        //     }
+                        //     const track = newPoppedTrack.data as Track;
+                        //     await newMusicGuildInfo.player.playTrack({
+                        //         track: track.encoded,
+                        //     });
+                        //     await textChannel.send(`Now playing **${track.info.title}**, if it works...`);
+                        //     newMusicGuildInfo.isPlaying = true;
+                        // } else {
+                        poppedTrack = poppedTrack as Track;
+                        await newMusicGuildInfo.player.playTrack({
+                            track: { encoded: poppedTrack.encoded },
+                            position: poppedTrack.info.position,
+                        });
+                        await textChannel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
+                        newMusicGuildInfo.isPlaying = true;
+                        // }
                     } else {
                         newMusicGuildInfo.isPlaying = false;
                     }
@@ -325,10 +323,8 @@ export class PlayMusicCommand extends Command {
                     currentTrack = currentTrack as Track;
                     await textChannel.send(`Track loaded. ${currentTrack.info.title} | Duration: ${fancyTimeFormat(currentTrack.info.length! / 1000)}`);
                     newMusicGuildInfo.player.playTrack({
-                        track: currentTrack.encoded,
-                        options: {
-                            startTime: currentTrack.info.position!,
-                        },
+                        track: { encoded: currentTrack.encoded },
+                        position: currentTrack.info.position,
                     });
                 }
 
@@ -352,14 +348,14 @@ export class PlayMusicCommand extends Command {
             musicManager.set(guildId, thisGuildInfo);
             musicGuildInfo = thisGuildInfo;
         }
-        switch (searchRes.loadType as LavalinkLoadType) {
-            case "LAZY_LOAD_GDRIVE":
-                searchRes = searchRes as LavalinkLazyLoad;
-                musicGuildInfo.queue.push(searchRes);
-                await textChannel.send(
-                    `Track loaded. ${searchRes.info.title} | Pos: ${musicGuildInfo.queue.length}\nThis track will be lazy-loaded on it's turn.`
-                );
-                break;
+        switch (searchRes.loadType as any) {
+            // case "LAZY_LOAD_GDRIVE":
+            //     searchRes = searchRes as LavalinkLazyLoad;
+            //     musicGuildInfo.queue.push(searchRes);
+            //     await textChannel.send(
+            //         `Track loaded. ${searchRes.info.title} | Pos: ${musicGuildInfo.queue.length}\nThis track will be lazy-loaded on it's turn.`
+            //     );
+            //     break;
             case "TRACK_LOADED":
                 searchRes = searchRes as LavalinkResponse;
                 logger.debug(`LoadType: ${searchRes.loadType} for query ${searchQuery}`);
@@ -432,10 +428,8 @@ export class PlayMusicCommand extends Command {
             } else {
                 poppedTrack = poppedTrack as Track;
                 await musicGuildInfo.player.playTrack({
-                    track: poppedTrack.encoded,
-                    options: {
-                        startTime: poppedTrack.info.position,
-                    },
+                    track: { encoded: poppedTrack.encoded },
+                    position: poppedTrack.info.position,
                 });
                 await textChannel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
                 musicGuildInfo.isPlaying = true;

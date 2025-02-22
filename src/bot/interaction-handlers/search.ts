@@ -115,10 +115,8 @@ export class SearchInteractionHandler extends InteractionHandler {
 
                         poppedTrack = poppedTrack as Track;
                         await newMusicGuildInfo.player.playTrack({
-                            track: poppedTrack.encoded,
-                            options: {
-                                startTime: poppedTrack.info.position,
-                            },
+                            track: { encoded: poppedTrack.encoded },
+                            position: poppedTrack.info.position,
                         });
                         await interaction.message.channel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
                         newMusicGuildInfo.isPlaying = true;
@@ -137,10 +135,8 @@ export class SearchInteractionHandler extends InteractionHandler {
                     `Track loaded. ${currentTrack.info.title} | Duration: ${fancyTimeFormat(currentTrack.info.length! / 1000)}`
                 );
                 newMusicGuildInfo.player.playTrack({
-                    track: currentTrack.encoded,
-                    options: {
-                        startTime: currentTrack.info.position!,
-                    },
+                    track: { encoded: currentTrack.encoded },
+                    position: currentTrack.info.position!,
                 });
 
                 newMusicGuildInfo.isPlaying = true;
@@ -181,10 +177,8 @@ export class SearchInteractionHandler extends InteractionHandler {
 
             poppedTrack = poppedTrack as Track;
             await musicGuildInfo.player.playTrack({
-                track: poppedTrack.encoded,
-                options: {
-                    startTime: poppedTrack.info.position,
-                },
+                track: { encoded: poppedTrack.encoded },
+                position: poppedTrack.info.position,
             });
             await interaction.message.channel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
             musicGuildInfo.isPlaying = true;
