@@ -1,10 +1,15 @@
-import type { VoiceBasedChannel } from "discord.js";
+import type { VoiceBasedChannel, TextBasedChannel } from "discord.js";
 import { LoadType, type Track, type Player } from "shoukaku";
 import { PlayerState } from "../lib/ongaku/PlayerState";
 import { PlayerManager } from "./PlayerManager";
 import { resolveLavalinkNode } from "./ShoukakuContext";
+import { parseUrl, getLavalinkQuery, type ParsedUrl } from "../lib/urlParser";
+import logger from "../lib/winston";
 
 export type LavalinkLoadType = "TRACK_LOADED" | "PLAYLIST_LOADED" | "SEARCH_RESULT" | "NO_MATCHES" | "LOAD_FAILED";
+
+// Global sessions map - shared across all MusicService instances
+const globalSessions: Map<string, MusicSession> = new Map();
 
 export interface MusicSession {
     guildId: string;
@@ -14,6 +19,8 @@ export interface MusicSession {
     currentPosition: number;
     repeatMode: "no" | "single" | "playlist";
     isPaused: boolean;
+    isPlaying: boolean;
+    textChannel?: TextBasedChannel;
 }
 
 function shoukakuLoadTypeToString(loadType: LoadType): LavalinkLoadType {
@@ -42,21 +49,37 @@ type LavalinkResolveResult = {
 
 export class MusicService {
     private readonly playerManager: PlayerManager;
-    private readonly sessions: Map<string, MusicSession> = new Map();
 
     public constructor(playerManager?: PlayerManager) {
         this.playerManager = playerManager ?? new PlayerManager();
     }
 
     public getSession(guildId: string): MusicSession | undefined {
-        return this.sessions.get(guildId);
+        return globalSessions.get(guildId);
     }
 
-    public async getOrCreateSession(guildId: string, voiceChannel: VoiceBasedChannel): Promise<MusicSession> {
-        const existing = this.sessions.get(guildId);
-        if (existing) return existing;
+    public async getOrCreateSession(guildId: string, voiceChannel: VoiceBasedChannel, textChannel?: TextBasedChannel): Promise<MusicSession> {
+        const existing = globalSessions.get(guildId);
+        if (existing) {
+            // Update textChannel if provided (allows commands to provide context for messaging)
+            if (textChannel) {
+                existing.textChannel = textChannel;
+            }
+            // await textChannel?.send(`Joining voice channel if not yet joined: **${voiceChannel.name}**`);
+            try {
+                const player = await this.playerManager.joinVoiceChannel(guildId, voiceChannel);
+                existing.player = player;
+                await textChannel?.send(`✅ Re-joining voice channel: **${voiceChannel.name}**`);
+            } catch (error) {
+                // ignore
+            }
+            return existing;
+        }
 
-        const player = await this.playerManager.getOrCreatePlayer(guildId, voiceChannel);
+        // Join voice channel - MUST AWAIT before proceeding
+        const player = await this.playerManager.joinVoiceChannel(guildId, voiceChannel);
+        await textChannel?.send(`✅ Joined voice channel: **${voiceChannel.name}**`);
+
         const session: MusicSession = {
             guildId,
             voiceChannelId: voiceChannel.id,
@@ -65,9 +88,134 @@ export class MusicService {
             currentPosition: 0,
             repeatMode: "no",
             isPaused: false,
+            isPlaying: false,
+            textChannel,
         };
-        this.sessions.set(guildId, session);
+        globalSessions.set(guildId, session);
+
+        // Attach session-level event handlers ONCE per session
+        this.attachSessionEventHandlers(session);
+
         return session;
+    }
+
+    /**
+     * Attach event handlers to the player for queue progression and user feedback
+     * This is called only once when a session is created
+     */
+    private attachSessionEventHandlers(session: MusicSession): void {
+        const player = session.player;
+        const guildId = session.guildId;
+
+        // Track exception - provide user feedback
+        player.on?.("exception", (err: any) => {
+            logger.error("Player exception:", err);
+            if (err.exception?.message === "This video is not available") {
+                session.textChannel?.send("⏭️ Skipping unavailable track").catch(logger.error);
+            }
+        });
+
+        // Track stuck - provide user feedback
+        player.on?.("stuck", () => {
+            logger.warn(`Track stuck on guild ${guildId}`);
+            session.textChannel?.send("⏭️ Track stuck, skipping...").catch(logger.error);
+        });
+
+        // Track end - handle queue progression
+        player.on?.("end", async (data: { reason?: string }) => {
+            if (data.reason === "replaced") return; // Track was replaced
+
+            const currentSession = globalSessions.get(guildId);
+            if (!currentSession) return;
+
+            // Progress queue
+            const currentPosition = currentSession.currentPosition;
+            const queueSize = currentSession.queue.length;
+            const repeatMode = currentSession.repeatMode;
+
+            // Advance to next track unless in single repeat mode
+            if (repeatMode !== "single") {
+                currentSession.currentPosition = Math.min(currentPosition + 1, queueSize);
+            }
+
+            // Check if reached end of queue
+            if (currentSession.currentPosition >= queueSize) {
+                await currentSession.textChannel?.send("✅ Reached the end of playlist");
+                currentSession.isPlaying = false;
+
+                if (repeatMode === "playlist") {
+                    currentSession.currentPosition = 0;
+                    await currentSession.textChannel?.send("🔄 Playlist loop enabled. Resetting to the beginning.");
+                    await this.playTrackFromSession(currentSession);
+                }
+                return;
+            }
+
+            // Play next track
+            await this.playTrackFromSession(currentSession);
+        });
+    }
+
+    /**
+     * Play a track from the current session's current position
+     * Used internally by event handlers
+     */
+    private async playTrackFromSession(session: MusicSession): Promise<void> {
+        const track = session.queue[session.currentPosition];
+        if (!track) return;
+
+        // Skip tracks with null/missing encoded data
+        if (!track.encoded) {
+            logger.warn(`Track at position ${session.currentPosition} has no encoded data, skipping`);
+            session.currentPosition += 1;
+            if (session.currentPosition < session.queue.length) {
+                await this.playTrackFromSession(session);
+            }
+            return;
+        }
+
+        try {
+            await session.player.playTrack({
+                track: { encoded: track.encoded },
+                position: track.info?.position || 0,
+            });
+
+            session.isPlaying = true;
+
+            const fancyTimeFormat = (seconds: number) => {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const secs = Math.floor(seconds % 60);
+                if (hours > 0) return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+                return `${minutes}:${secs.toString().padStart(2, "0")}`;
+            };
+
+            const duration = fancyTimeFormat(track.info.length / 1000);
+            const position = track.info.position ? fancyTimeFormat(track.info.position / 1000) : "0:00";
+
+            await session.textChannel?.send(`▶️ **${track.info.title}** | ${duration}${position !== "0:00" ? ` (seek: ${position})` : ""}`);
+        } catch (error) {
+            logger.error("Error playing track:", error);
+            session.textChannel?.send("❌ Failed to play track. Skipping...").catch(logger.error);
+        }
+    }
+
+    /**
+     * Public method for commands to start playing the next track from the queue
+     * @param guildId - Guild ID
+     */
+    public async playNextTrackForGuild(guildId: string): Promise<void> {
+        const session = globalSessions.get(guildId);
+        if (!session) {
+            logger.warn(`No session found for guild ${guildId} when trying to play next track`);
+            return;
+        }
+        if (!session.player) {
+            logger.warn(`No player found in session for guild ${guildId}`);
+            return;
+        }
+        logger.debug(`Playing next track for guild ${guildId} (queue size: ${session.queue.length}, position: ${session.currentPosition})`);
+        await this.playTrackFromSession(session);
     }
 
     /**
@@ -82,16 +230,8 @@ export class MusicService {
         return res as LavalinkResolveResult;
     }
 
-    /**
-     * Ensure a player exists for guild and voice channel.
-     * Does not touch the legacy `musicManager` map unless it already exists.
-     */
-    public async ensurePlayer(guildId: string, voiceChannel: VoiceBasedChannel) {
-        return this.playerManager.getOrCreatePlayer(guildId, voiceChannel);
-    }
-
     public async queueTrack(guildId: string, track: Track) {
-        const session = this.sessions.get(guildId);
+        const session = globalSessions.get(guildId);
         if (!session) throw new Error("No active music session for this guild");
         session.queue.push(track);
     }
@@ -101,15 +241,13 @@ export class MusicService {
      * This is intentionally conservative so it doesn't disrupt existing flow.
      */
     public async playNext(guildId: string) {
-        const session = this.sessions.get(guildId);
+        const session = globalSessions.get(guildId);
         if (!session) throw new Error("No active music session for this guild");
         if (session.currentPosition >= session.queue.length) {
             return;
         }
 
         const track = session.queue[session.currentPosition];
-        const sm = this.playerManager.getStateMachine(guildId);
-        sm.tryTransitionTo(PlayerState.LOADING, { allowSameState: true });
 
         await session.player.playTrack({
             track: { encoded: track.encoded },
@@ -118,7 +256,7 @@ export class MusicService {
     }
 
     public async skipTrack(guildId: string) {
-        const session = this.sessions.get(guildId);
+        const session = globalSessions.get(guildId);
         if (!session) throw new Error("No active music session for this guild");
 
         // stopTrack => trackEnd(reason=STOPPED) on Lavalink.
@@ -126,7 +264,7 @@ export class MusicService {
     }
 
     public async pause(guildId: string) {
-        const session = this.sessions.get(guildId);
+        const session = globalSessions.get(guildId);
         if (!session) throw new Error("No active music session for this guild");
 
         const nextPaused = !session.isPaused;
@@ -136,7 +274,167 @@ export class MusicService {
     }
 
     public async destroySession(guildId: string) {
-        await this.playerManager.destroyPlayer(guildId);
-        this.sessions.delete(guildId);
+        // Get the session before destroying to clear it
+        const session = globalSessions.get(guildId);
+
+        if (session) {
+            // Clean up player resources
+            this.playerManager.cleanupPlayer(session.player);
+
+            // Clear session's internal state
+            session.queue = [];
+            session.currentPosition = 0;
+            session.isPlaying = false;
+            session.isPaused = false;
+            session.textChannel = undefined;
+        }
+
+        // Leave voice channel
+        await this.playerManager.leaveVoiceChannel(guildId);
+    }
+
+    /**
+     * Parse a user input string and resolve it through Lavalink
+     * Handles YouTube links, playlists, HTTP URLs, and search queries
+     *
+     * @param input - User input (URL or search query)
+     * @param seekMode - Whether to extract timestamp for seeking
+     * @returns Resolution result with load type and track data
+     */
+    public async resolveInput(
+        input: string,
+        seekMode: boolean = false
+    ): Promise<{
+        parsed: ParsedUrl;
+        result: LavalinkResolveResult;
+        timestamp?: number;
+    }> {
+        const parsed = parseUrl(input, seekMode);
+        const lavalinkQuery = getLavalinkQuery(parsed);
+
+        // Special handling for Google Drive - needs additional processing
+        if (parsed.type === "google-drive") {
+            throw new Error("Google Drive support requires additional setup. Please use YouTube links or search queries.");
+        }
+
+        const result = await this.resolveTrack(lavalinkQuery);
+
+        return {
+            parsed,
+            result,
+            timestamp: parsed.type === "youtube-video" ? parsed.timestamp : undefined,
+        };
+    }
+
+    /**
+     * Queue tracks from a resolution result
+     * Handles different load types (single track, playlist, search result, etc.)
+     *
+     * @param guildId - Guild ID
+     * @param result - The Lavalink resolution result
+     * @param timestamp - Optional timestamp to set on the track (in milliseconds)
+     * @returns Array of queued tracks
+     */
+    public async queueTracksFromResult(guildId: string, result: LavalinkResolveResult, timestamp?: number): Promise<Track[]> {
+        const session = globalSessions.get(guildId);
+        if (!session) throw new Error("No active music session for this guild");
+
+        const queuedTracks: Track[] = [];
+
+        switch (result.loadType) {
+            case "TRACK_LOADED": {
+                const track = result.data as Track;
+                if (!track.encoded) {
+                    logger.warn(`Track has no encoded data: ${track.info?.title}`);
+                    break;
+                }
+                if (timestamp) {
+                    track.info.position = timestamp;
+                }
+                session.queue.push(track);
+                queuedTracks.push(track);
+                break;
+            }
+
+            case "PLAYLIST_LOADED": {
+                const tracks = (result.data as any).tracks || [];
+                const validTracks = tracks.filter((t: Track) => {
+                    if (!t.encoded) {
+                        logger.warn(`Skipping track with no encoded data: ${t.info?.title}`);
+                        return false;
+                    }
+                    return true;
+                });
+                session.queue.push(...validTracks);
+                queuedTracks.push(...validTracks);
+                break;
+            }
+
+            case "SEARCH_RESULT": {
+                const tracks = (result.data as any[]) || [];
+                if (tracks.length > 0) {
+                    const track = tracks[0];
+                    if (!track.encoded) {
+                        logger.warn(`Search result track has no encoded data: ${track.info?.title}`);
+                        break;
+                    }
+                    session.queue.push(track);
+                    queuedTracks.push(track);
+                }
+                break;
+            }
+
+            case "NO_MATCHES":
+            case "LOAD_FAILED":
+            default:
+                // No tracks to queue
+                break;
+        }
+
+        return queuedTracks;
+    }
+
+    /**
+     * Get information about what's currently playing
+     * @param guildId - Guild ID
+     * @returns Current track info or null if nothing playing
+     */
+    public getCurrentTrack(guildId: string): Track | null {
+        const session = globalSessions.get(guildId);
+        if (!session || session.currentPosition >= session.queue.length) {
+            return null;
+        }
+
+        return session.queue[session.currentPosition] as Track | null;
+    }
+
+    /**
+     * Get the queue for a guild
+     * @param guildId - Guild ID
+     * @returns Array of tracks in queue
+     */
+    public getQueue(guildId: string): Track[] {
+        const session = globalSessions.get(guildId);
+        return session?.queue ?? [];
+    }
+
+    /**
+     * Get queue statistics
+     * @param guildId - Guild ID
+     * @returns Queue statistics (size, current position, etc.)
+     */
+    public getQueueStats(guildId: string) {
+        const session = globalSessions.get(guildId);
+        if (!session) {
+            return null;
+        }
+
+        return {
+            queueSize: session.queue.length,
+            currentPosition: session.currentPosition,
+            isPlaying: session.isPlaying,
+            repeatMode: session.repeatMode,
+            isPaused: session.isPaused,
+        };
     }
 }

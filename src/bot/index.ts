@@ -2,6 +2,7 @@ import { SapphireClient } from "@sapphire/framework";
 import { Shoukaku, Connectors, NodeOption } from "shoukaku";
 import { config } from "../config";
 import { setShoukakuManager } from "../lib/musicQueue";
+import { setShoukakuContext } from "../services/ShoukakuContext";
 import logger from "../lib/winston";
 import prisma from "../lib/prisma";
 import { channelTrackingManager, deleteFromEphemeralVCManager, initializeChannelTrackingManager, initializeJoinToCreateVCManager } from "../lib/channelTracker";
@@ -44,6 +45,7 @@ async function createBotApp() {
         });
 
         setShoukakuManager(manager);
+        setShoukakuContext(manager);
         manager.on("error", (_, err) => {
             logger.error(`Shoukaku error.`);
             logger.error(err);
