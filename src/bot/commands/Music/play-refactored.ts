@@ -37,7 +37,7 @@ Currently supports:
 Use --seek or -s flag to jump to a specific timestamp if available.`,
         });
 
-        this.musicService = new MusicService();
+        this.musicService = MusicService.getInstance();
     }
 
     public override registerApplicationCommands(registry: ChatInputCommand.Registry) {

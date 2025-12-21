@@ -8,9 +8,6 @@ import logger from "../lib/winston";
 
 export type LavalinkLoadType = "TRACK_LOADED" | "PLAYLIST_LOADED" | "SEARCH_RESULT" | "NO_MATCHES" | "LOAD_FAILED";
 
-// Global sessions map - shared across all MusicService instances
-const globalSessions: Map<string, MusicSession> = new Map();
-
 export interface MusicSession {
     guildId: string;
     voiceChannelId: string;
@@ -48,30 +45,88 @@ type LavalinkResolveResult = {
 };
 
 export class MusicService {
+    private static instance: MusicService | null = null;
+    private static sessions: Map<string, MusicSession> = new Map();
+
     private readonly playerManager: PlayerManager;
 
-    public constructor(playerManager?: PlayerManager) {
+    private constructor(playerManager?: PlayerManager) {
         this.playerManager = playerManager ?? new PlayerManager();
     }
 
-    public getSession(guildId: string): MusicSession | undefined {
-        return globalSessions.get(guildId);
+    /**
+     * Get the singleton instance of MusicService
+     * @param playerManager - Optional PlayerManager instance (only used on first initialization)
+     */
+    public static getInstance(playerManager?: PlayerManager): MusicService {
+        if (!MusicService.instance) {
+            MusicService.instance = new MusicService(playerManager);
+        }
+        return MusicService.instance;
     }
 
+    /**
+     * Get all active sessions (useful for diagnostics and cleanup)
+     */
+    public static getSessions(): ReadonlyMap<string, MusicSession> {
+        return MusicService.sessions;
+    }
+
+    /**
+     * Clear all sessions (useful for testing and bot shutdown)
+     */
+    public static clearAllSessions(): void {
+        MusicService.sessions.clear();
+    }
+
+    public getSession(guildId: string): MusicSession | undefined {
+        return MusicService.sessions.get(guildId);
+    }
+
+    /**
+     * Get or create a music session for a guild
+     *
+     * CRITICAL FIXES IMPLEMENTED:
+     * - Issue #1: Cleans up old player before replacing to prevent event handler accumulation
+     * - Issue #5: Re-attaches event handlers to new player instance after rejoin
+     *
+     * @param guildId - The guild ID
+     * @param voiceChannel - The voice channel to join
+     * @param textChannel - Optional text channel for user feedback
+     * @returns The session (existing or newly created)
+     */
     public async getOrCreateSession(guildId: string, voiceChannel: VoiceBasedChannel, textChannel?: TextBasedChannel): Promise<MusicSession> {
-        const existing = globalSessions.get(guildId);
+        const existing = MusicService.sessions.get(guildId);
         if (existing) {
             // Update textChannel if provided (allows commands to provide context for messaging)
             if (textChannel) {
                 existing.textChannel = textChannel;
             }
-            // await textChannel?.send(`Joining voice channel if not yet joined: **${voiceChannel.name}**`);
+
+            // Check if we're already in the correct voice channel
+            if (existing.voiceChannelId === voiceChannel.id) {
+                // Already in the right channel, no need to rejoin
+                logger.debug(`Session already exists in voice channel ${voiceChannel.id}, skipping rejoin`);
+                return existing;
+            }
+
+            // Different voice channel - need to move
+            logger.debug(`Moving from voice channel ${existing.voiceChannelId} to ${voiceChannel.id}`);
             try {
+                // Clean up old player before replacing to prevent memory leaks
+                this.playerManager.cleanupPlayer(existing.player);
+
                 const player = await this.playerManager.joinVoiceChannel(guildId, voiceChannel);
                 existing.player = player;
-                await textChannel?.send(`✅ Re-joining voice channel: **${voiceChannel.name}**`);
+                existing.voiceChannelId = voiceChannel.id;
+
+                // Re-attach event handlers to new player
+                this.attachSessionEventHandlers(existing);
+
+                await textChannel?.send(`✅ Moved to voice channel: **${voiceChannel.name}**`);
             } catch (error) {
-                // ignore
+                logger.error("Error during voice channel move:", error);
+                await textChannel?.send("❌ Failed to move voice channels. Please try stopping and starting again.");
             }
             return existing;
         }
@@ -91,7 +146,7 @@ export class MusicService {
             isPlaying: false,
             textChannel,
         };
-        globalSessions.set(guildId, session);
+        MusicService.sessions.set(guildId, session);
 
         // Attach session-level event handlers ONCE per session
         this.attachSessionEventHandlers(session);
@@ -101,7 +156,10 @@ export class MusicService {
 
     /**
      * Attach event handlers to the player for queue progression and user feedback
-     * This is called only once when a session is created
+     * This is called only once when a session is created (and on rejoin)
+     *
+     * IMPORTANT: Event handlers MUST always fetch the session from the map, never use
+     * the captured closure variable to avoid stale references after rejoin.
      */
     private attachSessionEventHandlers(session: MusicSession): void {
         const player = session.player;
@@ -110,38 +168,51 @@ export class MusicService {
         // Track exception - provide user feedback
         player.on?.("exception", (err: any) => {
             logger.error("Player exception:", err);
+            // Always get fresh session from map to avoid stale references
+            const currentSession = MusicService.sessions.get(guildId);
+            if (!currentSession) return;
+
             if (err.exception?.message === "This video is not available") {
-                session.textChannel?.send("⏭️ Skipping unavailable track").catch(logger.error);
+                currentSession.textChannel?.send("⏭️ Skipping unavailable track").catch(logger.error);
             }
         });
 
         // Track stuck - provide user feedback
         player.on?.("stuck", () => {
             logger.warn(`Track stuck on guild ${guildId}`);
-            session.textChannel?.send("⏭️ Track stuck, skipping...").catch(logger.error);
+            // Always get fresh session from map to avoid stale references
+            const currentSession = MusicService.sessions.get(guildId);
+            if (!currentSession) return;
+
+            currentSession.textChannel?.send("⏭️ Track stuck, skipping...").catch(logger.error);
         });
 
         // Track end - handle queue progression
         player.on?.("end", async (data: { reason?: string }) => {
             if (data.reason === "replaced") return; // Track was replaced
 
-            const currentSession = globalSessions.get(guildId);
+            // Always get fresh session from map to avoid stale references
+            const currentSession = MusicService.sessions.get(guildId);
             if (!currentSession) return;
 
-            // Progress queue
+            // Progress queue based on repeat mode
             const currentPosition = currentSession.currentPosition;
             const queueSize = currentSession.queue.length;
             const repeatMode = currentSession.repeatMode;
 
-            // Advance to next track unless in single repeat mode
-            if (repeatMode !== "single") {
-                currentSession.currentPosition = Math.min(currentPosition + 1, queueSize);
+            // Handle single repeat mode - replay same track
+            if (repeatMode === "single") {
+                await this.playTrackFromSession(currentSession);
+                return;
             }
+
+            // Advance to next track
+            currentSession.currentPosition = currentPosition + 1;
 
             // Check if reached end of queue
             if (currentSession.currentPosition >= queueSize) {
-                await currentSession.textChannel?.send("✅ Reached the end of playlist");
                 currentSession.isPlaying = false;
+                await currentSession.textChannel?.send("✅ Reached the end of playlist");
 
                 if (repeatMode === "playlist") {
                     currentSession.currentPosition = 0;
@@ -205,7 +276,7 @@ export class MusicService {
      * @param guildId - Guild ID
      */
     public async playNextTrackForGuild(guildId: string): Promise<void> {
-        const session = globalSessions.get(guildId);
+        const session = MusicService.sessions.get(guildId);
         if (!session) {
             logger.warn(`No session found for guild ${guildId} when trying to play next track`);
             return;
@@ -231,7 +302,7 @@ export class MusicService {
     }
 
     public async queueTrack(guildId: string, track: Track) {
-        const session = globalSessions.get(guildId);
+        const session = MusicService.sessions.get(guildId);
         if (!session) throw new Error("No active music session for this guild");
         session.queue.push(track);
     }
@@ -241,7 +312,7 @@ export class MusicService {
      * This is intentionally conservative so it doesn't disrupt existing flow.
      */
     public async playNext(guildId: string) {
-        const session = globalSessions.get(guildId);
+        const session = MusicService.sessions.get(guildId);
         if (!session) throw new Error("No active music session for this guild");
         if (session.currentPosition >= session.queue.length) {
             return;
@@ -256,7 +327,7 @@ export class MusicService {
     }
 
     public async skipTrack(guildId: string) {
-        const session = globalSessions.get(guildId);
+        const session = MusicService.sessions.get(guildId);
         if (!session) throw new Error("No active music session for this guild");
 
         // stopTrack => trackEnd(reason=STOPPED) on Lavalink.
@@ -264,7 +335,7 @@ export class MusicService {
     }
 
     public async pause(guildId: string) {
-        const session = globalSessions.get(guildId);
+        const session = MusicService.sessions.get(guildId);
         if (!session) throw new Error("No active music session for this guild");
 
         const nextPaused = !session.isPaused;
@@ -275,7 +346,7 @@ export class MusicService {
 
     public async destroySession(guildId: string) {
         // Get the session before destroying to clear it
-        const session = globalSessions.get(guildId);
+        const session = MusicService.sessions.get(guildId);
 
         if (session) {
             // Clean up player resources
@@ -288,6 +359,9 @@ export class MusicService {
             session.isPaused = false;
             session.textChannel = undefined;
         }
+
+        // Actually remove the session from the map to prevent memory leaks
+        MusicService.sessions.delete(guildId);
 
         // Leave voice channel
         await this.playerManager.leaveVoiceChannel(guildId);
@@ -336,10 +410,13 @@ export class MusicService {
      * @returns Array of queued tracks
      */
     public async queueTracksFromResult(guildId: string, result: LavalinkResolveResult, timestamp?: number): Promise<Track[]> {
-        const session = globalSessions.get(guildId);
+        const session = MusicService.sessions.get(guildId);
         if (!session) throw new Error("No active music session for this guild");
 
         const queuedTracks: Track[] = [];
+
+        // Check if playlist has ended (position is at or past the end)
+        const playlistEnded = !session.isPlaying && session.currentPosition >= session.queue.length;
 
         switch (result.loadType) {
             case "TRACK_LOADED": {
@@ -391,6 +468,13 @@ export class MusicService {
                 break;
         }
 
+        // If playlist had ended and we just added new tracks, reset position to the first new track
+        if (playlistEnded && queuedTracks.length > 0) {
+            const firstNewTrackIndex = session.queue.length - queuedTracks.length;
+            session.currentPosition = firstNewTrackIndex;
+            logger.debug(`Playlist had ended, reset position to ${firstNewTrackIndex} to play newly added tracks`);
+        }
+
         return queuedTracks;
     }
 
@@ -400,7 +484,7 @@ export class MusicService {
      * @returns Current track info or null if nothing playing
      */
     public getCurrentTrack(guildId: string): Track | null {
-        const session = globalSessions.get(guildId);
+        const session = MusicService.sessions.get(guildId);
         if (!session || session.currentPosition >= session.queue.length) {
             return null;
         }
@@ -414,7 +498,7 @@ export class MusicService {
      * @returns Array of tracks in queue
      */
     public getQueue(guildId: string): Track[] {
-        const session = globalSessions.get(guildId);
+        const session = MusicService.sessions.get(guildId);
         return session?.queue ?? [];
     }
 
@@ -424,7 +508,7 @@ export class MusicService {
      * @returns Queue statistics (size, current position, etc.)
      */
     public getQueueStats(guildId: string) {
-        const session = globalSessions.get(guildId);
+        const session = MusicService.sessions.get(guildId);
         if (!session) {
             return null;
         }
@@ -436,5 +520,110 @@ export class MusicService {
             repeatMode: session.repeatMode,
             isPaused: session.isPaused,
         };
+    }
+
+    /**
+     * Set repeat/loop mode for a guild
+     * @param guildId - Guild ID
+     * @param mode - Repeat mode: "no", "single", or "playlist"
+     */
+    public setRepeatMode(guildId: string, mode: "no" | "single" | "playlist"): void {
+        const session = MusicService.sessions.get(guildId);
+        if (!session) throw new Error("No active music session for this guild");
+        session.repeatMode = mode;
+    }
+
+    /**
+     * Jump to a specific track in the queue
+     * Sets the position to play the track after current one ends
+     * @param guildId - Guild ID
+     * @param position - Track position (0-based index)
+     * @returns The track that will be played next
+     */
+    public jumpToTrack(guildId: string, position: number): Track | null {
+        const session = MusicService.sessions.get(guildId);
+        if (!session) throw new Error("No active music session for this guild");
+
+        if (position < 0 || position >= session.queue.length) {
+            throw new Error(`Invalid position: ${position}. Queue size: ${session.queue.length}`);
+        }
+
+        // Set position to the target track - 1 so it plays next
+        session.currentPosition = position - 1;
+        return session.queue[position] || null;
+    }
+
+    /**
+     * Jump to a track and start playing immediately
+     * @param guildId - Guild ID
+     * @param position - Track position (0-based index)
+     */
+    public async jumpAndPlay(guildId: string, position: number): Promise<void> {
+        const session = MusicService.sessions.get(guildId);
+        if (!session) throw new Error("No active music session for this guild");
+
+        if (position < 0 || position >= session.queue.length) {
+            throw new Error(`Invalid position: ${position}. Queue size: ${session.queue.length}`);
+        }
+
+        session.currentPosition = position;
+        await this.playTrackFromSession(session);
+    }
+
+    /**
+     * Move a track from one position to another in the queue
+     * @param guildId - Guild ID
+     * @param fromPosition - Source position (0-based index)
+     * @param toPosition - Destination position (0-based index)
+     * @returns The moved track
+     */
+    public moveTrack(guildId: string, fromPosition: number, toPosition: number): Track {
+        const session = MusicService.sessions.get(guildId);
+        if (!session) throw new Error("No active music session for this guild");
+
+        if (fromPosition < 0 || fromPosition >= session.queue.length) {
+            throw new Error(`Invalid from position: ${fromPosition}. Queue size: ${session.queue.length}`);
+        }
+
+        if (toPosition < 0 || toPosition >= session.queue.length) {
+            throw new Error(`Invalid to position: ${toPosition}. Queue size: ${session.queue.length}`);
+        }
+
+        // Remove from source position
+        const [movedTrack] = session.queue.splice(fromPosition, 1);
+
+        // Insert at destination position
+        session.queue.splice(toPosition, 0, movedTrack);
+
+        return movedTrack;
+    }
+
+    /**
+     * Remove a track from the queue
+     * @param guildId - Guild ID
+     * @param position - Track position (0-based index)
+     * @returns The removed track
+     */
+    public removeTrack(guildId: string, position: number): Track {
+        const session = MusicService.sessions.get(guildId);
+        if (!session) throw new Error("No active music session for this guild");
+
+        if (position < 0 || position >= session.queue.length) {
+            throw new Error(`Invalid position: ${position}. Queue size: ${session.queue.length}`);
+        }
+
+        // Don't allow removing currently playing track
+        if (session.isPlaying && session.currentPosition === position) {
+            throw new Error("Cannot remove currently playing track. Use skip command instead.");
+        }
+
+        const [removedTrack] = session.queue.splice(position, 1);
+
+        // Adjust current position if needed
+        if (position < session.currentPosition) {
+            session.currentPosition--;
+        }
+
+        return removedTrack;
     }
 }

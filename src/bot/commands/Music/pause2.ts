@@ -5,24 +5,26 @@ import { MusicService } from "../../../services/MusicService";
 import logger from "../../../lib/winston";
 
 /**
- * Skip Music Command (Refactored)
+ * Pause/Resume Command (Refactored)
  *
- * Skips the currently playing track and plays the next one in queue.
+ * Pause or resume the currently playing music.
  *
  * Migration Status: COMPLETE (full service-layer implementation)
- * - Uses MusicService for session and skip logic
- * - No legacy musicQueue dependency
  */
-export class SkipMusicCommandRefactored extends Command {
+export class PauseCommandRefactored extends Command {
     private musicService: MusicService;
 
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
-            name: "skip2",
-            aliases: ["skip-new", "skip-v2"],
-            description: "Skip currently playing track",
-            detailedDescription: `Skip the currently playing track and play the next one in the queue.`,
+            name: "pause2",
+            aliases: ["resume2", "continue2", "pause-new"],
+            description: "Pause/continue playing music",
+            detailedDescription: `This command pauses and resumes the currently playing music player in a server.
+            It acts as a simple toggle that will change the state to the opposite state.
+            It's... as straightforward as it could be.
+            But this won't make the player play if player reached the end of playlist and thus stopped.
+            You'll need to use the jump command.`,
         });
 
         this.musicService = MusicService.getInstance();
@@ -30,7 +32,7 @@ export class SkipMusicCommandRefactored extends Command {
 
     public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
         registry.registerChatInputCommand((builder) => {
-            builder.setName("skip2").setDescription("Skip currently playing track");
+            builder.setName("pause2").setDescription("Pause/Resume currently playing track");
         });
     }
 
@@ -53,18 +55,14 @@ export class SkipMusicCommandRefactored extends Command {
         }
 
         const guildId = interaction.guildId!;
-        await interaction.deferReply();
 
         try {
-            await this.skip(guildId, interaction.channel!);
-            await interaction.followUp({
-                content: "✅ Skipped to next track",
-                ephemeral: true,
-            });
+            const message = await this.togglePause(guildId);
+            await interaction.reply(message);
         } catch (error) {
-            logger.error("Error in skip command:", error);
-            await interaction.followUp({
-                content: `❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+            logger.error("Error in pause command (slash):", error);
+            await interaction.reply({
+                content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
                 ephemeral: true,
             });
         }
@@ -88,35 +86,29 @@ export class SkipMusicCommandRefactored extends Command {
         const guildId = message.guildId!;
 
         try {
-            await this.skip(guildId, message.channel);
+            const responseMessage = await this.togglePause(guildId);
+            await message.channel.send(responseMessage);
         } catch (error) {
-            logger.error("Error in skip command:", error);
-            await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+            logger.error("Error in pause command (message):", error);
+            await message.channel.send(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 
-    /**
-     * Skip the current track
-     */
-    private async skip(guildId: string, textChannel: any): Promise<void> {
+    private async togglePause(guildId: string): Promise<string> {
+        // Check if session exists
         const session = this.musicService.getSession(guildId);
-
         if (!session) {
-            throw new Error("No active music session in this guild");
+            return "No active music session. Use `play2` to start playing music.";
         }
 
-        if (!session.isPlaying) {
-            await textChannel.send("❌ Nothing is currently playing");
-            return;
+        const stats = this.musicService.getQueueStats(guildId);
+        if (!stats?.isPlaying) {
+            return "Nothing is currently playing. Use `play2` or `jump2` to start playing.";
         }
 
-        try {
-            // Stop the current track (triggers "end" event which plays next track)
-            await session.player.stopTrack();
-            await textChannel.send("⏭️ Skipping current track");
-        } catch (error) {
-            logger.error("Error stopping track:", error);
-            throw new Error("Failed to skip track");
-        }
+        // Toggle pause state
+        const isPaused = await this.musicService.pause(guildId);
+
+        return isPaused ? "⏸️ Paused..." : "▶️ Resuming...";
     }
 }

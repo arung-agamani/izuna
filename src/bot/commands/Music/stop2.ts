@@ -35,7 +35,7 @@ export class StopMusicCommand extends Command {
 - Remove database records`,
         });
 
-        this.musicService = new MusicService();
+        this.musicService = MusicService.getInstance();
     }
 
     public override async messageRun(message: Message) {
