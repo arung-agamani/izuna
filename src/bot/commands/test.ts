@@ -3,7 +3,6 @@ import { Message, EmbedBuilder } from "discord.js";
 import { google } from "googleapis";
 import { closureGoogleOauthTracker } from "../../lib/google";
 import prisma from "../../lib/prisma";
-import { getMusicManager, getShoukakuManager } from "../../lib/musicQueue";
 
 export class TestCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -25,7 +24,7 @@ export class TestCommand extends Command {
             {
                 idHints: ["1043216731168051241"],
                 guildIds: ["339763195554299904"],
-            }
+            },
         );
     }
 

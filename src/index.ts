@@ -23,7 +23,7 @@ import apiv1Routes from "./routes/api";
 import { config } from "./config";
 import createBot from "./bot/index";
 import logger from "./lib/winston";
-import { init as initReminderFromDb, restartReminderJob } from "./lib/reminder";
+import ReminderService from "./services/ReminderService";
 import prisma from "./lib/prisma";
 import { closureGoogleOauthState, closureGoogleOauthTracker } from "./lib/google";
 import { oauthSessionState } from "./lib/session";
@@ -48,12 +48,9 @@ async function initializeBot() {
 
         // Initialize reminder system with its own error handling
         try {
-            logger.info("📅 Initializing reminders from database...");
-            await initReminderFromDb();
-            logger.info("✅ Database reminders loaded");
-
-            logger.info("⏰ Starting reminder scheduler...");
-            await restartReminderJob(botClient);
+            logger.info("📅 Initializing ReminderService...");
+            const reminderService = ReminderService.getInstance();
+            await reminderService.initialize(botClient);
             logger.info("✅ Reminder system fully initialized");
         } catch (reminderError) {
             logger.error("⚠️ Failed to initialize reminder system (non-critical):", reminderError);
