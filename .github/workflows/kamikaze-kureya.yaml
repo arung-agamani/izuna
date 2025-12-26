@@ -5,11 +5,13 @@ on:
             - dev
     workflow_dispatch:
 jobs:
-    package:
+    detect-changes:
         runs-on: ubuntu-latest
+        outputs:
+            src-changed: ${{ steps.changes.outputs.src }}
         steps:
             - name: Checkout
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
             - name: Check if there is change on certain paths
               uses: dorny/paths-filter@v3
               id: changes
@@ -18,48 +20,54 @@ jobs:
                       src:
                         - 'src/**'
                         - 'web/**'
+                        - 'Dockerfile'
+                        - 'package.json'
+                        - 'yarn.lock'
+    package:
+        runs-on: ubuntu-latest
+        needs: detect-changes
+        if: needs.detect-changes.outputs.src-changed == 'true'
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
             - name: Docker Login
-              if: steps.changes.outputs.src == 'true'
-              uses: docker/login-action@v2.1.0
+              uses: docker/login-action@v3
               with:
                   registry: ghcr.io
                   username: ${{ github.actor }}
                   password: ${{ secrets.GHCR_ACCESS_TOKEN }}
-
             - name: Build and push Docker images
-              if: steps.changes.outputs.src == 'true'
-              uses: docker/build-push-action@v3.2.0
+              uses: docker/build-push-action@v6
               with:
                   context: .
                   file: Dockerfile
                   push: true
-                  tags: ghcr.io/arung-agamani/izuna:${{ github.sha }}, ghcr.io/arung-agamani/izuna:latest
+                  tags: |
+                      ghcr.io/arung-agamani/izuna:${{ github.sha }}
+                      ghcr.io/arung-agamani/izuna:latest
+                  cache-from: type=registry,ref=ghcr.io/arung-agamani/izuna:buildcache
+                  cache-to: type=registry,ref=ghcr.io/arung-agamani/izuna:buildcache,mode=max
     deploy:
         runs-on: ubuntu-latest
         needs: package
+        if: needs.package.result == 'success'
         steps:
-            - name: Checkout
-              uses: actions/checkout@v3
-            - name: Check if there is change on certain paths
-              uses: dorny/paths-filter@v3
-              id: changes
-              with:
-                  filters: |
-                      src:
-                        - 'src/**'
-                        - 'web/**'
-            - name: Apply changes to remote server
-              if: steps.changes.outputs.src == 'true'
+            - name: Deploy to remote server
               uses: appleboy/ssh-action@master
               with:
                   host: ${{ secrets.KUREYA_SSH_HOST }}
                   username: ${{ secrets.KUREYA_SSH_USER }}
                   key: ${{ secrets.KUREYA_SSH_PRIVATE_KEY }}
+                  envs: GITHUB_SHA
                   script: |
-                      echo "SSH into the server"
-                      export GIT_COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
-                      export GIT_COMMIT_HASH="${{ github.sha }}"
-                      BUILD_REF="$GIT_COMMIT_HASH - $GIT_COMMIT_MESSAGE" \
-                      COMMIT_HASH=${{ steps.changes.outputs.src == 'true' && github.sha || 'latest' }} \
-                      doppler run -- docker compose -f ${{ secrets.COMPOSE_FILE_PATH}} up --force-recreate -d izunabot
-                      echo "Deploy done"
+                      set -e
+                      echo "🚀 Starting deployment..."
+                      echo "📦 Image tag: $GITHUB_SHA"
+                      export COMMIT_HASH="${GITHUB_SHA}"
+                      doppler run -- docker compose -f ${{ secrets.COMPOSE_FILE_PATH }} up --force-recreate -d izunabot
+                      if [ $? -eq 0 ]; then
+                        echo "✅ Deployment completed successfully"
+                      else
+                        echo "❌ Deployment failed"
+                        exit 1
+                      fi
