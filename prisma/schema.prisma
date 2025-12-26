@@ -60,7 +60,7 @@ model EphemeralVC {
   id Int @id @default(autoincrement())
   guildId String
   channelId String
-  
+
   @@unique([guildId, channelId])
 }
 
