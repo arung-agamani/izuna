@@ -45,8 +45,8 @@ jobs:
                   tags: |
                       ghcr.io/arung-agamani/izuna:${{ github.sha }}
                       ghcr.io/arung-agamani/izuna:latest
-                  cache-from: type=registry,ref=ghcr.io/arung-agamani/izuna:buildcache
-                  cache-to: type=registry,ref=ghcr.io/arung-agamani/izuna:buildcache,mode=max
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
     deploy:
         runs-on: ubuntu-latest
         needs: package
