@@ -1,7 +1,7 @@
 FROM node:18 as builder
 SHELL ["/bin/bash", "-c"]
 WORKDIR /tmp
-COPY package.json yarn.lock .yarnrc.yml /tmp/
+COPY package.json yarn.lock /tmp/
 RUN yarn install --frozen-lockfile
 COPY ./src ./src
 RUN yarn build
@@ -10,14 +10,14 @@ FROM node:18-buster-slim as web-builder
 WORKDIR /tmp
 COPY web /tmp
 WORKDIR /tmp/web
-COPY package.json yarn.lock .yarnrc.yml /tmp/web/
+COPY package.json yarn.lock /tmp/web/
 RUN yarn install --frozen-lockfile
 RUN yarn build
 
 FROM node:18-buster-slim
 LABEL org.opencontainers.image.source="https://github.com/arung-agamani/izuna"
 WORKDIR /usr/src/app
-COPY package.json yarn.lock .yarnrc.yml ./
+COPY package.json yarn.lock ./
 RUN apt-get update && apt-get install openssl git -y && rm -rf /var/lib/apt/lists/*
 RUN yarn install --frozen-lockfile --production
 COPY --from=builder /tmp/build ./build
