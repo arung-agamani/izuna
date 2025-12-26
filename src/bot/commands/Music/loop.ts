@@ -1,6 +1,7 @@
-import { Args, Command } from "@sapphire/framework";
+import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import musicManager from "../../../lib/musicQueue";
+import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
+import { MusicService } from "../../../services/MusicService";
 import logger from "../../../lib/winston";
 
 const aliases = {
@@ -9,63 +10,154 @@ const aliases = {
     none: ["none", "0", "off", "disable", "stop"],
 };
 
-export class LoopQueueCommand extends Command {
+/**
+ * Loop/Repeat Command (Refactored)
+ *
+ * Loop through the queue in various ways.
+ *
+ * Migration Status: COMPLETE (full service-layer implementation)
+ */
+export class LoopCommand extends Command {
+    private musicService: MusicService;
+
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
             name: "loop",
             aliases: ["repeat"],
-            description: `Loop through the queue in various ways.\nAvailable options: "all", "one", "1", "none"`,
+            description: `Loop through the queue in various ways. Options: "all", "one", "none"`,
             detailedDescription: `Loop through the playlist. Requires one argument.
-            There are two looping method :
-            
-            Single-track loop. This will repeat only the currently playing track.
-            Playlist loop. This will reset the playhead to the beginning of playlist after it reached the end of playlist.
-            
-            Aliases for track loop mode :
-            single : "one", "1", "single", "this"
-            playlist: "all", "entire", "playlist"
-            
-            To turn off the looping, use one of the following argument : "none", "0", "off", "disable", "stop`,
+            There are two looping methods:
+
+            Single-track loop: This will repeat only the currently playing track.
+            Playlist loop: This will reset the playhead to the beginning of playlist after it reached the end.
+
+            Aliases for loop modes:
+            - single: "one", "1", "single", "this"
+            - playlist: "all", "entire", "playlist"
+            - none: "none", "0", "off", "disable", "stop"`,
+        });
+
+        this.musicService = MusicService.getInstance();
+    }
+
+    public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
+        registry.registerChatInputCommand((builder) => {
+            builder
+                .setName("loop2")
+                .setDescription("Set loop/repeat mode")
+                .addStringOption((opt) =>
+                    opt
+                        .setName("mode")
+                        .setDescription("Loop mode")
+                        .setRequired(true)
+                        .addChoices(
+                            { name: "Single Track", value: "single" },
+                            { name: "Entire Playlist", value: "playlist" },
+                            { name: "Disable Loop", value: "none" },
+                        ),
+                );
         });
     }
 
+    public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: interaction.guildId,
+            guild: interaction.guild,
+            textChannel: interaction.channel,
+            member: interaction.member as any,
+            botId: interaction.client.id!,
+        });
+
+        if (!validation.valid) {
+            await interaction.reply({
+                content: validation.error!,
+                ephemeral: true,
+            });
+            return;
+        }
+
+        const guildId = interaction.guildId!;
+        const mode = interaction.options.getString("mode", true);
+
+        try {
+            const message = await this.setLoopMode(guildId, mode);
+            await interaction.reply(message);
+        } catch (error) {
+            logger.error("Error in loop command (slash):", error);
+            await interaction.reply({
+                content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+                ephemeral: true,
+            });
+        }
+    }
+
     public override async messageRun(message: Message, args: Args) {
-        if (!message.guildId) {
-            await message.channel.send("This command only works in servers");
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: message.guildId,
+            guild: message.guild,
+            textChannel: message.channel,
+            member: message.member,
+            botId: message.client.id!,
+        });
+
+        if (!validation.valid) {
+            await message.channel.send(validation.error!);
             return;
         }
-        if (!message.member?.voice.channel) {
-            await message.channel.send("You must be in voice channel first.");
-            return;
-        }
-        const botVoiceChannel = message.guild!.members.cache.get(message.client.id!)?.voice.channel;
-        if (!message.member?.voice.channel.members.some((user) => user.id === message.client.id) && botVoiceChannel) {
-            await message.channel.send("You must be in the same voice channel with bot.");
-            return;
-        }
-        const musicGuildInfo = musicManager.get(message.guildId!);
-        if (!musicGuildInfo) {
-            await message.channel.send("No bot in voice channel. Are you okay?");
-            return;
-        }
+
+        const guildId = message.guildId!;
+
         try {
             const loopMode = await args.pick("string");
-            if (aliases.playlist.includes(loopMode)) {
-                musicGuildInfo.isRepeat = "playlist";
-                await message.channel.send("Set the loop to **entire playlist**.");
-            } else if (aliases.single.includes(loopMode)) {
-                musicGuildInfo.isRepeat = "single";
-                await message.channel.send("Set the loop to **this** track only.");
-            } else if (aliases.none.includes(loopMode)) {
-                musicGuildInfo.isRepeat = "no";
-                await message.channel.send("Track repeat has been disabled.");
+            const responseMessage = await this.setLoopMode(guildId, loopMode);
+            await message.channel.send(responseMessage);
+        } catch (error: any) {
+            if (error.identifier) {
+                // Sapphire argument error
+                await message.channel.send('No arguments given. Please specify "all", "one", or "none"');
             } else {
-                await message.channel.send('Wrong argument given. Please specify between "all" or "1" or "one" or "none"');
-                return;
+                logger.error("Error in loop command (message):", error);
+                await message.channel.send(`Error: ${error.message || "Unknown error"}`);
             }
-        } catch (error) {
-            await message.channel.send('No arguments given. Please specify between "all" or "1" or "one" or "none"');
+        }
+    }
+
+    private async setLoopMode(guildId: string, modeInput: string): Promise<string> {
+        // Check if session exists
+        const session = this.musicService.getSession(guildId);
+        if (!session) {
+            return "No active music session. Use `play2` to start playing music.";
+        }
+
+        const lowerMode = modeInput.toLowerCase();
+
+        // Determine the actual mode from aliases
+        let mode: "no" | "single" | "playlist";
+
+        if (aliases.playlist.includes(lowerMode)) {
+            mode = "playlist";
+        } else if (aliases.single.includes(lowerMode)) {
+            mode = "single";
+        } else if (aliases.none.includes(lowerMode)) {
+            mode = "no";
+        } else {
+            return 'Invalid loop mode. Please use "all" (playlist), "one" (single track), or "none" (disable).';
+        }
+
+        // Set the repeat mode
+        this.musicService.setRepeatMode(guildId, mode);
+
+        // Return appropriate message
+        switch (mode) {
+            case "playlist":
+                return "🔁 Set loop mode to **entire playlist**.";
+            case "single":
+                return "🔂 Set loop mode to **this track** only.";
+            case "no":
+                return "▶️ Loop mode **disabled**.";
         }
     }
 }

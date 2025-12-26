@@ -1,17 +1,32 @@
 import { ChatInputCommand, Command } from "@sapphire/framework";
-import { Message, TextBasedChannel, VoiceBasedChannel } from "discord.js";
-import musicManager from "../../../lib/musicQueue";
+import type { Message } from "discord.js";
+import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
+import { MusicService } from "../../../services/MusicService";
+import logger from "../../../lib/winston";
 
+/**
+ * NTR/VCMove Command (Refactored)
+ *
+ * Forcefully pulls the bot into the voice channel you're currently in.
+ * Maintains playback while moving between channels.
+ *
+ * Migration Status: COMPLETE (full service-layer implementation)
+ */
 export class NtrCommand extends Command {
+    private musicService: MusicService;
+
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
-            name: "vcmove",
-            aliases: ["cmere", "come", "ntr"],
-            description: "Forcefully pulling the bot into voice channel you're in now.",
-            detailedDescription:
-                "An albeit weird naming, but it does the job.\nIf the bot is currently playing something in some other voice channel, it will be pulled into the voice channel you're currently in. Otherwise will do nothing if you're not even in any voice channel.",
+            name: "ntr",
+            aliases: ["vcmove", "cmere", "come"],
+            description: "Pull the music player into your voice channel",
+            detailedDescription: `Forcefully pull the bot into the voice channel you're currently in.
+If the bot is playing music in another channel, it will move to your channel while continuing playback.
+You must be in a voice channel to use this command.`,
         });
+
+        this.musicService = MusicService.getInstance();
     }
 
     public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
@@ -21,62 +36,114 @@ export class NtrCommand extends Command {
     }
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+        // Validate prerequisites (but don't require same channel - that's the point of this command)
         if (!interaction.guildId) {
-            await interaction.channel?.send("This command only works in servers");
+            await interaction.reply({
+                content: "❌ This command only works in servers",
+                ephemeral: true,
+            });
             return;
         }
-        const textChannel = interaction.channel;
-        if (!textChannel) {
-            await interaction.channel!.send("Text channel is undefined. This issue has been reported (should be)");
+
+        if (!interaction.guild) {
+            await interaction.reply({
+                content: "❌ Guild not found",
+                ephemeral: true,
+            });
             return;
         }
-        const voiceChannel = interaction.guild?.members.cache.get(interaction.member!.user.id)?.voice.channel;
+
+        const voiceChannel = interaction.guild.members.cache.get(interaction.user.id)?.voice.channel;
         if (!voiceChannel) {
-            await interaction.channel?.send("You must be in voice channel first.");
+            await interaction.reply({
+                content: "❌ You must be in a voice channel first",
+                ephemeral: true,
+            });
             return;
         }
+
         const guildId = interaction.guildId;
         await interaction.deferReply();
-        await this.ntr(guildId, textChannel, voiceChannel);
-        await interaction.followUp({ content: "Pause command complete", ephemeral: true });
+
+        try {
+            await this.moveBot(guildId, voiceChannel.id, interaction.guild, interaction.channel!);
+            await interaction.followUp({
+                content: "✅ Coming to your channel!",
+                ephemeral: true,
+            });
+        } catch (error) {
+            logger.error("Error in ntr command:", error);
+            await interaction.followUp({
+                content: `❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+                ephemeral: true,
+            });
+        }
     }
 
     public override async messageRun(message: Message) {
         if (!message.guildId) {
-            await message.channel.send("This command only works in servers");
+            await message.channel.send("❌ This command only works in servers");
             return;
         }
+
+        if (!message.guild) {
+            await message.channel.send("❌ Guild not found");
+            return;
+        }
+
         if (!message.member?.voice.channel) {
-            await message.channel.send("You must be in voice channel first.");
+            await message.channel.send("❌ You must be in a voice channel first");
             return;
         }
+
         const guildId = message.guildId;
-        const textChannel = message.channel;
         const voiceChannel = message.member.voice.channel;
 
-        await this.ntr(guildId, textChannel, voiceChannel);
+        try {
+            await this.moveBot(guildId, voiceChannel.id, message.guild, message.channel);
+        } catch (error) {
+            logger.error("Error in ntr command:", error);
+            await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
     }
 
-    public async ntr(guildId: string, textChannel: TextBasedChannel, userVoiceChannel: VoiceBasedChannel) {
-        const musicGuildInfo = musicManager.get(guildId);
-        if (!musicGuildInfo) {
-            await textChannel.send("No bot in voice channel. Are you okay?");
+    /**
+     * Move the bot to a different voice channel
+     */
+    private async moveBot(guildId: string, newVoiceChannelId: string, guild: any, textChannel: any): Promise<void> {
+        const session = this.musicService.getSession(guildId);
+
+        if (!session) {
+            await textChannel.send("❌ No active music session in this guild. Use `/play2` to start playing music first.");
+            throw new Error("No active music session");
+        }
+
+        // Check if already in the target channel
+        if (session.voiceChannelId === newVoiceChannelId) {
+            await textChannel.send("❌ I'm already in your voice channel!");
             return;
         }
-        const client = this.container.client;
-        const guild = client.guilds.cache.get(guildId)!;
-        if (!guild) {
-            await textChannel.send("Somehow the guild object is empty. Debug this");
-            return;
+
+        // Get the new voice channel
+        const newVoiceChannel = guild.channels.cache.get(newVoiceChannelId);
+        if (!newVoiceChannel || !newVoiceChannel.isVoiceBased()) {
+            throw new Error("Invalid voice channel");
         }
-        const botUser = guild.members.cache.get(client.id!);
-        if (!botUser) {
-            await textChannel.send("Bot user not found.... wtf, then who am i?");
-            return;
+
+        try {
+            await this.musicService.moveToChannel(guildId, newVoiceChannel, guild);
+            await textChannel.send("✅ Yes, yes, I'm coming!");
+        } catch (error) {
+            logger.error("Error moving to channel:", error);
+
+            // Display the error message to the user (MusicService provides user-friendly messages)
+            if (error instanceof Error) {
+                await textChannel.send(error.message);
+            } else {
+                await textChannel.send("❌ Failed to move to voice channel. Please check my permissions.");
+            }
+
+            throw error;
         }
-        botUser.voice.setChannel(userVoiceChannel);
-        musicGuildInfo.voiceChannel = userVoiceChannel;
-        await textChannel.send("Yes, yes, I'm coming!");
-        return;
     }
 }

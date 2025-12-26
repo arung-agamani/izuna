@@ -1,18 +1,31 @@
 import { ChatInputCommand, Command } from "@sapphire/framework";
-import type { Message, TextBasedChannel } from "discord.js";
-import musicManager from "../../../lib/musicQueue";
+import type { Message } from "discord.js";
+import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
+import { MusicService } from "../../../services/MusicService";
 import logger from "../../../lib/winston";
-// import prisma from "../../lib/prisma";
 
+/**
+ * Skip Music Command (Refactored)
+ *
+ * Skips the currently playing track and plays the next one in queue.
+ *
+ * Migration Status: COMPLETE (full service-layer implementation)
+ * - Uses MusicService for session and skip logic
+ * - No legacy musicQueue dependency
+ */
 export class SkipMusicCommand extends Command {
+    private musicService: MusicService;
+
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
             name: "skip",
-            description: "Skip playing music",
-            detailedDescription: `Skip currently playing track.
-            If "jump" command is previously used, it will skip to the track targeted by the previous "jump" command.`,
+            aliases: ["s"],
+            description: "Skip currently playing track",
+            detailedDescription: `Skip the currently playing track and play the next one in the queue.`,
         });
+
+        this.musicService = MusicService.getInstance();
     }
 
     public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
@@ -22,65 +35,88 @@ export class SkipMusicCommand extends Command {
     }
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
-        if (!interaction.guildId) {
-            await interaction.channel?.send("This command only works in servers");
-            return;
-        }
-        const ch = interaction.channel;
-        if (!ch) {
-            await interaction.channel!.send("Text channel is undefined. Hmm...");
-            return;
-        }
-        const vc = interaction.guild?.members.cache.get(interaction.member!.user.id)?.voice.channel;
-        if (!vc) {
-            await ch.send("You must be in voice channel first.");
-            return;
-        }
-        const botVoiceChannel = interaction.guild?.members.cache.get(interaction.client.id!)?.voice.channel;
-        if (!vc.members.some((user) => user.id === interaction.client.id) && botVoiceChannel) {
-            await interaction.reply("You must be in the same voice channel with bot.");
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: interaction.guildId,
+            guild: interaction.guild,
+            textChannel: interaction.channel,
+            member: interaction.member as any,
+            botId: interaction.client.id!,
+        });
+
+        if (!validation.valid) {
+            await interaction.reply({
+                content: validation.error!,
+                ephemeral: true,
+            });
             return;
         }
 
-        const guildId = interaction.guildId;
+        const guildId = interaction.guildId!;
         await interaction.deferReply();
-        await this.skip(guildId, ch);
-        await interaction.followUp({ content: "Skip command complete", ephemeral: true });
+
+        try {
+            await this.skip(guildId, interaction.channel!);
+            await interaction.followUp({
+                content: "✅ Skipped to next track",
+                ephemeral: true,
+            });
+        } catch (error) {
+            logger.error("Error in skip command:", error);
+            await interaction.followUp({
+                content: `❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+                ephemeral: true,
+            });
+        }
     }
 
     public override async messageRun(message: Message) {
-        if (!message.guildId) {
-            await message.channel.send("This command only works in servers");
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: message.guildId,
+            guild: message.guild,
+            textChannel: message.channel,
+            member: message.member,
+            botId: message.client.id!,
+        });
+
+        if (!validation.valid) {
+            await message.channel.send(validation.error!);
             return;
         }
-        if (!message.member?.voice.channel) {
-            await message.channel.send("You must be in voice channel first.");
-            return;
+
+        const guildId = message.guildId!;
+
+        try {
+            await this.skip(guildId, message.channel);
+        } catch (error) {
+            logger.error("Error in skip command:", error);
+            await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
-        const botVoiceChannel = message.guild!.members.cache.get(message.client.id!)?.voice.channel;
-        if (!message.member?.voice.channel.members.some((user) => user.id === message.client.id) && botVoiceChannel) {
-            await message.channel.send("You must be in the same voice channel with bot.");
-            return;
-        }
-        const guildId = message.guildId;
-        const ch = message.channel;
-        await this.skip(guildId, ch);
     }
 
-    public async skip(guildId: string, textChannel: TextBasedChannel) {
-        const musicGuildInfo = musicManager.get(guildId);
-        if (!musicGuildInfo) {
-            await textChannel.send("No bot in voice channel.");
+    /**
+     * Skip the current track
+     */
+    private async skip(guildId: string, textChannel: any): Promise<void> {
+        const session = this.musicService.getSession(guildId);
+
+        if (!session) {
+            throw new Error("No active music session in this guild");
+        }
+
+        if (!session.isPlaying) {
+            await textChannel.send("❌ Nothing is currently playing");
             return;
         }
-        if (musicGuildInfo.isPlaying) {
-            await textChannel.send("Skipping the current track");
-            await musicGuildInfo.player.stopTrack();
-            musicGuildInfo.isPlaying = false;
-            return;
-        } else {
-            await textChannel.send("No track to skip");
-            return;
+
+        try {
+            // Stop the current track (triggers "end" event which plays next track)
+            await session.player.stopTrack();
+            await textChannel.send("⏭️ Skipping current track");
+        } catch (error) {
+            logger.error("Error stopping track:", error);
+            throw new Error("Failed to skip track");
         }
     }
 }

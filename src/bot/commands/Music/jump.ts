@@ -1,108 +1,149 @@
-import { Args, Command } from "@sapphire/framework";
+import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import { Track } from "shoukaku";
-import { getGoogleClient } from "../../../lib/google";
-import musicManager, { getShoukakuManager, LavalinkLazyLoad } from "../../../lib/musicQueue";
+import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
+import { MusicService } from "../../../services/MusicService";
 import logger from "../../../lib/winston";
 
-export class RemoveFromQueueCommand extends Command {
+/**
+ * Jump Command (Refactored)
+ *
+ * Set the next play head to selected track number from queue.
+ * The targeted track will be played after the current playing track ends.
+ *
+ * Migration Status: COMPLETE (full service-layer implementation)
+ */
+export class JumpCommand extends Command {
+    private musicService: MusicService;
+
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
             name: "jump",
+            aliases: ["j"],
             description: "Set the next play head to selected track number from queue",
             detailedDescription: `Set the next play head to selected track number from playlist/queue.
             This command won't immediately stop the current playing track.
             The targeted track will be played after the current playing track ends.
             This means that using "skip" command after this command will play the targeted track immediately.`,
         });
+
+        this.musicService = MusicService.getInstance();
+    }
+
+    public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
+        registry.registerChatInputCommand((builder) => {
+            builder
+                .setName("jump")
+                .setDescription("Jump to a specific track in the queue")
+                .addIntegerOption((opt) => opt.setName("position").setDescription("Track position (1-based)").setRequired(true).setMinValue(1));
+        });
+    }
+
+    public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: interaction.guildId,
+            guild: interaction.guild,
+            textChannel: interaction.channel,
+            member: interaction.member as any,
+            botId: interaction.client.id!,
+        });
+
+        if (!validation.valid) {
+            await interaction.reply({
+                content: validation.error!,
+                ephemeral: true,
+            });
+            return;
+        }
+
+        const guildId = interaction.guildId!;
+        const position = interaction.options.getInteger("position", true);
+
+        await interaction.deferReply();
+
+        try {
+            await this.jumpToTrack(guildId, position, interaction.channel!);
+            await interaction.followUp({ content: "Jump command complete!", ephemeral: true });
+        } catch (error) {
+            logger.error("Error in jump command (slash):", error);
+            await interaction.followUp({
+                content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+                ephemeral: true,
+            });
+        }
     }
 
     public override async messageRun(message: Message, args: Args) {
-        if (!message.guildId) {
-            await message.channel.send("This command only works in servers");
-            return;
-        }
-        if (!message.member?.voice.channel) {
-            await message.channel.send("You must be in voice channel first.");
-            return;
-        }
-        const botVoiceChannel = message.guild!.members.cache.get(message.client.id!)?.voice.channel;
-        if (!message.member?.voice.channel.members.some((user) => user.id === message.client.id) && botVoiceChannel) {
-            await message.channel.send("You must be in the same voice channel with bot.");
-            return;
-        }
-        const musicGuildInfo = musicManager.get(message.guildId!);
-        if (!musicGuildInfo) {
-            await message.channel.send("No bot in voice channel. Are you okay?");
-            return;
-        }
-        try {
-            const posToJump = await args.pick("integer");
-            // check if there is a current playing track
-            if (posToJump > 0 && posToJump <= musicGuildInfo.queue.length) {
-                musicGuildInfo.skipPosition = posToJump - 1;
-                musicGuildInfo.isSkippingQueued = true;
-                await message.channel.send(`Set the play head to track ${posToJump}. **${musicGuildInfo.queue[posToJump - 1]?.info.title}**`);
-                if (!musicGuildInfo.isPlaying && musicGuildInfo.currentPosition === musicGuildInfo.queue.length) {
-                    let poppedTrack = musicGuildInfo.queue[posToJump - 1]!;
-                    musicGuildInfo.currentPosition = posToJump - 1;
-                    musicGuildInfo.isSkippingQueued = false;
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: message.guildId,
+            guild: message.guild,
+            textChannel: message.channel,
+            member: message.member,
+            botId: message.client.id!,
+        });
 
-                    if ((<LavalinkLazyLoad>poppedTrack).fileId) {
-                        const searchTarget = await this.resolveGoogleDrive((<LavalinkLazyLoad>poppedTrack).fileId);
-                        if (!searchTarget) {
-                            await message.channel.send("Failed to query from Google Drive");
-                            return;
-                        }
-                        const shoukakuManager = getShoukakuManager();
-                        if (!shoukakuManager) {
-                            await message.channel.send("Music manager uninitizalied. Check your implementation, dumbass");
-                            return;
-                        }
-                        // @ts-ignore
-                        const lavalinkNode = shoukakuManager.options.nodeResolver(shoukakuManager.nodes);
-                        if (!lavalinkNode) {
-                            await message.channel.send("No music player node currently connected.");
-                            return;
-                        }
-                        let newPoppedTrack = await lavalinkNode.rest.resolve(searchTarget!);
-                        if (!newPoppedTrack) {
-                            await message.channel.send("Failed to resolve WebContentLink as Playable Track");
-                            return;
-                        }
-                        const track = newPoppedTrack.data as Track;
-                        await musicGuildInfo.player.playTrack({
-                            track: { encoded: track.encoded },
-                        });
-                        await message.channel.send(`Now playing **${track.info.title}**, if it works...`);
-                        musicGuildInfo.isPlaying = true;
-                    } else {
-                        poppedTrack = poppedTrack as Track;
-                        await musicGuildInfo.player.playTrack({
-                            track: { encoded: poppedTrack.encoded },
-                            position: poppedTrack.info.position,
-                        });
-                        await message.channel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
-                        musicGuildInfo.isPlaying = true;
-                    }
-                }
-                return;
+        if (!validation.valid) {
+            await message.channel.send(validation.error!);
+            return;
+        }
+
+        const guildId = message.guildId!;
+
+        try {
+            const position = await args.pick("integer");
+            await this.jumpToTrack(guildId, position, message.channel);
+        } catch (error: any) {
+            if (error.identifier) {
+                // Sapphire argument error
+                await message.channel.send("Error: Please provide a valid track number (positive integer)");
+            } else {
+                logger.error("Error in jump command (message):", error);
+                await message.channel.send(`Error: ${error.message || "Unknown error"}`);
             }
-            await message.channel.send(`Out of range track number.`);
-            return;
-        } catch (error) {
-            await message.channel.send("Error on command. Please put non-zero positive integer");
-            return;
         }
     }
 
-    async resolveGoogleDrive(fileId: string) {
-        const drive = getGoogleClient();
-        const file = await drive.files.get({
-            fileId,
-            fields: "webContentLink",
-        });
-        return file.data.webContentLink;
+    private async jumpToTrack(guildId: string, position: number, channel: any) {
+        // Check if session exists
+        const session = this.musicService.getSession(guildId);
+        if (!session) {
+            await channel.send("No active music session. Use `play2` to start playing music.");
+            return;
+        }
+
+        const queue = this.musicService.getQueue(guildId);
+        const stats = this.musicService.getQueueStats(guildId);
+
+        if (!queue || queue.length === 0) {
+            await channel.send("Queue is empty. Add some tracks first!");
+            return;
+        }
+
+        // Convert to 0-based index
+        const targetIndex = position - 1;
+
+        if (targetIndex < 0 || targetIndex >= queue.length) {
+            await channel.send(`Invalid track position. Queue has ${queue.length} tracks (1-${queue.length})`);
+            return;
+        }
+
+        const targetTrack = queue[targetIndex];
+
+        // If nothing is currently playing and we're at the end, play immediately
+        if (!stats?.isPlaying && stats?.currentPosition === queue.length) {
+            await this.musicService.jumpAndPlay(guildId, targetIndex);
+            await channel.send(`▶️ Now playing: **${targetTrack.info.title}**`);
+        } else {
+            // Set up to play after current track ends
+            // jumpToTrack expects 0-based index and handles the -1 internally
+            this.musicService.jumpToTrack(guildId, targetIndex);
+            await channel.send(`⏭️ Set the play head to track ${position}: **${targetTrack.info.title}**`);
+
+            if (stats?.isPlaying) {
+                await channel.send("💡 Use `skip2` to play it immediately.");
+            }
+        }
     }
 }

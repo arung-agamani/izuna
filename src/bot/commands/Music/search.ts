@@ -1,105 +1,148 @@
 import { Args, ChatInputCommand, Command } from "@sapphire/framework";
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, TextBasedChannel, type Message } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type Message } from "discord.js";
+import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
+import { MusicService } from "../../../services/MusicService";
 import logger from "../../../lib/winston";
+
 const ytsearch = require("youtube-search-api");
 
-export class SearchMusicCommand extends Command {
+/**
+ * Search Command (Refactored)
+ *
+ * Search for music to play before enqueuing.
+ * Shows interactive search results with buttons for selection.
+ *
+ * Migration Status: COMPLETE (full service-layer implementation)
+ * Note: This command only displays search results. The actual queuing
+ * happens via button interaction handlers (ytplay button handler).
+ */
+export class SearchCommand extends Command {
+    private musicService: MusicService;
+
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
             name: "search",
+            aliases: ["find", "s"],
             description: "Search for music to play before enqueuing",
+            detailedDescription: `Search music from YouTube with given query.
+            Shows top 5 results with interactive buttons to select which track to play.
+            Click a number button to queue that track.
+            Click X to cancel the search.`,
         });
+
+        this.musicService = MusicService.getInstance();
     }
 
     public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
-        registry.registerChatInputCommand(
-            (builder) => {
-                builder
-                    .setName("search")
-                    .setDescription("Search music from Youtube with given query")
-                    .addStringOption((opt) => opt.setName("query").setDescription("Enter search query").setRequired(true));
-            },
-            {
-                idHints: [],
-            }
-        );
+        registry.registerChatInputCommand((builder) => {
+            builder
+                .setName("search")
+                .setDescription("Search music from YouTube with given query")
+                .addStringOption((opt) => opt.setName("query").setDescription("Enter search query").setRequired(true));
+        });
     }
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+        // Validate prerequisites (less strict for search - just needs to be in a guild)
         if (!interaction.guildId) {
-            await interaction.channel?.send("this comman");
-        }
-        const textChannel = interaction.channel;
-        if (!textChannel) {
-            await interaction.channel!.send("Text channel is undefined. This issue has been reported (should be)");
+            await interaction.reply({
+                content: "This command only works in servers.",
+                ephemeral: true,
+            });
             return;
         }
-        const voiceChannel = interaction.guild?.members.cache.get(interaction.member!.user.id)?.voice.channel;
-        if (!voiceChannel) {
-            await interaction.channel?.send("You must be in voice channel first.");
-            return;
-        }
-        const botVoiceChannel = interaction.guild?.members.cache.get(interaction.client.id!)?.voice.channel;
-        if (!voiceChannel.members.some((user) => user.id === interaction.client.id) && botVoiceChannel) {
-            await interaction.reply("You must be in the same voice channel with bot.");
-            return;
-        }
+
         const query = interaction.options.getString("query", true);
         const authorId = interaction.user.id;
+
         await interaction.deferReply();
-        await this.search(query, authorId, textChannel);
-        await interaction.followUp({ content: "Search command complete!", ephemeral: true });
+
+        try {
+            await this.performSearch(query, authorId, interaction.channel!);
+            await interaction.followUp({ content: "Search complete!", ephemeral: true });
+        } catch (error) {
+            logger.error("Error in search command (slash):", error);
+            await interaction.followUp({
+                content: `Error: ${error instanceof Error ? error.message : "Failed to search"}`,
+                ephemeral: true,
+            });
+        }
     }
 
     public override async messageRun(message: Message, args: Args) {
+        // Validate prerequisites (less strict for search)
         if (!message.guildId || !message.guild) {
-            await message.channel.send("This command only works in servers");
+            await message.channel.send("This command only works in servers.");
             return;
         }
-        if (!message.member?.voice.channel) {
-            await message.channel.send("You must be in voice channel first.");
-            return;
+
+        try {
+            const query = await args.rest("string");
+            const authorId = message.author.id;
+            await this.performSearch(query, authorId, message.channel);
+        } catch (error: any) {
+            if (error.identifier) {
+                // Sapphire argument error
+                await message.channel.send("Error: Please provide a search query.");
+            } else {
+                logger.error("Error in search command (message):", error);
+                await message.channel.send("Error: Failed to search. Please try again.");
+            }
         }
-        const botVoiceChannel = message.guild.members.cache.get(message.client.id!)?.voice.channel;
-        if (!message.member?.voice.channel.members.some((user) => user.id === message.client.id) && botVoiceChannel) {
-            await message.channel.send("You must be in the same voice channel with bot.");
-            return;
-        }
-        const query = await args.rest("string");
-        const authorId = message.author.id;
-        const textChannel = message.channel;
-        await this.search(query, authorId, textChannel);
     }
 
-    public async search(query: string, authorId: string, textChannel: TextBasedChannel) {
+    private async performSearch(query: string, authorId: string, channel: any) {
         try {
-            // search query
-            logger.debug(query);
+            logger.debug(`Searching YouTube for: ${query}`);
+
+            // Search YouTube for videos
             const result = await ytsearch.GetListByKeyword(query, false, 5, [{ type: "video" }]);
-            // show result as an interaction
+
+            if (!result || !result.items || result.items.length === 0) {
+                await channel.send("❌ No results found for your search query.");
+                return;
+            }
+
+            // Build embed with search results
             const embed = new EmbedBuilder();
-            const row = new ActionRowBuilder<ButtonBuilder>();
+            embed.setTitle("🔍 YouTube Search Results");
+            embed.setDescription("Click a number to queue that track, or X to cancel.");
+            embed.setColor(0x3b82f6); // Blue color
+
+            let resultText = "";
+            const row1 = new ActionRowBuilder<ButtonBuilder>();
             const row2 = new ActionRowBuilder<ButtonBuilder>();
-            let msg = "";
-            for (let i = 0; i < result.items.length; i++) {
-                msg += `${i + 1}. ${result.items[i].title}.\n`;
-                row.addComponents(
+
+            // Add results to embed and create buttons
+            for (let i = 0; i < result.items.length && i < 5; i++) {
+                const item = result.items[i];
+                const duration = item.length?.simpleText || "Unknown";
+                resultText += `**${i + 1}.** ${item.title}\n`;
+                resultText += `    ⏱️ ${duration} | 👁️ ${item.viewCount || "N/A"}\n\n`;
+
+                row1.addComponents(
                     new ButtonBuilder()
                         .setLabel(String(i + 1))
-                        .setCustomId(`ytplay:${authorId}:${result.items[i].id}`)
-                        .setStyle(ButtonStyle.Primary)
+                        .setCustomId(`ytplay:${authorId}:${item.id}`)
+                        .setStyle(ButtonStyle.Primary),
                 );
             }
-            row2.addComponents(new ButtonBuilder().setLabel("X").setCustomId(`ytplay:${authorId}:CANCELATIONAWOO`).setStyle(ButtonStyle.Danger));
-            embed.setTitle("Izuna Search Result");
-            embed.setDescription(msg);
 
-            await textChannel.send({ embeds: [embed], components: [row, row2] });
+            // Add cancel button
+            row2.addComponents(new ButtonBuilder().setLabel("✖ Cancel").setCustomId(`ytplay:${authorId}:CANCELATIONAWOO`).setStyle(ButtonStyle.Danger));
+
+            embed.setDescription(resultText);
+            embed.setFooter({ text: "💡 Buttons expire after 5 minutes" });
+            embed.setTimestamp();
+
+            await channel.send({
+                embeds: [embed],
+                components: [row1, row2],
+            });
         } catch (error) {
-            console.log(error);
-            await textChannel.send("Error on command. Put search term");
-            return;
+            logger.error("YouTube search error:", error);
+            throw new Error("Failed to search YouTube. Please try again later.");
         }
     }
 }

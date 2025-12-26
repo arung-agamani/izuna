@@ -1,93 +1,167 @@
-import { Args, Command } from "@sapphire/framework";
+import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import { Track } from "shoukaku";
-import musicManager, { isGdriveLazyLoad, LavalinkLazyLoad } from "../../../lib/musicQueue";
-import { fancyTimeFormat } from "../../../lib/utils";
+import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
+import { MusicService } from "../../../services/MusicService";
+import { parseTimeString, fancyTimeFormat } from "../../../lib/utils";
 import logger from "../../../lib/winston";
-// import logger from "../../../lib/winston";
 
-const digitsRegex = /^[0-9]{1,2}$/;
+/**
+ * Seek Command (Refactored)
+ *
+ * Seeks to a specific position in the currently playing track.
+ * Supports time formats: "ss", "mm:ss", "hh:mm:ss"
+ *
+ * Migration Status: COMPLETE (full service-layer implementation)
+ */
+export class SeekCommand extends Command {
+    private musicService: MusicService;
 
-export class SeekPlayerCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
             name: "seek",
-            description: "Seek currently playing track to desired position.",
-            detailedDescription: `This command accepts a string with format "hh:mm:ss" down to "ss".
-            You can put "40" and it will be translated to position 40 seconds since the beginning.
-            If putting 1:10, it will seek to position 70 seconds.
-            If putting 1:1:10, it will seek to position 3670 seconds (1 hour + 1 minute + 10 seconds).
-            It will decline if input position is greater than track's length.`,
+            aliases: [],
+            description: "Seek to a specific position in the current track",
+            detailedDescription: `Seek to a specific position in the currently playing track.
+
+Accepted time formats:
+- "40" = 40 seconds
+- "1:10" = 1 minute 10 seconds (70 seconds)
+- "1:1:10" = 1 hour 1 minute 10 seconds (3670 seconds)
+
+The position must not exceed the track's length.`,
+        });
+
+        this.musicService = MusicService.getInstance();
+    }
+
+    public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
+        registry.registerChatInputCommand((builder) => {
+            builder
+                .setName("seek")
+                .setDescription("Seek to a specific position in the current track")
+                .addStringOption((opt) => opt.setName("position").setDescription("Time position (e.g., '40', '1:10', '1:1:10')").setRequired(true));
         });
     }
 
-    public override async messageRun(message: Message, args: Args) {
-        if (!message.guildId) {
-            await message.channel.send("This command only works in servers");
+    public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: interaction.guildId,
+            guild: interaction.guild,
+            textChannel: interaction.channel,
+            member: interaction.member as any,
+            botId: interaction.client.id!,
+        });
+
+        if (!validation.valid) {
+            await interaction.reply({
+                content: validation.error!,
+                ephemeral: true,
+            });
             return;
         }
-        if (!message.member?.voice.channel) {
-            await message.channel.send("You must be in voice channel first.");
-            return;
-        }
-        const botVoiceChannel = message.guild!.members.cache.get(message.client.id!)?.voice.channel;
-        if (!message.member?.voice.channel.members.some((user) => user.id === message.client.id) && botVoiceChannel) {
-            await message.channel.send("You must be in the same voice channel with bot.");
-            return;
-        }
-        const musicGuildInfo = musicManager.get(message.guildId!);
-        if (!musicGuildInfo) {
-            await message.channel.send("No bot in voice channel. Are you okay?");
-            return;
-        }
+
+        const guildId = interaction.guildId!;
+        const positionString = interaction.options.getString("position", true);
+
+        await interaction.deferReply();
+
         try {
-            const inputString = await args.pick("string");
-            const data = inputString.split(":");
-            let pos = 0;
-            let isValid = true;
-            // validate
-            for (const piece of data) {
-                // logger.debug("Testing piece: " + piece);
-                if (!digitsRegex.exec(piece) || Number(piece) < 0) {
-                    isValid = false;
-                    // logger.debug("Falling piece: " + piece);
-                    break;
-                }
-            }
-            if (!isValid) {
-                await message.channel.send("Invalid string. Please input with format [hh:][mm:]ss");
-                return;
-            }
-            if (data.length === 3) {
-                pos += Number(data[0]) * 3600;
-                pos += Number(data[1]) * 60;
-                pos += Number(data[2]);
-            } else if (data.length === 2) {
-                pos += Number(data[0]) * 60;
-                pos += Number(data[1]);
-            } else if (data.length === 1) {
-                pos += Number(data[0]);
-            } else {
-                await message.channel.send("Invalid string. Please input with format [hh:][mm:]ss");
-                return;
-            }
-            let track = musicGuildInfo.queue[musicGuildInfo.currentPosition];
-            if (isGdriveLazyLoad(track)) {
-                track = track as LavalinkLazyLoad;
-                await message.channel.send("Cannot set seeking for GDrive track (yet)");
-                return;
-            }
-            if (pos * 1000 > (track as Track).info.length!) {
-                await message.channel.send("Out of range.");
-                return;
-            }
-            musicGuildInfo.player.seekTo(pos * 1000);
-            await message.channel.send(`Player seeked to position ${fancyTimeFormat(pos)}`);
-            return;
+            const formattedTime = await this.seek(guildId, positionString, interaction.channel!);
+            await interaction.followUp({
+                content: `⏩ Seeked to position ${formattedTime}`,
+                ephemeral: true,
+            });
         } catch (error) {
-            await message.channel.send("Error on command. Please put non-zero positive integer for both arguments");
+            logger.error("Error in seek command:", error);
+            await interaction.followUp({
+                content: `❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+                ephemeral: true,
+            });
+        }
+    }
+
+    public override async messageRun(message: Message, args: Args) {
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: message.guildId,
+            guild: message.guild,
+            textChannel: message.channel,
+            member: message.member,
+            botId: message.client.id!,
+        });
+
+        if (!validation.valid) {
+            await message.channel.send(validation.error!);
             return;
+        }
+
+        const guildId = message.guildId!;
+
+        try {
+            const positionString = await args.pick("string");
+            const formattedTime = await this.seek(guildId, positionString, message.channel);
+        } catch (error) {
+            logger.error("Error in seek command:", error);
+            if (error instanceof Error && error.message.includes("There was no input")) {
+                await message.channel.send("❌ Error: Please provide a time position (e.g., `40`, `1:10`, `1:1:10`)");
+            } else {
+                await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+            }
+        }
+    }
+
+    /**
+     * Seek to a position in the current track
+     * @returns Formatted time string for confirmation
+     */
+    private async seek(guildId: string, positionString: string, textChannel: any): Promise<string> {
+        const session = this.musicService.getSession(guildId);
+
+        if (!session) {
+            throw new Error("No active music session in this guild");
+        }
+
+        if (!session.isPlaying) {
+            await textChannel.send("❌ No track currently playing");
+            throw new Error("No track currently playing");
+        }
+
+        // Parse time string to seconds
+        let positionSeconds: number;
+        try {
+            positionSeconds = parseTimeString(positionString);
+        } catch (error) {
+            await textChannel.send(
+                `❌ ${error instanceof Error ? error.message : "Invalid time format"}\n` + `Examples: \`40\` (40s), \`1:10\` (1m10s), \`1:1:10\` (1h1m10s)`,
+            );
+            throw error;
+        }
+
+        // Convert to milliseconds
+        const positionMs = positionSeconds * 1000;
+
+        // Get current track info
+        const currentTrack = session.queue[session.currentPosition];
+        if (!currentTrack) {
+            throw new Error("No track at current position");
+        }
+
+        // Check if track is a live stream (no length)
+        if (currentTrack.info.isStream) {
+            await textChannel.send("❌ Cannot seek in live streams");
+            throw new Error("Cannot seek in live streams");
+        }
+
+        try {
+            await this.musicService.seekTo(guildId, positionMs);
+            const formattedTime = fancyTimeFormat(positionSeconds);
+            await textChannel.send(`⏩ Player seeked to position ${formattedTime}`);
+            return formattedTime;
+        } catch (error) {
+            logger.error("Error seeking track:", error);
+            throw error;
         }
     }
 }

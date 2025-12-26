@@ -1,57 +1,122 @@
-import { Command } from "@sapphire/framework";
+import { ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import musicManager, { getShoukakuManager } from "../../../lib/musicQueue";
+import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
+import { MusicService } from "../../../services/MusicService";
 import logger from "../../../lib/winston";
-import prisma from "../../../lib/prisma";
-// import prisma from "../../lib/prisma";
 
-export class ShuffleMusicQueueCommand extends Command {
+/**
+ * Shuffle Command (Refactored)
+ *
+ * Shuffles the current playlist while preserving the currently playing track.
+ * Uses Fisher-Yates algorithm for true randomization.
+ *
+ * Migration Status: COMPLETE (full service-layer implementation)
+ */
+export class ShuffleCommand extends Command {
+    private musicService: MusicService;
+
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
             name: "shuffle",
-            description: "Shuffle current playlist",
-            detailedDescription: `Shuffle the current playlist. The current playhead will stay the same (to be fixed)`,
+            aliases: ["sh"],
+            description: "Shuffle the current playlist",
+            detailedDescription: `Shuffle the current playlist using true random algorithm.
+The currently playing track will stay at its position, and all other tracks will be shuffled.
+If nothing is playing, the entire queue will be shuffled.`,
+        });
+
+        this.musicService = MusicService.getInstance();
+    }
+
+    public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
+        registry.registerChatInputCommand((builder) => {
+            builder.setName("shuffle").setDescription("Shuffle the current playlist");
         });
     }
 
-    private shuffle = (array: any[]) => {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
+    public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: interaction.guildId,
+            guild: interaction.guild,
+            textChannel: interaction.channel,
+            member: interaction.member as any,
+            botId: interaction.client.id!,
+        });
+
+        if (!validation.valid) {
+            await interaction.reply({
+                content: validation.error!,
+                ephemeral: true,
+            });
+            return;
         }
-        return array;
-    };
+
+        const guildId = interaction.guildId!;
+        await interaction.deferReply();
+
+        try {
+            await this.shuffle(guildId, interaction.channel!);
+            await interaction.followUp({
+                content: "🔀 Playlist shuffled! Use `/nowplaying2` to see the new order.",
+                ephemeral: true,
+            });
+        } catch (error) {
+            logger.error("Error in shuffle command:", error);
+            await interaction.followUp({
+                content: `❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+                ephemeral: true,
+            });
+        }
+    }
 
     public override async messageRun(message: Message) {
-        if (!message.guildId) {
-            await message.channel.send("This command only works in servers");
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: message.guildId,
+            guild: message.guild,
+            textChannel: message.channel,
+            member: message.member,
+            botId: message.client.id!,
+        });
+
+        if (!validation.valid) {
+            await message.channel.send(validation.error!);
             return;
         }
-        if (!message.member?.voice.channel) {
-            await message.channel.send("You must be in voice channel first.");
+
+        const guildId = message.guildId!;
+
+        try {
+            await this.shuffle(guildId, message.channel);
+        } catch (error) {
+            logger.error("Error in shuffle command:", error);
+            await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+    }
+
+    /**
+     * Shuffle the playlist
+     */
+    private async shuffle(guildId: string, textChannel: any): Promise<void> {
+        const session = this.musicService.getSession(guildId);
+
+        if (!session) {
+            throw new Error("No active music session in this guild");
+        }
+
+        if (session.queue.length < 2) {
+            await textChannel.send("❌ Queue must have at least 2 tracks to shuffle");
             return;
         }
-        const musicGuildInfo = musicManager.get(message.guildId!);
-        if (!musicGuildInfo) {
-            await message.channel.send("No bot in voice channel. Are you okay?");
-            return;
+
+        try {
+            this.musicService.shuffleQueue(guildId);
+            await textChannel.send("🔀 Playlist shuffled! Review the shuffled playlist by using `nowplaying2` command.");
+        } catch (error) {
+            logger.error("Error shuffling queue:", error);
+            throw error;
         }
-        // await musicGuildInfo.player.stopTrack();
-        const shoukakuManager = getShoukakuManager();
-        if (!shoukakuManager) {
-            await message.channel.send("Music manager uninitizalied. Check your implementation, dumbass");
-            return;
-        }
-        let currentId = "";
-        if (musicGuildInfo.isPlaying) {
-            currentId = musicGuildInfo.queue[musicGuildInfo.currentPosition].info.uri!;
-        }
-        musicGuildInfo.queue = this.shuffle(musicGuildInfo.queue);
-        if (musicGuildInfo.isPlaying) {
-            musicGuildInfo.currentPosition = musicGuildInfo.queue.findIndex((x) => x.info.uri === currentId);
-        }
-        await message.channel.send("Playlist shuffled. Review the shuffled playlist by calling `nowplaying` command");
-        // point to the currently playing
     }
 }

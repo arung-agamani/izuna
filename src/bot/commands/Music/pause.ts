@@ -1,22 +1,33 @@
 import { ChatInputCommand, Command } from "@sapphire/framework";
-import type { Message, TextBasedChannel } from "discord.js";
-import musicManager from "../../../lib/musicQueue";
+import type { Message } from "discord.js";
+import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
+import { MusicService } from "../../../services/MusicService";
 import logger from "../../../lib/winston";
-// import prisma from "../../lib/prisma";
 
-export class PauseMusicCommand extends Command {
+/**
+ * Pause/Resume Command (Refactored)
+ *
+ * Pause or resume the currently playing music.
+ *
+ * Migration Status: COMPLETE (full service-layer implementation)
+ */
+export class PauseCommand extends Command {
+    private musicService: MusicService;
+
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
             name: "pause",
-            aliases: ["continue", "resume"],
+            aliases: ["resume", "continue"],
             description: "Pause/continue playing music",
-            detailedDescription: `This command pause and resumes the currently playing music player in a server
-            It acts as simple toggle that will change the state to the opposite state.
-            It's... as straightforward is it could be.
+            detailedDescription: `This command pauses and resumes the currently playing music player in a server.
+            It acts as a simple toggle that will change the state to the opposite state.
+            It's... as straightforward as it could be.
             But this won't make the player play if player reached the end of playlist and thus stopped.
-            You'll need to use the jump command. There might be plan to implement said feature in future.`,
+            You'll need to use the jump command.`,
         });
+
+        this.musicService = MusicService.getInstance();
     }
 
     public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
@@ -26,60 +37,78 @@ export class PauseMusicCommand extends Command {
     }
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
-        if (!interaction.guildId) {
-            await interaction.channel?.send("This command only works in servers");
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: interaction.guildId,
+            guild: interaction.guild,
+            textChannel: interaction.channel,
+            member: interaction.member as any,
+            botId: interaction.client.id!,
+        });
+
+        if (!validation.valid) {
+            await interaction.reply({
+                content: validation.error!,
+                ephemeral: true,
+            });
             return;
         }
-        const textChannel = interaction.channel;
-        if (!textChannel) {
-            await interaction.channel!.send("Text channel is undefined. This issue has been reported (should be)");
-            return;
+
+        const guildId = interaction.guildId!;
+
+        try {
+            const message = await this.togglePause(guildId);
+            await interaction.reply(message);
+        } catch (error) {
+            logger.error("Error in pause command (slash):", error);
+            await interaction.reply({
+                content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+                ephemeral: true,
+            });
         }
-        const voiceChannel = interaction.guild?.members.cache.get(interaction.member!.user.id)?.voice.channel;
-        if (!voiceChannel) {
-            await interaction.channel?.send("You must be in voice channel first.");
-            return;
-        }
-        const botVoiceChannel = interaction.guild?.members.cache.get(interaction.client.id!)?.voice.channel;
-        if (!voiceChannel.members.some((user) => user.id === interaction.client.id) && botVoiceChannel) {
-            await interaction.reply("You must be in the same voice channel with bot.");
-            return;
-        }
-        const guildId = interaction.guildId;
-        await interaction.deferReply();
-        await this.pause(guildId, textChannel);
-        await interaction.followUp({ content: "Pause command complete", ephemeral: true });
     }
 
     public override async messageRun(message: Message) {
-        if (!message.guildId) {
-            await message.channel.send("This command only works in servers");
-            return;
-        }
-        if (!message.member?.voice.channel) {
-            await message.channel.send("You must be in voice channel first.");
-            return;
-        }
-        const botVoiceChannel = message.guild!.members.cache.get(message.client.id!)?.voice.channel;
-        if (!message.member?.voice.channel.members.some((user) => user.id === message.client.id) && botVoiceChannel) {
-            await message.channel.send("You must be in the same voice channel with bot.");
-            return;
-        }
-        const guildId = message.guildId;
-        const textChannel = message.channel;
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: message.guildId,
+            guild: message.guild,
+            textChannel: message.channel,
+            member: message.member,
+            botId: message.client.id!,
+        });
 
-        await this.pause(guildId, textChannel);
+        if (!validation.valid) {
+            await message.channel.send(validation.error!);
+            return;
+        }
+
+        const guildId = message.guildId!;
+
+        try {
+            const responseMessage = await this.togglePause(guildId);
+            await message.channel.send(responseMessage);
+        } catch (error) {
+            logger.error("Error in pause command (message):", error);
+            await message.channel.send(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
     }
 
-    public async pause(guildId: string, textChannel: TextBasedChannel) {
-        const musicGuildInfo = musicManager.get(guildId);
-        if (!musicGuildInfo) {
-            await textChannel.send("No bot in voice channel. Are you okay?");
-            return;
+    private async togglePause(guildId: string): Promise<string> {
+        // Check if session exists
+        const session = this.musicService.getSession(guildId);
+        if (!session) {
+            return "No active music session. Use `play2` to start playing music.";
         }
-        musicGuildInfo.player.setPaused(!musicGuildInfo.isPausing);
-        musicGuildInfo.isPausing = !musicGuildInfo.isPausing;
-        await textChannel.send(musicGuildInfo.player.paused ? "Pausing..." : "Resuming...");
-        return;
+
+        const stats = this.musicService.getQueueStats(guildId);
+        if (!stats?.isPlaying) {
+            return "Nothing is currently playing. Use `play2` or `jump2` to start playing.";
+        }
+
+        // Toggle pause state
+        const isPaused = await this.musicService.pause(guildId);
+
+        return isPaused ? "⏸️ Paused..." : "▶️ Resuming...";
     }
 }

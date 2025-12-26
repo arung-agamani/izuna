@@ -27,19 +27,47 @@ import { init as initReminderFromDb, restartReminderJob } from "./lib/reminder";
 import prisma from "./lib/prisma";
 import { closureGoogleOauthState, closureGoogleOauthTracker } from "./lib/google";
 import { oauthSessionState } from "./lib/session";
-import { getMusicManager, getShoukakuManager } from "./lib/musicQueue";
 
-let botClient: SapphireClient;
-if (config.runBot) {
-    (async () => {
+let botClient: SapphireClient | null = null;
+
+async function initializeBot() {
+    if (!config.runBot) {
+        logger.info("config.runBot is disabled - Discord bot will not start");
+        return;
+    }
+
+    try {
+        logger.info("🤖 Starting Discord bot initialization...");
         botClient = await createBot();
-        if (botClient) {
-            console.log("all good");
-            await initReminderFromDb();
-            await restartReminderJob(botClient);
+
+        if (!botClient) {
+            throw new Error("createBot() returned null or undefined");
         }
-    })();
+
+        logger.info("✅ Bot client created successfully");
+
+        // Initialize reminder system with its own error handling
+        try {
+            logger.info("📅 Initializing reminders from database...");
+            await initReminderFromDb();
+            logger.info("✅ Database reminders loaded");
+
+            logger.info("⏰ Starting reminder scheduler...");
+            await restartReminderJob(botClient);
+            logger.info("✅ Reminder system fully initialized");
+        } catch (reminderError) {
+            logger.error("⚠️ Failed to initialize reminder system (non-critical):", reminderError);
+            logger.warn("💡 Bot will continue without reminder functionality");
+        }
+
+        logger.info("✅ Bot initialization complete");
+    } catch (error) {
+        logger.error("❌ Critical error during bot initialization:", error);
+        logger.warn("⚠️ Application continuing without Discord bot");
+    }
 }
+
+initializeBot();
 
 // process.on("SIGTERM", async () => {
 //     console.log("SIGTERM received. Performing cleanup...");
@@ -221,7 +249,7 @@ if (config.runWeb) {
                     source: { type: "string" };
                     uid: { type: "string" };
                 };
-            }>
+            }>,
         ) => {
             const { source, uid } = request.query;
             const state = Buffer.from(`${source}-${uid}`).toString("base64");
@@ -292,7 +320,7 @@ if (config.runWeb) {
                     message: `You're already authenticated. Awoo to you ${discordUserId}`,
                 });
             }
-        }
+        },
     );
 
     server.register(oauthplugin, {
@@ -311,7 +339,7 @@ if (config.runWeb) {
                     r: string; // redirect link
                     i: string; // initiator
                 };
-            }>
+            }>,
         ) => {
             const stateObj = { redirect: req.query.r === "null" ? Buffer.from("/").toString("base64") : req.query.r, initiator: req.query.i || "web" };
             // console.log("State obj: ", stateObj);
@@ -382,7 +410,7 @@ if (config.runWeb) {
                 },
                 {
                     expiresIn: "1h",
-                }
+                },
             );
             oauthSessionState.delete(state);
             reply

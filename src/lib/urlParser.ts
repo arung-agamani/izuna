@@ -141,7 +141,20 @@ export function parseUrl(input: string, seekMode: boolean = false): ParsedUrl {
 
     const trimmedInput = input.trim();
 
-    // Check for YouTube video
+    // Check for YouTube playlist FIRST (before video check)
+    // This is important because playlist URLs can contain video IDs that would match the video regex
+    const playlistMatch = URL_PATTERNS.youtubePlaylist.exec(trimmedInput);
+    if (playlistMatch && playlistMatch[1]) {
+        const playlistId = playlistMatch[1];
+
+        return {
+            type: "youtube-playlist",
+            playlistId,
+            fullUrl: trimmedInput,
+        };
+    }
+
+    // Check for YouTube video (after playlist check)
     const youtubeVideoMatch = URL_PATTERNS.youtubeVideo.exec(trimmedInput);
     if (youtubeVideoMatch && youtubeVideoMatch[5]) {
         const videoId = youtubeVideoMatch[5];
@@ -151,18 +164,6 @@ export function parseUrl(input: string, seekMode: boolean = false): ParsedUrl {
             type: "youtube-video",
             videoId,
             timestamp,
-            fullUrl: trimmedInput,
-        };
-    }
-
-    // Check for YouTube playlist
-    const playlistMatch = URL_PATTERNS.youtubePlaylist.exec(trimmedInput);
-    if (playlistMatch && playlistMatch[1]) {
-        const playlistId = playlistMatch[1];
-
-        return {
-            type: "youtube-playlist",
-            playlistId,
             fullUrl: trimmedInput,
         };
     }

@@ -1,7 +1,6 @@
 import { SapphireClient } from "@sapphire/framework";
 import { Shoukaku, Connectors, NodeOption } from "shoukaku";
 import { config } from "../config";
-import { setShoukakuManager } from "../lib/musicQueue";
 import { setShoukakuContext } from "../services/ShoukakuContext";
 import logger from "../lib/winston";
 import prisma from "../lib/prisma";
@@ -44,15 +43,18 @@ async function createBotApp() {
             resumeByLibrary: true,
         });
 
-        setShoukakuManager(manager);
         setShoukakuContext(manager);
-        manager.on("error", (_, err) => {
-            logger.error(`Shoukaku error.`);
-            logger.error(err);
-            console.log(err);
+        manager.on("error", (node, err) => {
+            logger.error("Shoukaku connection error", {
+                node: node || "unknown",
+                error: err instanceof Error ? err.message : String(err),
+                stack: err instanceof Error ? err.stack : undefined,
+            });
         });
         manager.on("ready", () => {
-            logger.info("Shoukaku manager is ready");
+            logger.info("✅ Shoukaku manager ready", {
+                nodes: manager.nodes.size,
+            });
         });
     }
     await initializeJoinToCreateVCManager();

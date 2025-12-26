@@ -1,4 +1,4 @@
-import type { VoiceBasedChannel, TextBasedChannel } from "discord.js";
+import type { VoiceBasedChannel, TextBasedChannel, Guild } from "discord.js";
 import { LoadType, type Track, type Player } from "shoukaku";
 import { PlayerState } from "../lib/ongaku/PlayerState";
 import { PlayerManager } from "./PlayerManager";
@@ -377,7 +377,7 @@ export class MusicService {
      */
     public async resolveInput(
         input: string,
-        seekMode: boolean = false
+        seekMode: boolean = false,
     ): Promise<{
         parsed: ParsedUrl;
         result: LavalinkResolveResult;
@@ -625,5 +625,179 @@ export class MusicService {
         }
 
         return removedTrack;
+    }
+
+    /**
+     * Shuffle the queue using Fisher-Yates algorithm
+     * Preserves currently playing track at its position
+     * @param guildId - Guild ID
+     */
+    public shuffleQueue(guildId: string): void {
+        const session = MusicService.sessions.get(guildId);
+        if (!session) throw new Error("No active music session for this guild");
+
+        if (session.queue.length <= 1) {
+            throw new Error("Queue must have at least 2 tracks to shuffle");
+        }
+
+        // If something is playing, preserve the current track and shuffle the rest
+        if (session.isPlaying) {
+            const currentTrack = session.queue[session.currentPosition];
+            const beforeCurrent = session.queue.slice(0, session.currentPosition);
+            const afterCurrent = session.queue.slice(session.currentPosition + 1);
+
+            // Shuffle tracks after current position using Fisher-Yates
+            for (let i = afterCurrent.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [afterCurrent[i], afterCurrent[j]] = [afterCurrent[j], afterCurrent[i]];
+            }
+
+            // Reconstruct queue
+            session.queue = [...beforeCurrent, currentTrack, ...afterCurrent];
+        } else {
+            // Nothing playing, shuffle entire queue
+            const queue = session.queue;
+            for (let i = queue.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [queue[i], queue[j]] = [queue[j], queue[i]];
+            }
+        }
+    }
+
+    /**
+     * Seek to a specific position in the current track
+     * @param guildId - Guild ID
+     * @param positionMs - Position in milliseconds
+     */
+    public async seekTo(guildId: string, positionMs: number): Promise<void> {
+        const session = MusicService.sessions.get(guildId);
+        if (!session) throw new Error("No active music session for this guild");
+        if (!session.isPlaying) throw new Error("No track currently playing");
+
+        const currentTrack = session.queue[session.currentPosition];
+        if (!currentTrack) throw new Error("No track at current position");
+
+        // Check if track has a length (live streams don't)
+        if (currentTrack.info.length && positionMs > currentTrack.info.length) {
+            throw new Error(`Seek position (${positionMs}ms) exceeds track length (${currentTrack.info.length}ms)`);
+        }
+
+        if (positionMs < 0) {
+            throw new Error("Seek position must be positive");
+        }
+
+        await session.player.seekTo(positionMs);
+    }
+
+    /**
+     * Move the bot to a different voice channel
+     * @param guildId - Guild ID
+     * @param newVoiceChannel - The new voice channel to join
+     * @param guild - Discord guild object (needed for bot member lookup)
+     * @throws Error if bot lacks permissions or move fails
+     */
+    public async moveToChannel(guildId: string, newVoiceChannel: VoiceBasedChannel, guild: Guild): Promise<void> {
+        const session = MusicService.sessions.get(guildId);
+        if (!session) throw new Error("No active music session for this guild");
+
+        logger.debug(`[MusicService] moveToChannel called for guild ${guildId}`);
+        logger.debug(`[MusicService] Target channel: ${newVoiceChannel.name} (${newVoiceChannel.id})`);
+
+        // Get bot member
+        const botMember = guild.members.cache.get(guild.client.user!.id);
+        if (!botMember) {
+            logger.error(`[MusicService] Bot member not found in guild ${guildId}`);
+            throw new Error("Bot member not found in guild");
+        }
+
+        logger.debug(`[MusicService] Bot member found: ${botMember.user.tag}`);
+        logger.debug(`[MusicService] Current voice channel: ${botMember.voice.channel?.name || "none"}`);
+
+        // Check bot permissions
+        const permissions = newVoiceChannel.permissionsFor(botMember);
+        logger.debug(`[MusicService] Bot permissions in target channel:`);
+        logger.debug(`  - CONNECT: ${permissions?.has("Connect")}`);
+        logger.debug(`  - SPEAK: ${permissions?.has("Speak")}`);
+        logger.debug(`  - VIEW_CHANNEL: ${permissions?.has("ViewChannel")}`);
+        logger.debug(`  - MOVE_MEMBERS: ${permissions?.has("MoveMembers")}`);
+
+        const missingPermissions = permissions?.missing(["Connect", "Speak", "ViewChannel"]) || [];
+        logger.debug(`  - Missing basic permissions: ${missingPermissions.join(", ") || "none"}`);
+
+        // Check if channel is full
+        if (newVoiceChannel.userLimit > 0 && newVoiceChannel.members.size >= newVoiceChannel.userLimit) {
+            logger.warn(`[MusicService] Target channel is full (${newVoiceChannel.members.size}/${newVoiceChannel.userLimit})`);
+            const canBypassLimit = permissions?.has("MoveMembers");
+            logger.debug(`[MusicService] Can bypass user limit: ${canBypassLimit}`);
+        }
+
+        try {
+            logger.debug(`[MusicService] Attempting to move bot to channel ${newVoiceChannel.name}...`);
+
+            // Attempt to move (atomic operation - only update session on success)
+            await botMember.voice.setChannel(newVoiceChannel);
+
+            // Only update session after successful move
+            session.voiceChannelId = newVoiceChannel.id;
+
+            logger.info(`[MusicService] Successfully moved bot to channel ${newVoiceChannel.name}`);
+        } catch (error: any) {
+            logger.error(`[MusicService] Failed to move bot to channel:`, error);
+
+            // Handle DiscordAPIError[50013] - Missing Permissions
+            if (error?.code === 50013 || error?.message?.includes("Missing Permissions")) {
+                logger.error(`[MusicService] Permission denied - Bot lacks required permissions`);
+
+                // Provide helpful error message
+                const hasMoveMembers = permissions?.has("MoveMembers");
+                const isChannelFull = newVoiceChannel.userLimit > 0 && newVoiceChannel.members.size >= newVoiceChannel.userLimit;
+
+                let errorMessage = "❌ Insufficient permissions to move to that voice channel.\n\n";
+
+                if (!hasMoveMembers && isChannelFull) {
+                    errorMessage += `The channel is full (${newVoiceChannel.members.size}/${newVoiceChannel.userLimit}) and I lack the **Move Members** permission.\n`;
+                    errorMessage += "Please ask a server admin to grant me the **Move Members** permission, or free up space in the channel.";
+                } else if (!hasMoveMembers) {
+                    errorMessage += "I need the **Move Members** permission to switch voice channels.\n";
+                    errorMessage += "Please ask a server admin to grant this permission in Server Settings → Roles.";
+                } else if (missingPermissions.length > 0) {
+                    errorMessage += `Missing permissions: **${missingPermissions.join(", ")}**\n`;
+                    errorMessage += "Please ask a server admin to grant these permissions for the target channel.";
+                } else {
+                    errorMessage += "Please ask a server admin to check my permissions for that voice channel.";
+                }
+
+                throw new Error(errorMessage);
+            }
+
+            // Re-throw other errors with context
+            if (error instanceof Error) {
+                logger.error(`[MusicService] Error message: ${error.message}`);
+                logger.error(`[MusicService] Error name: ${error.name}`);
+                throw new Error(`Failed to move to voice channel: ${error.message}`);
+            }
+
+            throw new Error("Failed to move to voice channel: Unknown error");
+        }
+    }
+
+    /**
+     * Clear the entire queue
+     * @param guildId - Guild ID
+     * @param keepCurrent - If true, keeps the currently playing track
+     */
+    public clearQueue(guildId: string, keepCurrent: boolean = true): void {
+        const session = MusicService.sessions.get(guildId);
+        if (!session) throw new Error("No active music session for this guild");
+
+        if (keepCurrent && session.isPlaying) {
+            const currentTrack = session.queue[session.currentPosition];
+            session.queue = [currentTrack];
+            session.currentPosition = 0;
+        } else {
+            session.queue = [];
+            session.currentPosition = 0;
+            session.isPlaying = false;
+        }
     }
 }

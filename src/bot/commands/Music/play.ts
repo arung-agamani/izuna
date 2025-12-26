@@ -1,28 +1,43 @@
 import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message, TextBasedChannel, VoiceBasedChannel } from "discord.js";
-import { HttpUrlRegex } from "@sapphire/discord-utilities";
-import musicManager, { MusicGuildInfo, getShoukakuManager, LavalinkLoadType, LavalinkLazyLoad, shoukakuLoadType2String } from "../../../lib/musicQueue";
-import logger from "../../../lib/winston";
 import { fancyTimeFormat } from "../../../lib/utils";
-import { getGoogleClient } from "../../../lib/google";
-import { Connection, ErrorResult, LavalinkResponse, LoadType, Node, Playlist, PlaylistResult, SearchResult, Track } from "shoukaku";
+import logger from "../../../lib/winston";
+import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
+import { MusicService } from "../../../services/MusicService";
 
-const youtubeVideoRegex = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/;
-const youtubePlaylistRegex = /(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:playlist|list|embed)(?:\.php)?(?:\?.*list=|\/))([a-zA-Z0-9\-_]+)/;
-const driveRegex = /\/file\/d\/([^\/]+)/;
-const hmsRegex = /[hms]+/g;
-const timestampRegex = /\&t=([0-9A-Za-z]+)/;
-
+/**
+ * Play Music Command (Refactored)
+ *
+ * This is a fully refactored version of the original play command that:
+ * 1. Uses MusicService for track resolution and queue management
+ * 2. Uses URL parsing utilities for consistent URL handling
+ * 3. Uses validation utilities to eliminate duplicated checks
+ * 4. Separates concerns: validation, parsing, resolving, queuing
+ *
+ * Migration Status: COMPLETE (full service-layer implementation)
+ * - No longer uses legacy musicManager
+ * - All functionality delegated to MusicService
+ * - Cleaner architecture with proper separation of concerns
+ */
 export class PlayMusicCommand extends Command {
+    private musicService: MusicService;
+
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
             name: "play",
             flags: ["s", "seek"],
-            description: "Plays music", // TODO: make better description
-            detailedDescription: `Play music using given search query (like how you would use the search function in Youtube directly), or through provided Youtube link.
-            Accepts only Youtube for now, Spotify or Soundcloud, or other sources will be considered when there is high demand.`,
+            description: "Plays music from YouTube or search query",
+            detailedDescription: `Play music using a search query (like YouTube search) or a direct YouTube link.
+Currently supports:
+- YouTube videos (https://youtube.com/watch?v=...)
+- YouTube playlists (https://youtube.com/playlist?list=...)
+- Search queries (title, artist, etc.)
+
+Use --seek or -s flag to jump to a specific timestamp if available.`,
         });
+
+        this.musicService = MusicService.getInstance();
     }
 
     public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
@@ -30,419 +45,212 @@ export class PlayMusicCommand extends Command {
             (builder) => {
                 builder
                     .setName("play")
-                    .setDescription("Play music from Youtube links or search query")
+                    .setDescription("Play music from YouTube links or search query")
                     .addStringOption((opt) => opt.setName("query").setDescription("Enter search query or link").setRequired(true))
-                    .addBooleanOption((opt) => opt.setName("seek").setDescription("Seek to timestamp if exist").setRequired(false));
+                    .addBooleanOption((opt) => opt.setName("seek").setDescription("Seek to timestamp if available").setRequired(false));
             },
-            {
-                idHints: ["1176094847669637171", "1176133402689273958"],
-            }
+            // {
+            //     idHints: ["1176094847669637171", "1176133402689273958"],
+            // }
         );
     }
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
-        if (!interaction.guildId) {
-            await interaction.reply("This command only works in servers");
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: interaction.guildId,
+            guild: interaction.guild,
+            textChannel: interaction.channel,
+            member: interaction.member as any,
+            botId: interaction.client.id!,
+        });
+
+        if (!validation.valid) {
+            await interaction.reply(validation.error!);
             return;
         }
-        const textChannel = interaction.channel;
-        if (!textChannel) {
-            await interaction.reply("Text channel is undefined. This issue has been reported (should be)");
-            return;
-        }
-        const voiceChannel = interaction.guild?.members.cache.get(interaction.member!.user.id)?.voice.channel;
-        if (!voiceChannel) {
-            await interaction.reply("You must be in voice channel first.");
-            return;
-        }
-        const botVoiceChannel = interaction.guild?.members.cache.get(interaction.client.id!)?.voice.channel;
-        if (!voiceChannel.members.some((user) => user.id === interaction.client.id) && botVoiceChannel) {
-            await interaction.reply("You must be in the same voice channel with bot.");
-            return;
-        }
+
         const query = interaction.options.getString("query", true);
         const isSeeking = interaction.options.getBoolean("seek", false) || false;
-        const guildId = interaction.guildId;
-        const authorId = interaction.user.id;
 
         await interaction.deferReply();
-        await this.play(textChannel, voiceChannel, guildId, authorId, query, isSeeking);
-        await interaction.followUp({ content: "Play command complete!", ephemeral: true });
+
+        try {
+            await this.play({
+                textChannel: interaction.channel as TextBasedChannel,
+                voiceChannel: validation.voiceChannel!,
+                guildId: interaction.guildId!,
+                authorId: interaction.user.id,
+                query,
+                isSeeking,
+            });
+
+            await interaction.followUp({
+                content: "✅ Track added to queue!",
+                ephemeral: true,
+            });
+        } catch (error) {
+            logger.error("Error in play command:", error);
+            await interaction.followUp({
+                content: `❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+                ephemeral: true,
+            });
+        }
     }
 
     public override async messageRun(message: Message, args: Args) {
-        if (!message.guildId || !message.guild) {
-            await message.channel.send("This command only works in servers");
-            return;
-        }
-        if (!message.member?.voice.channel) {
-            await message.channel.send("You must be in voice channel first.");
-            return;
-        }
-        const botVoiceChannel = message.guild.members.cache.get(message.client.id!)?.voice.channel;
-        if (!message.member?.voice.channel.members.some((user) => user.id === message.client.id) && botVoiceChannel) {
-            await message.channel.send("You must be in the same voice channel with bot.");
-            return;
-        }
-        // search the stuff
-        const isSeeking = args.getFlags("s", "seek");
-        const searchQuery = await args.rest("string");
-        if (isSeeking) {
-            logger.debug("Seeking is active for input string: " + searchQuery);
-        } else {
-            logger.debug("NOT ACTIVE");
-        }
-        // is youtube video?
-        await this.play(message.channel, message.member.voice.channel, message.guildId, message.author.id, searchQuery, isSeeking);
-        return;
-    }
-
-    public async play(
-        textChannel: TextBasedChannel,
-        voiceChannel: VoiceBasedChannel,
-        guildId: string,
-        authorId: string,
-        searchQuery: string,
-        isSeeking: boolean
-    ) {
-        const youtubeRegexRes = youtubeVideoRegex.exec(searchQuery);
-        const youtubePlaylistRes = youtubePlaylistRegex.exec(searchQuery);
-        let videoId = "";
-        let playlistId = "";
-        let targetTimestamp = 0;
-        if (youtubeRegexRes && youtubeRegexRes[5]) {
-            logger.debug("Is inside youtubeRegexRes=true");
-            videoId = youtubeRegexRes[5];
-            if (isSeeking) {
-                targetTimestamp = timestampRegex
-                    .exec(searchQuery)![1]!
-                    .replaceAll(hmsRegex, ":")
-                    .split(":")
-                    .slice(0, -1)
-                    .reverse()
-                    .reduce((acc, curr, idx) => acc + Number(curr) * Math.pow(60, idx), 0);
-                logger.debug("Timestamp set to " + targetTimestamp);
-            }
-        }
-        if (youtubePlaylistRes && youtubePlaylistRes[1]) {
-            playlistId = youtubePlaylistRes[1];
-        }
-        if (searchQuery === "") {
-            await textChannel.send("Please put in something to search");
-            return;
-        }
-        const shoukakuManager = getShoukakuManager();
-        if (!shoukakuManager) {
-            await textChannel.send("Music manager uninitizalied. Check your implementation, dumbass");
-            return;
-        }
-
-        // let lavalinkNode: Node | undefined
-        // const lavalinkConn = new Connection(shoukakuManager, {
-        //     guildId,
-        //     channelId: voiceChannel.id,
-        //     shardId: 0
-        // })
-        // shoukakuManager.connections.set(guildId, lavalinkConn)
-        // @ts-ignore
-        const lavalinkNode = shoukakuManager.options.nodeResolver(shoukakuManager.nodes);
-        if (!lavalinkNode) {
-            await textChannel.send("No music player node currently connected.");
-            return;
-        }
-
-        let searchRes: LavalinkResponse | LavalinkLazyLoad | undefined;
-        if (youtubePlaylistRes) {
-            logger.debug("Resolving as playlistId");
-            logger.debug(`playlistId: ${playlistId}`);
-            if (playlistId.startsWith("OLAK5uy")) {
-                searchRes = await lavalinkNode.rest.resolve(`https://www.youtube.com/playlist?list=${playlistId}`);
-            } else {
-                searchRes = await lavalinkNode.rest.resolve(playlistId);
-            }
-        } else if (youtubeRegexRes) {
-            logger.debug("Resolving as videoId");
-            searchRes = await lavalinkNode.rest.resolve(videoId);
-            if (isSeeking) {
-                const track = searchRes!.data as Track;
-                track.info.position = targetTimestamp * 1000;
-                logger.debug(`Search set with seeking flag. Timestamp : ${targetTimestamp}`);
-                logger.debug(`searchRes.tracks[0].info.position = ${track.info.position}`);
-            }
-        } else if (driveRegex.exec(searchQuery)) {
-            logger.debug("Resolving as gdriveId");
-            const fileId = driveRegex.exec(searchQuery)![1]!;
-            const drive = getGoogleClient();
-            const file = await drive.files.get({
-                fileId,
-            });
-            // searchRes = await lavalinkNode.rest.resolve(file.data.webContentLink!);
-            // await message.channel.send(
-            //     "**[Warning]** That looks like a Google Drive link.\nThis feature is currently unstable and you might encounter unplayable track case (especially after track finish).\nIn case of unplayable track, please requeue the track and delete old unplayable track."
-            // );
-            searchRes = {
-                loadType: "LAZY_LOAD_GDRIVE",
-                fileId,
-                info: {
-                    title: file.data.name!,
-                    length: -1,
-                    uri: searchQuery,
-                },
-            };
-        } else if (HttpUrlRegex.exec(searchQuery)) {
-            logger.debug("Resolving as httpId");
-            logger.debug("Is inside HttpUrlRegex=true, line 106");
-            searchRes = await lavalinkNode.rest.resolve(searchQuery);
-        } else {
-            logger.debug("Resolving as searchId");
-            logger.debug("Is inside standard ytsearch=true, line 109");
-            searchRes = await lavalinkNode.rest.resolve(`ytsearch: ${searchQuery}`);
-        }
-        if (!searchRes) {
-            logger.error(`Search result returns null: 185`);
-            await textChannel.send("Search result returns undefined. That's weird...");
-            return;
-        }
-        if (searchRes.loadType !== "LAZY_LOAD_GDRIVE") {
-            searchRes.loadType = shoukakuLoadType2String(searchRes.loadType as LoadType);
-        }
-
-        logger.debug(`Search done through REST API returns type ${searchRes?.loadType}`);
-        if ((searchRes.loadType as LavalinkLoadType) === "LOAD_FAILED" || !searchRes) {
-            logger.debug(`187: LoadType: ${searchRes?.loadType}`);
-            logger.debug(searchRes);
-            await textChannel.send("Failed to search that query. Try with different formatting, I guess?");
-            return;
-        }
-        let musicGuildInfo = musicManager.get(guildId);
-        if (!musicGuildInfo) {
-            logger.debug(
-                `Supplied args: ${JSON.stringify({
-                    guildId: guildId,
-                    channelId: voiceChannel.id,
-                    shardId: 0,
-                })}`
-            );
-            // const player = await lavalinkNode.joinChannel({
-            //     guildId: guildId,
-            //     channelId: voiceChannel.id,
-            //     shardId: 0,
-            // });
-            const player = await shoukakuManager.joinVoiceChannel({
-                guildId,
-                channelId: voiceChannel.id,
-                shardId: 0,
-            });
-            await player.node.rest.updateSession(true, 300);
-            player.on("exception", (err) => {
-                logger.error("Shoukaku player error");
-                logger.error(err);
-                if (err.exception.message === "This video is not available") {
-                    textChannel.send("Skipping the track. Reason: This video is not available :(");
-                }
-            });
-            player.on("end", async (data) => {
-                // console.log(data);
-                if (data.reason === "replaced") return;
-                const currentMusicGuildInfo = musicManager.get(guildId!);
-                if (!currentMusicGuildInfo) return;
-                if (currentMusicGuildInfo.stopIssued) {
-                    return;
-                }
-                const newMusicGuildInfo = { ...currentMusicGuildInfo };
-                if (newMusicGuildInfo.isSkippingQueued) {
-                    newMusicGuildInfo.isSkippingQueued = false;
-                    newMusicGuildInfo.currentPosition = newMusicGuildInfo.skipPosition;
-                } else {
-                    if (newMusicGuildInfo.isRepeat !== "single") {
-                        newMusicGuildInfo.currentPosition += 1;
-                    }
-                }
-                newMusicGuildInfo.isPlaying = true;
-                if (newMusicGuildInfo.currentPosition === newMusicGuildInfo.queue.length) {
-                    await textChannel.send("Reached the end of playlist");
-                    if (newMusicGuildInfo.isRepeat === "playlist") {
-                        newMusicGuildInfo.currentPosition = 0;
-                        await textChannel.send("Playlist loop is set. Resetting playhead to the beginning of the queue.");
-                        let poppedTrack = newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition]!;
-                        // if ((<LavalinkLazyLoad>poppedTrack).fileId) {
-                        //     const searchTarget = await this.resolveGoogleDrive((<LavalinkLazyLoad>poppedTrack).fileId);
-                        //     if (!searchTarget) {
-                        //         await textChannel.send("Failed to query from Google Drive");
-                        //         return;
-                        //     }
-                        //     let newPoppedTrack = await lavalinkNode.rest.resolve(searchTarget!);
-                        //     if (!newPoppedTrack) {
-                        //         await textChannel.send("Failed to resolve WebContentLink as Playable Track");
-                        //         return;
-                        //     }
-                        //     const track = newPoppedTrack.data as Track;
-                        //     await newMusicGuildInfo.player.playTrack({
-                        //         track: track.encoded,
-                        //     });
-                        //     await textChannel.send(`Now playing **${track.info.title}**, if it works...`);
-                        //     newMusicGuildInfo.isPlaying = true;
-                        // } else {
-                        poppedTrack = poppedTrack as Track;
-                        await newMusicGuildInfo.player.playTrack({
-                            track: { encoded: poppedTrack.encoded },
-                            position: poppedTrack.info.position,
-                        });
-                        await textChannel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
-                        newMusicGuildInfo.isPlaying = true;
-                        // }
-                    } else {
-                        newMusicGuildInfo.isPlaying = false;
-                    }
-                    musicManager.set(guildId, newMusicGuildInfo);
-                    return;
-                }
-
-                // play the track or smth
-                let currentTrack = newMusicGuildInfo.queue[newMusicGuildInfo.currentPosition];
-                // if ((<LavalinkLazyLoad>currentTrack).fileId) {
-                if (false) {
-                    // currentTrack = currentTrack as LavalinkLazyLoad;
-                    // const searchTarget = await this.resolveGoogleDrive(currentTrack.fileId);
-                    // if (!searchTarget) {
-                    //     await textChannel.send("Failed to query from Google Drive");
-                    //     return;
-                    // }
-                    // let newPoppedTrack = await lavalinkNode.rest.resolve(searchTarget!);
-                    // if (!newPoppedTrack) {
-                    //     await textChannel.send("Failed to resolve WebContentLink as Playable Track");
-                    //     return;
-                    // }
-                    // const track = newPoppedTrack.data as Track;
-                    // await newMusicGuildInfo.player.playTrack({
-                    //     track: track.encoded,
-                    // });
-                    // await textChannel.send(`Now playing **${track.info.title}**, if it works...`);
-                    // newMusicGuildInfo.isPlaying = true;
-                } else {
-                    currentTrack = currentTrack as Track;
-                    await textChannel.send(`Track loaded. ${currentTrack.info.title} | Duration: ${fancyTimeFormat(currentTrack.info.length! / 1000)}`);
-                    newMusicGuildInfo.player.playTrack({
-                        track: { encoded: currentTrack.encoded },
-                        position: currentTrack.info.position,
-                    });
-                }
-
-                newMusicGuildInfo.isPlaying = true;
-                musicManager.set(guildId, newMusicGuildInfo);
-            });
-            // put in manager
-            let thisGuildInfo: MusicGuildInfo = {
-                initiator: authorId,
-                voiceChannel: voiceChannel,
-                currentPosition: 0, // 0-based indexing
-                isRepeat: "no",
-                isPlaying: false,
-                isPausing: false,
-                queue: [],
-                player: player,
-                isSkippingQueued: false,
-                skipPosition: 0,
-                stopIssued: false,
-            };
-            musicManager.set(guildId, thisGuildInfo);
-            musicGuildInfo = thisGuildInfo;
-        }
-        switch (searchRes.loadType as any) {
-            // case "LAZY_LOAD_GDRIVE":
-            //     searchRes = searchRes as LavalinkLazyLoad;
-            //     musicGuildInfo.queue.push(searchRes);
-            //     await textChannel.send(
-            //         `Track loaded. ${searchRes.info.title} | Pos: ${musicGuildInfo.queue.length}\nThis track will be lazy-loaded on it's turn.`
-            //     );
-            //     break;
-            case "TRACK_LOADED":
-                searchRes = searchRes as LavalinkResponse;
-                logger.debug(`LoadType: ${searchRes.loadType} for query ${searchQuery}`);
-                const track = searchRes.data as Track;
-                musicGuildInfo?.queue.push(track);
-                await textChannel.send(
-                    `Track loaded. ${track.info.title} | Duration: ${fancyTimeFormat(track.info.length! / 1000)} | Pos: ${
-                        musicGuildInfo.queue.length
-                    }. | Timestamp: ${fancyTimeFormat(track.info.position / 1000)}`
-                );
-                break;
-            case "PLAYLIST_LOADED":
-                searchRes = searchRes as LavalinkResponse;
-                logger.debug(`LoadType: ${searchRes.loadType} for query ${searchQuery}`);
-                const tracks = (searchRes.data as Playlist).tracks;
-                musicGuildInfo?.queue.push(...tracks);
-                let msg = "";
-                for (const track of tracks) {
-                    msg += `Track loaded. ${track.info.title} | Duration: ${track.info.length}\n`;
-                }
-                if (msg.length > 2000) msg = msg.slice(0, 1997) + "...";
-                await textChannel.send(msg);
-                break;
-            case "SEARCH_RESULT":
-                searchRes = searchRes as SearchResult;
-                logger.debug(`LoadType: ${searchRes.loadType} for query ${searchQuery}`);
-                musicGuildInfo?.queue.push(searchRes.data[0]!);
-                await textChannel.send("Search result for: " + searchQuery);
-                await textChannel.send(
-                    `Track loaded. **${searchRes.data[0]?.info.title}** | Duration: ${fancyTimeFormat(searchRes.data[0]?.info.length! / 1000)} | Pos: ${
-                        musicGuildInfo.queue.length
-                    }`
-                );
-                break;
-            case "NO_MATCHES":
-                logger.debug(`LoadType: ${searchRes.loadType} for query ${searchQuery}`);
-                await textChannel.send("No result found... Hmm...");
-                return;
-            case "LOAD_FAILED":
-                logger.debug(`LoadType: ${searchRes.loadType} for query ${searchQuery}`);
-                logger.error(`Loading error on line 369: ${(searchRes as ErrorResult).data.message} - ${(searchRes as ErrorResult).data.cause}`);
-                await textChannel.send(`Loading error: ${(searchRes as ErrorResult).data.message}`);
-                return;
-            default:
-                logger.warn(`LoadType : Default case reached (unknown case)`);
-                logger.warn(`Aborting to prevent weird issues`);
-                return;
-        }
-        // play the head
-        if (!musicGuildInfo.isPlaying) {
-            let poppedTrack = musicGuildInfo.queue[musicGuildInfo.currentPosition]!;
-            // if ((<LavalinkLazyLoad>poppedTrack).fileId) {
-            if (false) {
-                // const searchTarget = await this.resolveGoogleDrive((<LavalinkLazyLoad>poppedTrack).fileId);
-                // if (!searchTarget) {
-                //     await textChannel.send("Failed to query from Google Drive");
-                //     return;
-                // }
-                // let newPoppedTrack = await lavalinkNode.rest.resolve(searchTarget!);
-                // if (!newPoppedTrack) {
-                //     await textChannel.send("Failed to resolve WebContentLink as Playable Track");
-                //     return;
-                // }
-                // const track = newPoppedTrack.data as Track;
-                // await musicGuildInfo.player.playTrack({
-                //     track: track.encoded,
-                // });
-                // await textChannel.send(`Now playing **${track.info.title}**, if it works...`);
-                // musicGuildInfo.isPlaying = true;
-            } else {
-                poppedTrack = poppedTrack as Track;
-                await musicGuildInfo.player.playTrack({
-                    track: { encoded: poppedTrack.encoded },
-                    position: poppedTrack.info.position,
-                });
-                await textChannel.send(`Now playing **${poppedTrack.info.title}**, if it works...`);
-                musicGuildInfo.isPlaying = true;
-            }
-        }
-    }
-
-    async resolveGoogleDrive(fileId: string) {
-        const drive = getGoogleClient();
-        const file = await drive.files.get({
-            fileId,
-            fields: "webContentLink",
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: message.guildId,
+            guild: message.guild,
+            textChannel: message.channel,
+            member: message.member,
+            botId: message.client.id!,
         });
-        return file.data.webContentLink;
+
+        if (!validation.valid) {
+            await message.channel.send(validation.error!);
+            return;
+        }
+
+        const isSeeking = args.getFlags("s", "seek");
+        const query = await args.rest("string");
+
+        if (!query) {
+            await message.channel.send("Please provide a search query or URL");
+            return;
+        }
+
+        try {
+            await this.play({
+                textChannel: message.channel,
+                voiceChannel: validation.voiceChannel!,
+                guildId: message.guildId!,
+                authorId: message.author.id,
+                query,
+                isSeeking,
+            });
+        } catch (error) {
+            logger.error("Error in play command:", error);
+            await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+    }
+
+    /**
+     * Main play logic
+     * Handles: parsing input → resolving tracks → queuing → playing
+     */
+    private async play(options: {
+        textChannel: TextBasedChannel;
+        voiceChannel: VoiceBasedChannel;
+        guildId: string;
+        authorId: string;
+        query: string;
+        isSeeking: boolean;
+    }): Promise<void> {
+        const { textChannel, voiceChannel, guildId, authorId, query, isSeeking } = options;
+
+        // Parse the input URL/query
+        let resolution;
+        try {
+            resolution = await this.musicService.resolveInput(query, isSeeking);
+        } catch (error) {
+            throw new Error(error instanceof Error ? error.message : "Failed to resolve input");
+        }
+
+        const { parsed, result, timestamp } = resolution;
+
+        logger.debug(`Parsed input type: ${parsed.type}`);
+        logger.debug(`Resolution result: ${result.loadType}`);
+
+        // Handle resolution errors
+        if ((result.loadType as string) === "NO_MATCHES" || (result.loadType as string) === "LOAD_FAILED") {
+            const errorMsg = result.loadType === "NO_MATCHES" ? "No results found for that query" : "Failed to load the track/playlist";
+            throw new Error(errorMsg);
+        }
+
+        // Get or create music session via MusicService
+        // Pass textChannel so session handlers can send user feedback
+        const musicSession = await this.musicService.getOrCreateSession(guildId, voiceChannel, textChannel);
+
+        // Ensure textChannel is set on the session (important for user feedback from event handlers)
+        if (musicSession) {
+            musicSession.textChannel = textChannel;
+        }
+
+        // CRITICAL: Ensure player is fully ready before queueing
+        // Give the player a moment to establish voice connection
+        if (!musicSession.player) {
+            throw new Error("Failed to create player - bot could not join voice channel");
+        }
+
+        // Queue the tracks
+        try {
+            const queuedTracks = await this.musicService.queueTracksFromResult(guildId, result, timestamp);
+
+            if (queuedTracks.length === 0) {
+                throw new Error("No tracks were queued from the result");
+            }
+
+            // Format response message
+            this.sendQueueMessage(textChannel, parsed, result, queuedTracks);
+
+            // Start playing if not already playing
+            const stats = this.musicService.getQueueStats(guildId);
+            // send the stats as message
+            textChannel.send(`🎶 Queue Size: ${stats?.queueSize}, Currently Playing: ${stats?.isPlaying ? "Yes" : "No"}`).catch(logger.error);
+
+            // Play if not currently playing OR if queue was ended but now has new tracks
+            if (
+                (stats && !stats.isPlaying && stats.queueSize > 0) ||
+                (stats && stats.currentPosition >= stats.queueSize - queuedTracks.length && stats.queueSize > 0)
+            ) {
+                logger.debug(`Starting playback for guild ${guildId} (queue size: ${stats.queueSize}, position: ${stats.currentPosition})`);
+                // Use MusicService's internal playback method
+                await this.musicService.playNextTrackForGuild(guildId);
+            }
+        } catch (error) {
+            logger.error("Error queuing tracks:", error);
+            throw new Error("Failed to queue tracks");
+        }
+    }
+
+    /**
+     * Send a formatted queue confirmation message
+     */
+    private sendQueueMessage(textChannel: TextBasedChannel, parsed: any, result: any, queuedTracks: any[]): void {
+        const trackCount = queuedTracks.length;
+
+        switch (parsed.type) {
+            case "youtube-video": {
+                const track = queuedTracks[0];
+                const duration = fancyTimeFormat((track?.info?.length || 0) / 1000);
+                const position = track?.info?.position ? fancyTimeFormat(track.info.position / 1000) : "0:00";
+
+                textChannel.send(`⬇️ Track loaded: **${track?.info?.title}** | ${duration}${position !== "0:00" ? ` (seek: ${position})` : ""}`);
+                break;
+            }
+
+            case "youtube-playlist": {
+                textChannel.send(`📋 Playlist loaded: **${trackCount}** tracks added to queue`);
+                break;
+            }
+
+            case "search": {
+                const track = queuedTracks[0];
+                const duration = fancyTimeFormat((track?.info?.length || 0) / 1000);
+
+                textChannel.send(`🔍 Search result: **${track?.info?.title}** | ${duration} (from query: "${parsed.query}")`);
+                break;
+            }
+
+            case "http": {
+                const track = queuedTracks[0];
+                const duration = fancyTimeFormat((track?.info?.length || 0) / 1000);
+
+                textChannel.send(`🔗 URL loaded: **${track?.info?.title}** | ${duration}`);
+                break;
+            }
+        }
     }
 }

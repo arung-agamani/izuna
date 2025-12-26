@@ -1,146 +1,252 @@
-import { Command } from "@sapphire/framework";
-import { Message, userMention } from "discord.js";
-import { EmbedBuilder } from "discord.js";
-import musicManager, { getShoukakuManager } from "../../../lib/musicQueue";
+import { Args, Command } from "@sapphire/framework";
+import { Message, EmbedBuilder, Colors, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
+import { MusicService } from "../../../services/MusicService";
 import { fancyTimeFormat } from "../../../lib/utils";
-// import prisma from "../../lib/prisma";
-import { PaginatedMessage } from "@sapphire/discord.js-utilities";
 import logger from "../../../lib/winston";
+
+/**
+ * Now Playing 2 Command - User-Friendly Now Playing Display
+ *
+ * Shows:
+ * 1. Currently playing track with thumbnail and link
+ * 2. Full playlist with pagination (5 items per page)
+ * 3. Playback controls and repeat mode
+ *
+ * Clean, user-friendly interface for viewing playlist status.
+ */
 export class NowPlayingMusicCommand extends Command {
+    private musicService: MusicService;
+
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
             name: "nowplaying",
             aliases: ["np", "queue", "q"],
-            description: "Show now playing and queue",
-            detailedDescription: `Showing the now playing track and it's detailed information as well as the playlist.
-            It's as straightforward as it could be.`,
+            description: "Show now playing and playlist",
+            detailedDescription: `Show currently playing track and full playlist with:
+- Track thumbnail and source link
+- Full playlist with pagination
+- Duration for each track
+- Playback status and repeat mode`,
         });
+
+        this.musicService = MusicService.getInstance();
     }
 
-    public override async messageRun(message: Message) {
-        if (!message.guildId) {
-            await message.channel.send("This command only works in servers");
+    public override async messageRun(message: Message, args: Args) {
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: message.guildId,
+            guild: message.guild,
+            textChannel: message.channel,
+            member: message.member,
+            botId: message.client.id!,
+        });
+
+        if (!validation.valid) {
+            await message.channel.send(validation.error!);
             return;
         }
-        if (!message.member?.voice.channel) {
-            await message.channel.send("You must be in voice channel first.");
-            return;
-        }
-        const botVoiceChannel = message.guild!.members.cache.get(message.client.id!)?.voice.channel;
-        if (!message.member?.voice.channel.members.some((user) => user.id === message.client.id) && botVoiceChannel) {
-            await message.channel.send("You must be in the same voice channel with bot.");
-            return;
-        }
-        const musicGuildInfo = musicManager.get(message.guildId!);
-        if (!musicGuildInfo) {
-            await message.channel.send("No bot in voice channel. Are you okay?");
-            return;
-        }
-        const shoukakuManager = getShoukakuManager();
-        if (!shoukakuManager) {
-            await message.channel.send("Music manager uninitizalied. Check your implementation, dumbass");
-            return;
-        }
-        // @ts-ignore
-        const lavalinkNode = shoukakuManager.options.nodeResolver(shoukakuManager.nodes);
-        if (!lavalinkNode) {
-            await message.channel.send("No music player node currently connected.");
-            return;
-        }
-        if (musicGuildInfo.queue.length === 0) {
-            await message.channel.send("No item in queue");
-            return;
-        }
-        // check if there is a current playing track
-        const queue = musicGuildInfo.queue;
-        const paginatedMessage = new PaginatedMessage();
-        let i = 0;
-        if (queue.length < 10) {
-            const page = new EmbedBuilder();
-            page.setTitle("Now playing queue...");
-            let msg = "";
-            for (let j = 0; j < queue.length; j++) {
-                if (musicGuildInfo.currentPosition === i) {
-                    msg += `**${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}**\n`;
-                } else {
-                    msg += `${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}\n`;
-                }
-                i++;
+
+        const guildId = message.guildId!;
+
+        try {
+            // Parse page number if provided
+            let page = 1;
+            try {
+                const pageArg = await args.pick("integer");
+                page = Math.max(1, pageArg);
+            } catch {
+                // No page argument provided, default to page 1
             }
-            page.setDescription(msg);
-            paginatedMessage.addPageEmbed((embed) => {
-                embed.setTitle("Now playing queue...");
-                embed.setDescription(msg);
-                return embed;
+
+            // Get session from MusicService
+            const session = this.musicService.getSession(guildId);
+
+            if (!session) {
+                await message.channel.send("❌ No active music session. Use `play2` to start playing music.");
+                return;
+            }
+
+            // Get queue stats
+            const stats = this.musicService.getQueueStats(guildId);
+            const currentTrack = this.musicService.getCurrentTrack(guildId);
+            const queue = this.musicService.getQueue(guildId);
+
+            // Build and send embed
+            const embed = this.buildPlaylistEmbed(session, stats, currentTrack, queue, page);
+            const components = this.buildNavigationButtons(queue.length, page, message.author.id);
+
+            if (components.length > 0) {
+                await message.channel.send({ embeds: [embed], components });
+            } else {
+                await message.channel.send({ embeds: [embed] });
+            }
+        } catch (error) {
+            logger.error("Error in nowplaying2 command:", error);
+            await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+    }
+
+    /**
+     * Build playlist embed with current track and queue
+     */
+    private buildPlaylistEmbed(session: any, stats: any, currentTrack: any, queue: any[], page: number): EmbedBuilder {
+        const embed = new EmbedBuilder().setColor(Colors.Purple);
+
+        // Calculate pagination
+        const itemsPerPage = 5;
+        const totalPages = Math.ceil(queue.length / itemsPerPage);
+        const currentPage = Math.min(page, totalPages);
+        const startIdx = (currentPage - 1) * itemsPerPage;
+        const endIdx = Math.min(startIdx + itemsPerPage, queue.length);
+
+        // Header with repeat mode
+        const repeatEmoji = {
+            no: "▶️",
+            single: "🔂",
+            playlist: "🔁",
+        };
+        const repeatMode = stats?.repeatMode || "no";
+        embed.setTitle(`${repeatEmoji[repeatMode as keyof typeof repeatEmoji]} Now Playing & Playlist`);
+
+        // Currently Playing Section
+        if (currentTrack && stats?.isPlaying) {
+            const duration = fancyTimeFormat(currentTrack.info.length / 1000);
+            const position = fancyTimeFormat((session.player?.position || 0) / 1000);
+            const progress = this.buildProgressBar(session.player?.position || 0, currentTrack.info.length);
+
+            let nowPlayingText = `**${currentTrack.info.title}**\n`;
+            nowPlayingText += `*by ${currentTrack.info.author || "Unknown Artist"}*\n\n`;
+            nowPlayingText += `${progress} \`${position}\` / \`${duration}\`\n`;
+
+            // Add source link
+            if (currentTrack.info.uri) {
+                nowPlayingText += `🔗 [View Source](${currentTrack.info.uri})\n`;
+            }
+
+            // Add source name
+            if (currentTrack.info.sourceName) {
+                nowPlayingText += `📍 Source: ${currentTrack.info.sourceName}`;
+            }
+
+            embed.addFields({
+                name: "🎵 Now Playing",
+                value: nowPlayingText,
+                inline: false,
+            });
+
+            // Set thumbnail if available
+            if (currentTrack.info.artworkUrl) {
+                embed.setThumbnail(currentTrack.info.artworkUrl);
+            }
+        } else {
+            embed.addFields({
+                name: "🎵 Now Playing",
+                value: stats?.isPaused ? "⏸️ **Paused**" : "❌ Nothing playing",
+                inline: false,
+            });
+        }
+
+        // Playlist Section
+        if (queue.length === 0) {
+            embed.addFields({
+                name: "📋 Playlist",
+                value: "Empty playlist. Add tracks with `play2`!",
+                inline: false,
             });
         } else {
-            let totalPages = Math.ceil(queue.length / 10);
-            let pageCounter = 0;
-            while (pageCounter < totalPages) {
-                let msg = "";
-                // console.log(pageCounter);
-                if (pageCounter < totalPages - 1) {
-                    for (let j = 0; j < 10; j++) {
-                        if (musicGuildInfo.currentPosition === i) {
-                            msg += `**${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}**\n`;
-                        } else {
-                            msg += `${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}\n`;
-                        }
-                        i++;
-                    }
-                    paginatedMessage.addPageEmbed((embed) => {
-                        embed.setTitle("Now playing queue...");
-                        embed.setDescription(msg);
-                        return embed;
-                    });
-                    pageCounter++;
-                } else {
-                    for (let j = i; j < queue.length; j++) {
-                        if (musicGuildInfo.currentPosition === i) {
-                            msg += `**${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}**\n`;
-                        } else {
-                            msg += `${i + 1}. ${queue[i]?.info.title} - Duration ${fancyTimeFormat(queue[i]?.info.length! / 1000)}\n`;
-                        }
-                        i++;
-                    }
-                    paginatedMessage.addPageEmbed((embed) => {
-                        embed.setTitle("Now playing queue...");
-                        embed.setDescription(msg);
-                        return embed;
-                    });
-                    pageCounter++;
-                }
+            // Build playlist text
+            let playlistText = "";
+            for (let i = startIdx; i < endIdx; i++) {
+                const track = queue[i];
+                const duration = fancyTimeFormat((track.info?.length || 0) / 1000);
+                const isCurrentTrack = i === stats?.currentPosition;
+                const prefix = isCurrentTrack ? "▶️" : `\`${i + 1}.\``;
+
+                playlistText += `${prefix} **${track.info?.title || "Unknown"}** \`[${duration}]\`\n`;
             }
+
+            // Calculate total duration
+            const totalDuration = queue.reduce((sum, track) => sum + (track.info?.length || 0), 0) / 1000;
+            const remainingDuration = queue.slice(stats?.currentPosition || 0).reduce((sum, track) => sum + (track.info?.length || 0), 0) / 1000;
+
+            embed.addFields({
+                name: `📋 Playlist (Page ${currentPage}/${totalPages})`,
+                value: playlistText || "No tracks",
+                inline: false,
+            });
+
+            // Footer with stats
+            let footerText = `${queue.length} track${queue.length !== 1 ? "s" : ""} • Total: ${fancyTimeFormat(totalDuration)}`;
+            if (stats?.isPlaying) {
+                footerText += ` • Remaining: ${fancyTimeFormat(remainingDuration)}`;
+            }
+            footerText += ` • Repeat: ${repeatMode.toUpperCase()}`;
+
+            embed.setFooter({ text: footerText });
         }
-        const embedMessage = new EmbedBuilder();
-        const currentTrack = musicGuildInfo.queue[musicGuildInfo.currentPosition];
-        const npString = `${fancyTimeFormat(musicGuildInfo.player.position / 1000)} / ${fancyTimeFormat(currentTrack?.info.length! / 1000)}`;
-        if (musicGuildInfo.isPlaying) {
-            embedMessage.setTitle("Izuna: Now Playing...");
-            embedMessage.addFields({ name: currentTrack?.info.title!, value: currentTrack?.info.uri! });
-            embedMessage.addFields({ name: "Position", value: npString });
-            const estimatedToDone =
-                musicGuildInfo.queue.slice(musicGuildInfo.currentPosition).reduce((acc, val) => acc + val.info.length, 0) / 1000 -
-                musicGuildInfo.player.position / 1000;
-            embedMessage.addFields({ name: "Estimated Playlist Time Left", value: fancyTimeFormat(estimatedToDone) });
-            // embedMessage.addFields({ name: "State-ispausing", value: String(musicGuildInfo.isPausing) });
-            // embedMessage.addFields({ name: "State-isplaying", value: String(musicGuildInfo.isPlaying) });
-            // embedMessage.addFields({ name: "State-isskippingqueued", value: String(musicGuildInfo.isSkippingQueued) });
-            // embedMessage.addFields({ name: "State-isrepeat", value: String(musicGuildInfo.isRepeat) });
-            await message.channel.send({ embeds: [embedMessage] });
+
+        return embed;
+    }
+
+    /**
+     * Build navigation buttons for pagination
+     */
+    private buildNavigationButtons(queueLength: number, currentPage: number, userId: string): ActionRowBuilder<ButtonBuilder>[] {
+        const itemsPerPage = 5;
+        const totalPages = Math.ceil(queueLength / itemsPerPage);
+
+        if (totalPages <= 1) {
+            return []; // No pagination needed
         }
-        let currentPage = Math.floor(musicGuildInfo.currentPosition / 10);
-        paginatedMessage.setIndex(currentPage);
-        paginatedMessage.setWrongUserInteractionReply((targetUser) => ({
-            content: `Even if you fiddle with my buttons, my heart belongs to ${userMention(targetUser.id)}-sama alone.`,
-            ephemeral: true,
-            allowedMentions: {
-                users: [],
-                roles: [],
-            },
-        }));
-        await paginatedMessage.run(message);
-        return;
+
+        const row = new ActionRowBuilder<ButtonBuilder>();
+
+        // Previous button
+        row.addComponents(
+            new ButtonBuilder()
+                .setCustomId(`np2:${userId}:prev:${currentPage}`)
+                .setLabel("◀ Previous")
+                .setStyle(ButtonStyle.Primary)
+                .setDisabled(currentPage <= 1),
+        );
+
+        // Page indicator
+        row.addComponents(
+            new ButtonBuilder()
+                .setCustomId(`np2:${userId}:page:${currentPage}`)
+                .setLabel(`${currentPage} / ${totalPages}`)
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(true),
+        );
+
+        // Next button
+        row.addComponents(
+            new ButtonBuilder()
+                .setCustomId(`np2:${userId}:next:${currentPage}`)
+                .setLabel("Next ▶")
+                .setStyle(ButtonStyle.Primary)
+                .setDisabled(currentPage >= totalPages),
+        );
+
+        return [row];
+    }
+
+    /**
+     * Build a visual progress bar
+     */
+    private buildProgressBar(position: number, length: number, barLength: number = 20): string {
+        if (length === 0) return "[░░░░░░░░░░░░░░░░░░░░] 0%";
+
+        const percentage = Math.min(100, (position / length) * 100);
+        const filledLength = Math.round((barLength * position) / length);
+        const emptyLength = barLength - filledLength;
+
+        const filled = "█".repeat(Math.max(0, filledLength));
+        const empty = "░".repeat(Math.max(0, emptyLength));
+
+        return `[${filled}${empty}] ${Math.round(percentage)}%`;
     }
 }

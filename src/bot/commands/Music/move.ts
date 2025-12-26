@@ -1,22 +1,31 @@
-import { Args, Command } from "@sapphire/framework";
+import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import musicManager from "../../../lib/musicQueue";
+import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
+import { MusicService } from "../../../services/MusicService";
 import logger from "../../../lib/winston";
 
-export class MoveQueueItemCommand extends Command {
+/**
+ * Move Command (Refactored)
+ *
+ * Move selected track to new position in the queue.
+ *
+ * Migration Status: COMPLETE (full service-layer implementation)
+ */
+export class MoveCommand extends Command {
+    private musicService: MusicService;
+
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
             name: "move",
+            aliases: ["mv"],
             description: "Move selected track to new position",
-            detailedDescription: `Move selected track to new position. Requires two argument: track's position to move and desired track position.
+            detailedDescription: `Move selected track to new position. Requires two arguments: track's position to move and desired track position.
             Track will be moved in-place without carrying the play head position.
-            This means that moving currently playing track will not carry the play head, which effects to:
-            - Next track played will be the next increment of play head, or
-            - Next track played will be the next track targeted by jump command if not yet played.
+            This means that moving currently playing track will not carry the play head.
 
             Example:
-            Currently playing playlist: 
+            Currently playing playlist:
             1. track1
             2. track2 <- Play head
             3. track3
@@ -24,45 +33,121 @@ export class MoveQueueItemCommand extends Command {
             Using "move 2 1" will result to:
             1. track2
             2. track1 <- Play head
-            3. track3
-            `,
+            3. track3`,
+        });
+
+        this.musicService = MusicService.getInstance();
+    }
+
+    public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
+        registry.registerChatInputCommand((builder) => {
+            builder
+                .setName("move")
+                .setDescription("Move a track to a different position in the queue")
+                .addIntegerOption((opt) => opt.setName("from").setDescription("Current track position (1-based)").setRequired(true).setMinValue(1))
+                .addIntegerOption((opt) => opt.setName("to").setDescription("Destination position (1-based)").setRequired(true).setMinValue(1));
         });
     }
 
-    public override async messageRun(message: Message, args: Args) {
-        if (!message.guildId) {
-            await message.channel.send("This command only works in servers");
+    public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: interaction.guildId,
+            guild: interaction.guild,
+            textChannel: interaction.channel,
+            member: interaction.member as any,
+            botId: interaction.client.id!,
+        });
+
+        if (!validation.valid) {
+            await interaction.reply({
+                content: validation.error!,
+                ephemeral: true,
+            });
             return;
         }
-        if (!message.member?.voice.channel) {
-            await message.channel.send("You must be in voice channel first.");
-            return;
-        }
-        const botVoiceChannel = message.guild!.members.cache.get(message.client.id!)?.voice.channel;
-        if (!message.member?.voice.channel.members.some((user) => user.id === message.client.id) && botVoiceChannel) {
-            await message.channel.send("You must be in the same voice channel with bot.");
-            return;
-        }
-        const musicGuildInfo = musicManager.get(message.guildId!);
-        if (!musicGuildInfo) {
-            await message.channel.send("No bot in voice channel. Are you okay?");
-            return;
-        }
+
+        const guildId = interaction.guildId!;
+        const fromPosition = interaction.options.getInteger("from", true);
+        const toPosition = interaction.options.getInteger("to", true);
+
         try {
-            const posToMove = await args.pick("integer");
-            const posToJump = await args.pick("integer");
-            // check if there is a current playing track
-            if (posToJump > 0 && posToJump <= musicGuildInfo.queue.length && posToMove > 0 && posToMove <= musicGuildInfo.queue.length) {
-                const item = musicGuildInfo.queue.splice(posToMove - 1, 1)[0]!;
-                musicGuildInfo.queue.splice(posToJump - 1, 0, item);
-                await message.channel.send(`Moved track **${item.info.title}** to position **${posToJump}**`);
-                return;
-            }
-            await message.channel.send(`Out of range track number.`);
-            return;
+            const message = await this.moveTrack(guildId, fromPosition, toPosition);
+            await interaction.reply(message);
         } catch (error) {
-            await message.channel.send("Error on command. Please put non-zero positive integer for both arguments");
+            logger.error("Error in move command (slash):", error);
+            await interaction.reply({
+                content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+                ephemeral: true,
+            });
+        }
+    }
+
+    public override async messageRun(message: Message, args: Args) {
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: message.guildId,
+            guild: message.guild,
+            textChannel: message.channel,
+            member: message.member,
+            botId: message.client.id!,
+        });
+
+        if (!validation.valid) {
+            await message.channel.send(validation.error!);
             return;
         }
+
+        const guildId = message.guildId!;
+
+        try {
+            const fromPosition = await args.pick("integer");
+            const toPosition = await args.pick("integer");
+            const responseMessage = await this.moveTrack(guildId, fromPosition, toPosition);
+            await message.channel.send(responseMessage);
+        } catch (error: any) {
+            if (error.identifier) {
+                // Sapphire argument error
+                await message.channel.send("Error: Please provide two valid track numbers (positive integers)");
+            } else {
+                logger.error("Error in move command (message):", error);
+                await message.channel.send(`Error: ${error.message || "Unknown error"}`);
+            }
+        }
+    }
+
+    private async moveTrack(guildId: string, fromPosition: number, toPosition: number): Promise<string> {
+        // Check if session exists
+        const session = this.musicService.getSession(guildId);
+        if (!session) {
+            return "No active music session. Use `play2` to start playing music.";
+        }
+
+        const queue = this.musicService.getQueue(guildId);
+
+        if (!queue || queue.length === 0) {
+            return "Queue is empty. Add some tracks first!";
+        }
+
+        // Convert to 0-based indices
+        const fromIndex = fromPosition - 1;
+        const toIndex = toPosition - 1;
+
+        if (fromIndex < 0 || fromIndex >= queue.length) {
+            return `Invalid source position. Queue has ${queue.length} tracks (1-${queue.length})`;
+        }
+
+        if (toIndex < 0 || toIndex >= queue.length) {
+            return `Invalid destination position. Queue has ${queue.length} tracks (1-${queue.length})`;
+        }
+
+        if (fromIndex === toIndex) {
+            return "Source and destination positions are the same. No move needed.";
+        }
+
+        // Move the track
+        const movedTrack = this.musicService.moveTrack(guildId, fromIndex, toIndex);
+
+        return `✅ Moved track **${movedTrack.info.title}** from position ${fromPosition} to position ${toPosition}`;
     }
 }

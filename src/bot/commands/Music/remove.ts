@@ -1,64 +1,138 @@
-import { Args, Command } from "@sapphire/framework";
+import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import { Track } from "shoukaku";
-import musicManager, { isGdriveLazyLoad, LavalinkLazyLoad } from "../../../lib/musicQueue";
+import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
+import { MusicService } from "../../../services/MusicService";
 import logger from "../../../lib/winston";
 
-export class RemoveFromQueueCommand extends Command {
+/**
+ * Remove Command (Refactored)
+ *
+ * Remove a certain track from the music queue.
+ *
+ * Migration Status: COMPLETE (full service-layer implementation)
+ */
+export class RemoveCommand extends Command {
+    private musicService: MusicService;
+
     public constructor(context: Command.Context, options: Command.Options) {
         super(context, {
             ...options,
             name: "remove",
-            aliases: ["delete"],
+            aliases: ["delete", "rm"],
             description: "Remove a certain track from music queue",
             detailedDescription: `Remove a track from music queue based on track's position.
-            This command use 1-based indexing, which means first track will have track position 1, and so on.
-            You can use "nowplaying", "np", "queue", "q" command (which are all the same command) to check the current playlist.`,
+            This command uses 1-based indexing, which means first track will have track position 1, and so on.
+            You can use "nowplaying", "np", "queue" commands to check the current playlist.
+            Cannot remove currently playing track - use skip instead.`,
+        });
+
+        this.musicService = MusicService.getInstance();
+    }
+
+    public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
+        registry.registerChatInputCommand((builder) => {
+            builder
+                .setName("remove")
+                .setDescription("Remove a track from the queue")
+                .addIntegerOption((opt) => opt.setName("position").setDescription("Track position to remove (1-based)").setRequired(true).setMinValue(1));
         });
     }
 
-    public override async messageRun(message: Message, args: Args) {
-        if (!message.guildId) {
-            await message.channel.send("This command only works in servers");
+    public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: interaction.guildId,
+            guild: interaction.guild,
+            textChannel: interaction.channel,
+            member: interaction.member as any,
+            botId: interaction.client.id!,
+        });
+
+        if (!validation.valid) {
+            await interaction.reply({
+                content: validation.error!,
+                ephemeral: true,
+            });
             return;
         }
-        if (!message.member?.voice.channel) {
-            await message.channel.send("You must be in voice channel first.");
-            return;
-        }
-        const botVoiceChannel = message.guild!.members.cache.get(message.client.id!)?.voice.channel;
-        if (!message.member?.voice.channel.members.some((user) => user.id === message.client.id) && botVoiceChannel) {
-            await message.channel.send("You must be in the same voice channel with bot.");
-            return;
-        }
-        const musicGuildInfo = musicManager.get(message.guildId!);
-        if (!musicGuildInfo) {
-            await message.channel.send("No bot in voice channel. Are you okay?");
-            return;
-        }
+
+        const guildId = interaction.guildId!;
+        const position = interaction.options.getInteger("position", true);
+
         try {
-            const posToRemove = await args.pick("integer");
-            // check if there is a current playing track
-            if (posToRemove < 1 || posToRemove > musicGuildInfo.queue.length) {
-                await message.channel.send("Out of range track number.");
-                return;
-            }
-            if (musicGuildInfo.isPlaying && musicGuildInfo.currentPosition === posToRemove - 1) {
-                await message.channel.send("Cannot remove currently playing track.");
-                return;
-            }
-            const deletedTracks = musicGuildInfo.queue.splice(posToRemove - 1, 1);
-            if (isGdriveLazyLoad(deletedTracks[0])) {
-                await message.channel.send(
-                    `Removed track (lazy-loaded Google Drive entry) **${(deletedTracks[0] as LavalinkLazyLoad).fileId}** from the queue`
-                );
-                return;
-            }
-            await message.channel.send(`Removed track **${(deletedTracks[0] as Track)?.info.title}** from the queue.`);
-            return;
+            const message = await this.removeTrack(guildId, position);
+            await interaction.reply(message);
         } catch (error) {
-            await message.channel.send("Error on command. Please put non-zero positive integer");
+            logger.error("Error in remove command (slash):", error);
+            await interaction.reply({
+                content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+                ephemeral: true,
+            });
+        }
+    }
+
+    public override async messageRun(message: Message, args: Args) {
+        // Validate prerequisites
+        const validation = validateMusicCommandPrerequisites({
+            guildId: message.guildId,
+            guild: message.guild,
+            textChannel: message.channel,
+            member: message.member,
+            botId: message.client.id!,
+        });
+
+        if (!validation.valid) {
+            await message.channel.send(validation.error!);
             return;
+        }
+
+        const guildId = message.guildId!;
+
+        try {
+            const position = await args.pick("integer");
+            const responseMessage = await this.removeTrack(guildId, position);
+            await message.channel.send(responseMessage);
+        } catch (error: any) {
+            if (error.identifier) {
+                // Sapphire argument error
+                await message.channel.send("Error: Please provide a valid track number (positive integer)");
+            } else {
+                logger.error("Error in remove command (message):", error);
+                await message.channel.send(`Error: ${error.message || "Unknown error"}`);
+            }
+        }
+    }
+
+    private async removeTrack(guildId: string, position: number): Promise<string> {
+        // Check if session exists
+        const session = this.musicService.getSession(guildId);
+        if (!session) {
+            return "No active music session. Use `play2` to start playing music.";
+        }
+
+        const queue = this.musicService.getQueue(guildId);
+
+        if (!queue || queue.length === 0) {
+            return "Queue is empty. Nothing to remove!";
+        }
+
+        // Convert to 0-based index
+        const trackIndex = position - 1;
+
+        if (trackIndex < 0 || trackIndex >= queue.length) {
+            return `Invalid track position. Queue has ${queue.length} tracks (1-${queue.length})`;
+        }
+
+        try {
+            // Remove the track
+            const removedTrack = this.musicService.removeTrack(guildId, trackIndex);
+            return `🗑️ Removed track **${removedTrack.info.title}** from the queue.`;
+        } catch (error: any) {
+            // Handle specific error for currently playing track
+            if (error.message && error.message.includes("Cannot remove currently playing track")) {
+                return "❌ Cannot remove currently playing track. Use `skip2` command instead.";
+            }
+            throw error;
         }
     }
 }
