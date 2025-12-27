@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import tierlistRoutes from "./tierlist";
 import closureRoutes from "./closure";
 import reminderRoutes from "./reminders";
+import oauthRoutes from "../oauth";
 
 async function apiV1(instance: FastifyInstance, _: FastifyPluginOptions) {
     instance.register(tierlistRoutes, {
@@ -13,6 +14,7 @@ async function apiV1(instance: FastifyInstance, _: FastifyPluginOptions) {
     instance.register(reminderRoutes, {
         prefix: "/reminders",
     });
+    instance.register(oauthRoutes);
 
     instance.get("/status", async (_req, _res) => {
         return {

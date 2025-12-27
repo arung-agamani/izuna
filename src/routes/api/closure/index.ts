@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
-import { FastifyDiscordOAuthBody } from "../../..";
+import { FastifyDiscordOAuthBody } from "../../../types";
 import prisma from "../../../lib/prisma";
 import logger from "../../../lib/winston";
 import discordOauth2 from "discord-oauth2";
@@ -60,7 +60,7 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
                 message: "here will be baseline for user API",
                 user: req.user,
             };
-        }
+        },
     );
 
     fastify.get("/user/me", { onRequest: [fastify.authenticate] }, async (req, res) => {
@@ -96,7 +96,7 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
                 if (
                     closureGuilds.findIndex(
                         (y: (typeof closureGuilds)[0]) =>
-                            y.guildId === x.guildId && new PermissionsBitField(x.permissionInteger as any).has(PermissionsBitField.Flags.SendMessages)
+                            y.guildId === x.guildId && new PermissionsBitField(x.permissionInteger as any).has(PermissionsBitField.Flags.SendMessages),
                     ) > -1
                 )
                     return true;
@@ -134,7 +134,7 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
                 if (
                     closureGuilds.findIndex(
                         (y: (typeof closureGuilds)[0]) =>
-                            y.guildId === x.guildId && new PermissionsBitField(x.permissionInteger as any).has(PermissionsBitField.Flags.Administrator)
+                            y.guildId === x.guildId && new PermissionsBitField(x.permissionInteger as any).has(PermissionsBitField.Flags.Administrator),
                     ) > -1
                 )
                     return true;
@@ -170,7 +170,7 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
             return {
                 data: userReminder,
             };
-        }
+        },
     );
 
     fastify.get<{

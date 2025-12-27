@@ -2,7 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import DiscordOAuth2 from "discord-oauth2";
 import prisma from "../../../lib/prisma";
 import logger from "../../../lib/winston";
-import { FastifyDiscordOAuthBody } from "../../..";
+import { FastifyDiscordOAuthBody } from "../../../types";
 import discordSession from "../../../lib/session";
 
 const oauth = new DiscordOAuth2();
