@@ -2,12 +2,6 @@ import type { Shoukaku } from "shoukaku";
 
 let shoukaku: Shoukaku | undefined;
 
-/**
- * Service-layer context for the Shoukaku instance.
- *
- * This is intentionally separate from the legacy `src/lib/musicQueue.ts` so the new
- * services can be migrated gradually without depending on that module.
- */
 export function setShoukakuContext(instance: Shoukaku) {
     shoukaku = instance;
 }
@@ -23,10 +17,6 @@ export function requireShoukakuContext(): Shoukaku {
     return shoukaku;
 }
 
-/**
- * Resolve an active Lavalink node from Shoukaku.
- * Node selection is delegated to Shoukaku's configured nodeResolver.
- */
 export function resolveLavalinkNode() {
     const manager = requireShoukakuContext();
     // @ts-ignore - shoukaku exposes nodeResolver dynamically
