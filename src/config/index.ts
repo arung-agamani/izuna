@@ -42,6 +42,7 @@ export const config = {
     botPrefix: env.NODE_ENV === "development" ? new RegExp("^idev[,! ]", "i") : new RegExp("^izuna[,! ]", "i"),
     botToken: env.DISCORD_BOT_TOKEN,
     lavalinkConfigPath: env.LAVALINK_CONFIG_PATH,
+    useLocalLavalink: env.USE_LOCAL_LAVALINK,
 
     // Credentials
     ownerUsers: ["145558597424644097"],

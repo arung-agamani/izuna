@@ -91,6 +91,7 @@ Use --seek or -s flag to jump to a specific timestamp if available.`,
             });
         } catch (error) {
             logger.error("Error in play command:", error);
+            console.error(error);
             await interaction.followUp({
                 content: `❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`,
                 ephemeral: true,
@@ -109,7 +110,7 @@ Use --seek or -s flag to jump to a specific timestamp if available.`,
         });
 
         if (!validation.valid) {
-            await message.channel.send(validation.error!);
+            if (message.channel.isSendable()) await message.channel.send(validation.error!);
             return;
         }
 
@@ -117,7 +118,7 @@ Use --seek or -s flag to jump to a specific timestamp if available.`,
         const query = await args.rest("string");
 
         if (!query) {
-            await message.channel.send("Please provide a search query or URL");
+            if (message.channel.isSendable()) await message.channel.send("Please provide a search query or URL");
             return;
         }
 
@@ -132,7 +133,8 @@ Use --seek or -s flag to jump to a specific timestamp if available.`,
             });
         } catch (error) {
             logger.error("Error in play command:", error);
-            await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+            console.error(error);
+            if (message.channel.isSendable()) await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 
@@ -198,7 +200,7 @@ Use --seek or -s flag to jump to a specific timestamp if available.`,
             // Start playing if not already playing
             const stats = this.musicService.getQueueStats(guildId);
             // send the stats as message
-            textChannel.send(`🎶 Queue Size: ${stats?.queueSize}, Currently Playing: ${stats?.isPlaying ? "Yes" : "No"}`).catch(logger.error);
+            if (textChannel.isSendable()) textChannel.send(`🎶 Queue Size: ${stats?.queueSize}, Currently Playing: ${stats?.isPlaying ? "Yes" : "No"}`).catch(logger.error);
 
             // Play if not currently playing OR if queue was ended but now has new tracks
             if (
@@ -220,6 +222,7 @@ Use --seek or -s flag to jump to a specific timestamp if available.`,
      */
     private sendQueueMessage(textChannel: TextBasedChannel, parsed: any, result: any, queuedTracks: any[]): void {
         const trackCount = queuedTracks.length;
+        if (!textChannel.isSendable()) return;
 
         switch (parsed.type) {
             case "youtube-video": {

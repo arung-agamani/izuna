@@ -49,7 +49,7 @@ export class StopMusicCommand extends Command {
         });
 
         if (!validation.valid) {
-            await message.channel.send(validation.error!);
+            if (message.channel.isSendable()) await message.channel.send(validation.error!);
             return;
         }
 
@@ -60,7 +60,7 @@ export class StopMusicCommand extends Command {
             const session = this.musicService.getSession(guildId);
 
             if (!session) {
-                await message.channel.send("❌ No active music session in this guild");
+                if (message.channel.isSendable()) await message.channel.send("❌ No active music session in this guild");
                 return;
             }
 
@@ -93,10 +93,10 @@ export class StopMusicCommand extends Command {
             }
 
             // Send confirmation message
-            await message.channel.send("⏹️ Stopped music and left voice channel");
+            if (message.channel.isSendable()) await message.channel.send("⏹️ Stopped music and left voice channel");
         } catch (error) {
             logger.error(`Error in stop2 command for guild ${guildId}:`, error);
-            await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error occurred"}`);
+            if (message.channel.isSendable()) await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error occurred"}`);
         }
     }
 }

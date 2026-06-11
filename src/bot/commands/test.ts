@@ -84,6 +84,6 @@ export class TestCommand extends Command {
         //         console.log(error);
         //     }
         // }
-        await message.channel.send("Executing test");
+        if (message.channel.isSendable()) await message.channel.send("Executing test");
     }
 }

@@ -93,7 +93,7 @@ The position must not exceed the track's length.`,
         });
 
         if (!validation.valid) {
-            await message.channel.send(validation.error!);
+            if (message.channel.isSendable()) await message.channel.send(validation.error!);
             return;
         }
 
@@ -105,9 +105,9 @@ The position must not exceed the track's length.`,
         } catch (error) {
             logger.error("Error in seek command:", error);
             if (error instanceof Error && error.message.includes("There was no input")) {
-                await message.channel.send("❌ Error: Please provide a time position (e.g., `40`, `1:10`, `1:1:10`)");
+                if (message.channel.isSendable()) await message.channel.send("❌ Error: Please provide a time position (e.g., `40`, `1:10`, `1:1:10`)");
             } else {
-                await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+                if (message.channel.isSendable()) await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
             }
         }
     }

@@ -27,29 +27,35 @@ async function createBotApp() {
             enabled: process.env["NODE_ENV"] === "development",
         },
     });
+
     const nodes: NodeOption[] = [];
-    if (config.lavalinkConfigPath) {
-        const lavalinkNodeConfig = await fetch(config.lavalinkConfigPath).then((res) => res.json());
+    if (config.useLocalLavalink) {
+        logger.info("Using local lavalink node");
+        nodes.push({
+            name: "local",
+            url: "localhost:2333",
+            auth: "youshallnotpass"
+        });
+    } else if (config.lavalinkConfigPath) {
+        const lavalinkNodeConfig = await (globalThis as any).fetch(config.lavalinkConfigPath).then((res: any) => res.json());
         for (const node of lavalinkNodeConfig) {
             logger.info(`Added ${node.name} to lavalink node pool`);
             nodes.push(node);
         }
     }
-    await client.login(process.env["DISCORD_BOT_TOKEN"]);
-    if (!process.env["MUTE"] && process.env["MUTE"] !== "1") {
+    
+    if (!process.env["MUTE"] && process.env["MUTE"] !== "1") { 
         logger.info("Initializing Shoukaku connector");
-        const manager = new Shoukaku(new Connectors.DiscordJS(client), nodes, {
-            resume: true,
-            resumeByLibrary: true,
-        });
-
+        const manager = new Shoukaku(new Connectors.DiscordJS(client), nodes);
         setShoukakuContext(manager);
+        logger.info("Shoukaku manager initialized with nodes:", nodes.map(node => node.name).join(", "));
         manager.on("error", (node, err) => {
             logger.error("Shoukaku connection error", {
                 node: node || "unknown",
                 error: err instanceof Error ? err.message : String(err),
                 stack: err instanceof Error ? err.stack : undefined,
             });
+            logger.error(err);
         });
         manager.on("ready", () => {
             logger.info("✅ Shoukaku manager ready", {
@@ -57,6 +63,7 @@ async function createBotApp() {
             });
         });
     }
+    await client.login(process.env["DISCORD_BOT_TOKEN"]);
     await initializeJoinToCreateVCManager();
     await initializeChannelTrackingManager();
     client.on("messageCreate", async (message) => {

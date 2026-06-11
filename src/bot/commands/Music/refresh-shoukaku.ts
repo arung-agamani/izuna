@@ -64,21 +64,21 @@ This is an admin utility command and should be used only when experiencing conne
 
     public override async messageRun(message: Message) {
         if (!message.guildId) {
-            await message.channel.send("❌ This command only works in servers");
+            if (message.channel.isSendable()) await message.channel.send("❌ This command only works in servers");
             return;
         }
 
         // Simple admin check - you can enhance this with proper role checking
         if (!message.member?.permissions.has("Administrator")) {
-            await message.channel.send("❌ This command requires Administrator permissions");
+            if (message.channel.isSendable()) await message.channel.send("❌ This command requires Administrator permissions");
             return;
         }
 
         try {
-            await this.refresh(message.channel);
+            if (message.channel.isSendable()) await this.refresh(message.channel);
         } catch (error) {
             logger.error("Error refreshing nodes:", error);
-            await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+            if (message.channel.isSendable()) await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 

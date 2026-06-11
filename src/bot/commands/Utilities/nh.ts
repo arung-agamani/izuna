@@ -69,7 +69,7 @@ export class NhCommand extends Command {
         try {
             const code = await args.pick("number");
             if (code < 600000 && code > 2) {
-                await message.channel.send("Sent to your DM. It's unsafe out there :)");
+                if (message.channel.isSendable()) await message.channel.send("Sent to your DM. It's unsafe out there :)");
                 await message.author.send(`https://nhentai.net/g/${code}`);
                 try {
                     if (!availableSessions) {

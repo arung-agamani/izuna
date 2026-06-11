@@ -56,7 +56,7 @@ export class PublicLavalinkNodeService {
                 break;
         }
 
-        const response = await fetch(apiUrl);
+        const response = await (globalThis as any).fetch(apiUrl);
         if (!response.ok) {
             throw new Error(`Failed to fetch public Lavalink nodes: ${response.statusText}`);
         }
@@ -142,7 +142,7 @@ export class PublicLavalinkNodeService {
                             headers["Authorization"] = node.password;
                         }
 
-                        const response = await fetch(url, {
+                        const response = await (globalThis as any).fetch(url, {
                             method: "GET",
                             signal: controller.signal,
                             headers,

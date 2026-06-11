@@ -81,7 +81,7 @@ export class SkipMusicCommand extends Command {
         });
 
         if (!validation.valid) {
-            await message.channel.send(validation.error!);
+            if (message.channel.isSendable()) await message.channel.send(validation.error!);
             return;
         }
 
@@ -91,7 +91,7 @@ export class SkipMusicCommand extends Command {
             await this.skip(guildId, message.channel);
         } catch (error) {
             logger.error("Error in skip command:", error);
-            await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+            if (message.channel.isSendable()) await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 

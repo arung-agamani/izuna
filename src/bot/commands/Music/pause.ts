@@ -79,7 +79,7 @@ export class PauseCommand extends Command {
         });
 
         if (!validation.valid) {
-            await message.channel.send(validation.error!);
+            if (message.channel.isSendable()) await message.channel.send(validation.error!);
             return;
         }
 
@@ -87,10 +87,10 @@ export class PauseCommand extends Command {
 
         try {
             const responseMessage = await this.togglePause(guildId);
-            await message.channel.send(responseMessage);
+            if (message.channel.isSendable()) await message.channel.send(responseMessage);
         } catch (error) {
             logger.error("Error in pause command (message):", error);
-            await message.channel.send(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+            if (message.channel.isSendable()) await message.channel.send(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 

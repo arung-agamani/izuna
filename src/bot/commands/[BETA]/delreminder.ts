@@ -23,15 +23,15 @@ export class DelReminderCommand extends Command {
             // Check if reminder exists and belongs to the user
             const reminder = await reminderService.getReminderForUser(Number(id), message.author.id);
             if (!reminder) {
-                await message.channel.send("There is no reminder with that id attached to you.");
+                if (message.channel.isSendable()) await message.channel.send("There is no reminder with that id attached to you.");
                 return;
             }
 
             // Delete the reminder
             await reminderService.deleteReminder(Number(id));
-            await message.channel.send(`Reminder for <@${message.author.id}> with id "${reminder.id}" has been deleted`);
+            if (message.channel.isSendable()) await message.channel.send(`Reminder for <@${message.author.id}> with id "${reminder.id}" has been deleted`);
         } catch (error) {
-            await message.channel.send(`Failed to delete reminder: ${error instanceof Error ? error.message : "Unknown error"}`);
+            if (message.channel.isSendable()) await message.channel.send(`Failed to delete reminder: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 }

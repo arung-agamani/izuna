@@ -82,7 +82,7 @@ If nothing is playing, the entire queue will be shuffled.`,
         });
 
         if (!validation.valid) {
-            await message.channel.send(validation.error!);
+            if (message.channel.isSendable()) await message.channel.send(validation.error!);
             return;
         }
 
@@ -92,7 +92,7 @@ If nothing is playing, the entire queue will be shuffled.`,
             await this.shuffle(guildId, message.channel);
         } catch (error) {
             logger.error("Error in shuffle command:", error);
-            await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+            if (message.channel.isSendable()) await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 

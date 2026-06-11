@@ -73,7 +73,7 @@ export class SearchCommand extends Command {
     public override async messageRun(message: Message, args: Args) {
         // Validate prerequisites (less strict for search)
         if (!message.guildId || !message.guild) {
-            await message.channel.send("This command only works in servers.");
+            if (message.channel.isSendable()) await message.channel.send("This command only works in servers.");
             return;
         }
 
@@ -84,10 +84,10 @@ export class SearchCommand extends Command {
         } catch (error: any) {
             if (error.identifier) {
                 // Sapphire argument error
-                await message.channel.send("Error: Please provide a search query.");
+                if (message.channel.isSendable()) await message.channel.send("Error: Please provide a search query.");
             } else {
                 logger.error("Error in search command (message):", error);
-                await message.channel.send("Error: Failed to search. Please try again.");
+                if (message.channel.isSendable()) await message.channel.send("Error: Failed to search. Please try again.");
             }
         }
     }

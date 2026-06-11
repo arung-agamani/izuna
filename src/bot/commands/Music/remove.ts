@@ -82,7 +82,7 @@ export class RemoveCommand extends Command {
         });
 
         if (!validation.valid) {
-            await message.channel.send(validation.error!);
+            if (message.channel.isSendable()) await message.channel.send(validation.error!);
             return;
         }
 
@@ -91,14 +91,14 @@ export class RemoveCommand extends Command {
         try {
             const position = await args.pick("integer");
             const responseMessage = await this.removeTrack(guildId, position);
-            await message.channel.send(responseMessage);
+            if (message.channel.isSendable()) await message.channel.send(responseMessage);
         } catch (error: any) {
             if (error.identifier) {
                 // Sapphire argument error
-                await message.channel.send("Error: Please provide a valid track number (positive integer)");
+                if (message.channel.isSendable()) await message.channel.send("Error: Please provide a valid track number (positive integer)");
             } else {
                 logger.error("Error in remove command (message):", error);
-                await message.channel.send(`Error: ${error.message || "Unknown error"}`);
+                if (message.channel.isSendable()) await message.channel.send(`Error: ${error.message || "Unknown error"}`);
             }
         }
     }

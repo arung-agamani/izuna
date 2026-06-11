@@ -82,17 +82,17 @@ You must be in a voice channel to use this command.`,
 
     public override async messageRun(message: Message) {
         if (!message.guildId) {
-            await message.channel.send("❌ This command only works in servers");
+            if (message.channel.isSendable()) await message.channel.send("❌ This command only works in servers");
             return;
         }
 
         if (!message.guild) {
-            await message.channel.send("❌ Guild not found");
+            if (message.channel.isSendable()) await message.channel.send("❌ Guild not found");
             return;
         }
 
         if (!message.member?.voice.channel) {
-            await message.channel.send("❌ You must be in a voice channel first");
+            if (message.channel.isSendable()) await message.channel.send("❌ You must be in a voice channel first");
             return;
         }
 
@@ -103,7 +103,7 @@ You must be in a voice channel to use this command.`,
             await this.moveBot(guildId, voiceChannel.id, message.guild, message.channel);
         } catch (error) {
             logger.error("Error in ntr command:", error);
-            await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+            if (message.channel.isSendable()) await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 

@@ -1,4 +1,4 @@
-import { InteractionHandler, InteractionHandlerTypes, PieceContext } from "@sapphire/framework";
+import { InteractionHandler, InteractionHandlerTypes } from "@sapphire/framework";
 import { ButtonInteraction } from "discord.js";
 import logger from "../../lib/winston";
 import { MusicService } from "../../services/MusicService";
@@ -16,7 +16,7 @@ import { Track } from "shoukaku";
 export class SearchInteractionHandler extends InteractionHandler {
     private musicService: MusicService;
 
-    public constructor(ctx: PieceContext, options: InteractionHandler.Options) {
+    public constructor(ctx: InteractionHandler.LoaderContext, options: InteractionHandler.Options) {
         super(ctx, {
             ...options,
             interactionHandlerType: InteractionHandlerTypes.Button,
@@ -86,13 +86,13 @@ export class SearchInteractionHandler extends InteractionHandler {
                 const position = session.queue.length;
                 const duration = fancyTimeFormat(track.info.length / 1000);
 
-                await interaction.message.channel.send(`✅ Added to queue: **${track.info.title}** | Duration: ${duration} | Position: ${position}`);
+                if (interaction.message.channel.isSendable()) await interaction.message.channel.send(`✅ Added to queue: **${track.info.title}** | Duration: ${duration} | Position: ${position}`);
             } else if (resolveResult.loadType === "PLAYLIST_LOADED") {
                 // Handle playlist (though search should only return single tracks)
                 const queuedTracks = await this.musicService.queueTracksFromResult(guildId, resolveResult);
                 addedCount = queuedTracks.length;
 
-                await interaction.message.channel.send(`✅ Added ${addedCount} track(s) from playlist to queue`);
+                if (interaction.message.channel.isSendable()) await interaction.message.channel.send(`✅ Added ${addedCount} track(s) from playlist to queue`);
             } else if (resolveResult.loadType === "SEARCH_RESULT") {
                 // Queue first result
                 const tracks = resolveResult.tracks as Track[];
@@ -104,7 +104,7 @@ export class SearchInteractionHandler extends InteractionHandler {
                     const position = session.queue.length;
                     const duration = fancyTimeFormat(track.info.length / 1000);
 
-                    await interaction.message.channel.send(`✅ Added to queue: **${track.info.title}** | Duration: ${duration} | Position: ${position}`);
+                    if (interaction.message.channel.isSendable()) await interaction.message.channel.send(`✅ Added to queue: **${track.info.title}** | Duration: ${duration} | Position: ${position}`);
                 }
             }
 
@@ -113,7 +113,7 @@ export class SearchInteractionHandler extends InteractionHandler {
                 await this.musicService.playNext(guildId);
                 const currentTrack = session.queue[session.currentPosition];
                 if (currentTrack) {
-                    await interaction.message.channel.send(`🎵 Now playing: **${currentTrack.info.title}**`);
+                    if (interaction.message.channel.isSendable()) await interaction.message.channel.send(`🎵 Now playing: **${currentTrack.info.title}**`);
                 }
             }
 

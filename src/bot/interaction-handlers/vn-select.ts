@@ -1,4 +1,4 @@
-import { InteractionHandler, InteractionHandlerTypes, PieceContext } from "@sapphire/framework";
+import { InteractionHandler, InteractionHandlerTypes } from "@sapphire/framework";
 import { EmbedBuilder, StringSelectMenuInteraction } from "discord.js";
 import { getKanaInstance, Kana } from "../../lib/kana";
 import { SearchCharacterResult } from "../../lib/kana/collections/chara";
@@ -7,7 +7,7 @@ import { debounceInteraction } from "../../lib/interactionTimeout";
 
 export class VNDBSelectInteractionHandler extends InteractionHandler {
     kana: Kana;
-    public constructor(ctx: PieceContext, options: InteractionHandler.Options) {
+    public constructor(ctx: InteractionHandler.LoaderContext, options: InteractionHandler.Options) {
         super(ctx, {
             ...options,
             interactionHandlerType: InteractionHandlerTypes.SelectMenu,

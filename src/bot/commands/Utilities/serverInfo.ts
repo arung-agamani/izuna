@@ -14,10 +14,10 @@ export class ServerInfoCommand extends Command {
     public override async messageRun(message: Message) {
         const guildPreview = await message.guild?.fetchPreview();
         if (!guildPreview) {
-            await message.channel.send("Error when fetching guild preview. Not administrator?");
+            if (message.channel.isSendable()) await message.channel.send("Error when fetching guild preview. Not administrator?");
             return;
         }
-        await message.channel.send(`Server ID: ${guildPreview.id}\nCreated at: ${format(guildPreview.createdAt, "P")}`);
+        if (message.channel.isSendable()) await message.channel.send(`Server ID: ${guildPreview.id}\nCreated at: ${format(guildPreview.createdAt, "P")}`);
         return;
     }
 }

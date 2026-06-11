@@ -180,7 +180,7 @@ export class VNDBCommand extends Command {
                 row.addComponents(button);
                 i++;
             }
-            return message.channel.send({ content: msg, components: [row] });
+            if (message.channel.isSendable()) return message.channel.send({ content: msg, components: [row] });
         } else if (searchResult.results.length === 1) {
             const vnInfo = await this.kana.vn.getInfo(["id", "=", searchResult.results[0].id]);
             if (typeof vnInfo === "string") {
@@ -207,9 +207,9 @@ export class VNDBCommand extends Command {
             });
             embed.setFooter({ text: `Click the title to open the page` });
             embed.setURL(`https://vndb.org/${entry.id}`);
-            return message.channel.send({ embeds: [embed] });
+            if (message.channel.isSendable()) return message.channel.send({ embeds: [embed] });
         } else {
-            return message.channel.send("No entries returned for that query");
+            if (message.channel.isSendable()) return message.channel.send("No entries returned for that query");
         }
     }
 

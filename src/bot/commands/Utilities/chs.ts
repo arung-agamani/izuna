@@ -38,9 +38,9 @@ export class ChooseCommand extends Command {
             );
             allItems = allItems.filter((x) => x.length > 0);
             const sample = allItems[Math.floor(Math.random() * allItems.length)]!;
-            await message.channel.send(sample);
+            if (message.channel.isSendable()) await message.channel.send(sample);
         } catch (error) {
-            await message.channel.send("You do not give any arguments, as it seems...");
+            if (message.channel.isSendable()) await message.channel.send("You do not give any arguments, as it seems...");
             return;
         }
     }

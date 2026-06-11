@@ -49,6 +49,7 @@ Running in development mode will not require Docker, but it's required to have `
 | `S3_BUCKET`                   | string | S3 Bucket Name                                      |
 | `S3_CLIENT_ID`                | string | AWS Access Key ID                                   |
 | `S3_CLIENT_SECRET`            | string | AWS Secret Key                                      |
+| `USE_LOCAL_LAVALINK`          | string | Dev Purpose: Use local lavalink server              |
 | `LAVALINK_CONFIG_PATH`        | string | Path to JSON file containing list of lavalink nodes |
 | `SENTRY_DSN`                  | string | URL to Sentry DSN, for error tracing                |
 

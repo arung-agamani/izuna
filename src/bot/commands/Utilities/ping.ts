@@ -34,6 +34,7 @@ export class PingCommand extends Command {
     }
 
     public override async messageRun(message: Message) {
+        if (!message.channel.isSendable()) return;
         const msg = await message.channel.send("Ping?");
         const content = `Pong!!! Bot latency: ${Math.round(this.container.client.ws.ping)}ms. API latency ${
             msg.createdTimestamp - message.createdTimestamp

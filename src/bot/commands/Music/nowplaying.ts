@@ -45,7 +45,7 @@ export class NowPlayingMusicCommand extends Command {
         });
 
         if (!validation.valid) {
-            await message.channel.send(validation.error!);
+            if (message.channel.isSendable()) await message.channel.send(validation.error!);
             return;
         }
 
@@ -65,7 +65,7 @@ export class NowPlayingMusicCommand extends Command {
             const session = this.musicService.getSession(guildId);
 
             if (!session) {
-                await message.channel.send("❌ No active music session. Use `play2` to start playing music.");
+                if (message.channel.isSendable()) await message.channel.send("❌ No active music session. Use `play2` to start playing music.");
                 return;
             }
 
@@ -79,13 +79,13 @@ export class NowPlayingMusicCommand extends Command {
             const components = this.buildNavigationButtons(queue.length, page, message.author.id);
 
             if (components.length > 0) {
-                await message.channel.send({ embeds: [embed], components });
+                if (message.channel.isSendable()) await message.channel.send({ embeds: [embed], components });
             } else {
-                await message.channel.send({ embeds: [embed] });
+                if (message.channel.isSendable()) await message.channel.send({ embeds: [embed] });
             }
         } catch (error) {
             logger.error("Error in nowplaying2 command:", error);
-            await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+            if (message.channel.isSendable()) await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 

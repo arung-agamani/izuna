@@ -1,4 +1,4 @@
-import { InteractionHandler, InteractionHandlerTypes, PieceContext } from "@sapphire/framework";
+import { InteractionHandler, InteractionHandlerTypes } from "@sapphire/framework";
 import {
     ButtonInteraction,
     Message,
@@ -17,7 +17,7 @@ import { addInteractionEntry, debounceInteraction } from "../../lib/interactionT
 
 export class VNDBInteractionHandler extends InteractionHandler {
     kana: Kana;
-    public constructor(ctx: PieceContext, options: InteractionHandler.Options) {
+    public constructor(ctx: InteractionHandler.LoaderContext, options: InteractionHandler.Options) {
         super(ctx, {
             ...options,
             interactionHandlerType: InteractionHandlerTypes.Button,
@@ -65,7 +65,7 @@ export class VNDBInteractionHandler extends InteractionHandler {
                 debounceInteraction(interaction.message.id);
             } else {
                 interaction.deferUpdate();
-                const sentMessage = await interaction.channel?.send({ embeds: [embed], components: [infoActionRow], content: "" });
+                const sentMessage = interaction.channel?.isSendable() ? await interaction.channel.send({ embeds: [embed], components: [infoActionRow], content: "" }) : undefined;
                 if (sentMessage) {
                     addInteractionEntry(sentMessage.id, () => {
                         sentMessage.edit({ embeds: sentMessage.embeds, components: undefined });

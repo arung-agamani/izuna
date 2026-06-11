@@ -13,10 +13,10 @@ export class TestSlashCommand extends Command {
     }
 
     public override async messageRun(message: Message, args: Args) {
-        await message.channel.send("...echoing requiem");
+        if (message.channel.isSendable()) await message.channel.send("...echoing requiem");
         const userGoogleOAuthState = closureGoogleOauthTracker.get(message.author.id);
         if (!userGoogleOAuthState) {
-            await message.channel.send("You're not logged in");
+            if (message.channel.isSendable()) await message.channel.send("You're not logged in");
             return;
         }
         const playlistId = await args.pick("string");
@@ -34,7 +34,7 @@ export class TestSlashCommand extends Command {
         const embed = new EmbedBuilder();
         embed.setTitle("Izuna: List of User's Playlist Items");
         if (!res.data.items || res.data.items.length === 0) {
-            await message.channel.send("Searched through that playlist and no items? wtf");
+            if (message.channel.isSendable()) await message.channel.send("Searched through that playlist and no items? wtf");
             return;
         }
         // should've used do-while smh, but this works either way, so yeah...
@@ -53,6 +53,6 @@ export class TestSlashCommand extends Command {
         for (const playlist of container) {
             embed.addFields({ name: playlist.snippet?.title || "", value: `https://www.youtube.com/watch?v=${playlist.snippet?.resourceId?.videoId}` });
         }
-        await message.channel.send({ embeds: [embed] });
+        if (message.channel.isSendable()) await message.channel.send({ embeds: [embed] });
     }
 }

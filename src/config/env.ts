@@ -18,4 +18,5 @@ export const env = {
   RUN_BOT: process.env["RUN_BOT"] === "1",
   RUN_WEB: process.env["RUN_WEB"] === "1",
   LAVALINK_CONFIG_PATH: process.env["RUN_BOT"] === "1" ? getEnv("LAVALINK_CONFIG_PATH") : "",
+  USE_LOCAL_LAVALINK: process.env["USE_LOCAL_LAVALINK"] === "true",
 };

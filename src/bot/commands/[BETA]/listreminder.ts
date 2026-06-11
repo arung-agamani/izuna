@@ -24,7 +24,7 @@ export class ListReminderCommand extends Command {
             });
 
             if (reminders.length === 0) {
-                await message.channel.send("You have no active reminders.");
+                if (message.channel.isSendable()) await message.channel.send("You have no active reminders.");
                 return;
             }
 
@@ -42,12 +42,12 @@ export class ListReminderCommand extends Command {
             // Split into multiple messages if too long
             const maxLength = 2000;
             if (reminderList.length <= maxLength) {
-                await message.channel.send(
+                if (message.channel.isSendable()) await message.channel.send(
                     `**Your Active Reminders (${reminders.length}):**\n\n${reminderList}`
                 );
             } else {
                 // Split by reminder entries
-                await message.channel.send(
+                if (message.channel.isSendable()) await message.channel.send(
                     `**Your Active Reminders (${reminders.length}):**`
                 );
                 let currentChunk = "";
@@ -59,18 +59,18 @@ export class ListReminderCommand extends Command {
                     const entry = `**ID ${reminder.id}**: \`${reminder.cronString}\`\n└ Location: ${location}\n└ Message: ${reminder.message}\n\n`;
 
                     if ((currentChunk + entry).length > maxLength) {
-                        await message.channel.send(currentChunk);
+                        if (message.channel.isSendable()) await message.channel.send(currentChunk);
                         currentChunk = entry;
                     } else {
                         currentChunk += entry;
                     }
                 }
                 if (currentChunk) {
-                    await message.channel.send(currentChunk);
+                    if (message.channel.isSendable()) await message.channel.send(currentChunk);
                 }
             }
         } catch (error) {
-            await message.channel.send(
+            if (message.channel.isSendable()) await message.channel.send(
                 `Failed to list reminders: ${error instanceof Error ? error.message : "Unknown error"}`
             );
         }

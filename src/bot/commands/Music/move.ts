@@ -94,7 +94,7 @@ export class MoveCommand extends Command {
         });
 
         if (!validation.valid) {
-            await message.channel.send(validation.error!);
+            if (message.channel.isSendable()) await message.channel.send(validation.error!);
             return;
         }
 
@@ -104,14 +104,14 @@ export class MoveCommand extends Command {
             const fromPosition = await args.pick("integer");
             const toPosition = await args.pick("integer");
             const responseMessage = await this.moveTrack(guildId, fromPosition, toPosition);
-            await message.channel.send(responseMessage);
+            if (message.channel.isSendable()) await message.channel.send(responseMessage);
         } catch (error: any) {
             if (error.identifier) {
                 // Sapphire argument error
-                await message.channel.send("Error: Please provide two valid track numbers (positive integers)");
+                if (message.channel.isSendable()) await message.channel.send("Error: Please provide two valid track numbers (positive integers)");
             } else {
                 logger.error("Error in move command (message):", error);
-                await message.channel.send(`Error: ${error.message || "Unknown error"}`);
+                if (message.channel.isSendable()) await message.channel.send(`Error: ${error.message || "Unknown error"}`);
             }
         }
     }

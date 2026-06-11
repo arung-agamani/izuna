@@ -55,15 +55,15 @@ export class GoogleLoginCommand extends Command {
         if (arg1 === "google") {
             const userOauthState = closureGoogleOauthTracker.get(message.author.id);
             if (!userOauthState) {
-                await message.channel.send("Login link has sent to your DM");
+                if (message.channel.isSendable()) await message.channel.send("Login link has sent to your DM");
                 await message.author.send(`${config.domainPrefix}/api/auth/google?source=closure&uid=${message.author.id}`);
                 return;
             } else {
-                await message.channel.send(`You've already logged in. The current session is valid for the next ${userOauthState.expires_in} seconds`);
+                if (message.channel.isSendable()) await message.channel.send(`You've already logged in. The current session is valid for the next ${userOauthState.expires_in} seconds`);
                 return;
             }
         } else {
-            await message.channel.send(`Invalid argument to command`);
+            if (message.channel.isSendable()) await message.channel.send(`Invalid argument to command`);
             return;
         }
     }

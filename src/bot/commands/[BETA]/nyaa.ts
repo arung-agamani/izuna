@@ -31,7 +31,7 @@ export class NyaaCommand extends Command {
         try {
             let query = await args.pick("string");
             if (!AlphanumericRegex.exec(query)) {
-                await message.channel.send("Invalid query. Please fill up with alphanumeric characters + spaces");
+                if (message.channel.isSendable()) await message.channel.send("Invalid query. Please fill up with alphanumeric characters + spaces");
                 return;
             }
             query = query.replace(/\s+/gi, "+");
@@ -73,7 +73,7 @@ export class NyaaCommand extends Command {
                 }
             }
             if (items.length === 0) {
-                await message.channel.send("Search result returns nothing...");
+                if (message.channel.isSendable()) await message.channel.send("Search result returns nothing...");
                 return;
             }
             const paginatedMessage = new PaginatedMessage();

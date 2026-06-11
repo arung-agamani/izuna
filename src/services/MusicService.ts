@@ -123,17 +123,17 @@ export class MusicService {
                 // Re-attach event handlers to new player
                 this.attachSessionEventHandlers(existing);
 
-                await textChannel?.send(`✅ Moved to voice channel: **${voiceChannel.name}**`);
+                if (textChannel?.isSendable()) await textChannel.send(`✅ Moved to voice channel: **${voiceChannel.name}**`);
             } catch (error) {
                 logger.error("Error during voice channel move:", error);
-                await textChannel?.send("❌ Failed to move voice channels. Please try stopping and starting again.");
+                if (textChannel?.isSendable()) await textChannel.send("❌ Failed to move voice channels. Please try stopping and starting again.");
             }
             return existing;
         }
 
         // Join voice channel - MUST AWAIT before proceeding
         const player = await this.playerManager.joinVoiceChannel(guildId, voiceChannel);
-        await textChannel?.send(`✅ Joined voice channel: **${voiceChannel.name}**`);
+        if (textChannel?.isSendable()) await textChannel.send(`✅ Joined voice channel: **${voiceChannel.name}**`);
 
         const session: MusicSession = {
             guildId,
@@ -173,7 +173,7 @@ export class MusicService {
             if (!currentSession) return;
 
             if (err.exception?.message === "This video is not available") {
-                currentSession.textChannel?.send("⏭️ Skipping unavailable track").catch(logger.error);
+                currentSession.textChannel?.isSendable() && currentSession.textChannel.send("⏭️ Skipping unavailable track").catch(logger.error);
             }
         });
 
@@ -184,7 +184,7 @@ export class MusicService {
             const currentSession = MusicService.sessions.get(guildId);
             if (!currentSession) return;
 
-            currentSession.textChannel?.send("⏭️ Track stuck, skipping...").catch(logger.error);
+            currentSession.textChannel?.isSendable() && currentSession.textChannel.send("⏭️ Track stuck, skipping...").catch(logger.error);
         });
 
         // Track end - handle queue progression
@@ -212,11 +212,11 @@ export class MusicService {
             // Check if reached end of queue
             if (currentSession.currentPosition >= queueSize) {
                 currentSession.isPlaying = false;
-                await currentSession.textChannel?.send("✅ Reached the end of playlist");
+                if (currentSession.textChannel?.isSendable()) await currentSession.textChannel.send("✅ Reached the end of playlist");
 
                 if (repeatMode === "playlist") {
                     currentSession.currentPosition = 0;
-                    await currentSession.textChannel?.send("🔄 Playlist loop enabled. Resetting to the beginning.");
+                    if (currentSession.textChannel?.isSendable()) await currentSession.textChannel.send("🔄 Playlist loop enabled. Resetting to the beginning.");
                     await this.playTrackFromSession(currentSession);
                 }
                 return;
@@ -264,10 +264,10 @@ export class MusicService {
             const duration = fancyTimeFormat(track.info.length / 1000);
             const position = track.info.position ? fancyTimeFormat(track.info.position / 1000) : "0:00";
 
-            await session.textChannel?.send(`▶️ **${track.info.title}** | ${duration}${position !== "0:00" ? ` (seek: ${position})` : ""}`);
+            if (session.textChannel?.isSendable()) await session.textChannel.send(`▶️ **${track.info.title}** | ${duration}${position !== "0:00" ? ` (seek: ${position})` : ""}`);
         } catch (error) {
             logger.error("Error playing track:", error);
-            session.textChannel?.send("❌ Failed to play track. Skipping...").catch(logger.error);
+            session.textChannel?.isSendable() && session.textChannel.send("❌ Failed to play track. Skipping...").catch(logger.error);
         }
     }
 

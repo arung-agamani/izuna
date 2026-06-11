@@ -104,7 +104,7 @@ export class LoopCommand extends Command {
         });
 
         if (!validation.valid) {
-            await message.channel.send(validation.error!);
+            if (message.channel.isSendable()) await message.channel.send(validation.error!);
             return;
         }
 
@@ -113,14 +113,14 @@ export class LoopCommand extends Command {
         try {
             const loopMode = await args.pick("string");
             const responseMessage = await this.setLoopMode(guildId, loopMode);
-            await message.channel.send(responseMessage);
+            if (message.channel.isSendable()) await message.channel.send(responseMessage);
         } catch (error: any) {
             if (error.identifier) {
                 // Sapphire argument error
-                await message.channel.send('No arguments given. Please specify "all", "one", or "none"');
+                if (message.channel.isSendable()) await message.channel.send('No arguments given. Please specify "all", "one", or "none"');
             } else {
                 logger.error("Error in loop command (message):", error);
-                await message.channel.send(`Error: ${error.message || "Unknown error"}`);
+                if (message.channel.isSendable()) await message.channel.send(`Error: ${error.message || "Unknown error"}`);
             }
         }
     }

@@ -19,7 +19,7 @@ export class HelpCommand extends Command {
             const arg1 = await args.rest("string");
             const command = this.container.stores.get("commands").get(arg1);
             if (!command) {
-                await message.channel.send(`Command \`${arg1}\` not found.`);
+                if (message.channel.isSendable()) await message.channel.send(`Command \`${arg1}\` not found.`);
                 return;
             }
             const helpEmbedBuilder = new EmbedBuilder();
@@ -30,7 +30,7 @@ export class HelpCommand extends Command {
             if (command.detailedDescription === "") {
                 helpEmbedBuilder.addFields({ name: "Details", value: "No info" });
             } else helpEmbedBuilder.addFields({ name: "Details", value: command.detailedDescription.toString() });
-            await message.channel.send({ embeds: [helpEmbedBuilder] });
+            if (message.channel.isSendable()) await message.channel.send({ embeds: [helpEmbedBuilder] });
             return;
         } catch (error) {
             const commandIter = this.container.stores.get("commands").entries();
@@ -62,7 +62,7 @@ export class HelpCommand extends Command {
             helpEmbedBuilder.setTimestamp().setFooter({
                 text: process.env["BUILD_REF"] || "Eggs",
             });
-            await message.channel.send({ embeds: [helpEmbedBuilder] });
+            if (message.channel.isSendable()) await message.channel.send({ embeds: [helpEmbedBuilder] });
         }
     }
 }

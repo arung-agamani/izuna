@@ -85,7 +85,7 @@ export class JumpCommand extends Command {
         });
 
         if (!validation.valid) {
-            await message.channel.send(validation.error!);
+            if (message.channel.isSendable()) await message.channel.send(validation.error!);
             return;
         }
 
@@ -97,10 +97,10 @@ export class JumpCommand extends Command {
         } catch (error: any) {
             if (error.identifier) {
                 // Sapphire argument error
-                await message.channel.send("Error: Please provide a valid track number (positive integer)");
+                if (message.channel.isSendable()) await message.channel.send("Error: Please provide a valid track number (positive integer)");
             } else {
                 logger.error("Error in jump command (message):", error);
-                await message.channel.send(`Error: ${error.message || "Unknown error"}`);
+                if (message.channel.isSendable()) await message.channel.send(`Error: ${error.message || "Unknown error"}`);
             }
         }
     }
