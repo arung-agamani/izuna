@@ -1,5 +1,5 @@
 import { SapphireClient } from "@sapphire/framework";
-import { Shoukaku, Connectors, NodeOption } from "shoukaku";
+import { Shoukaku, Connectors, NodeOption, ShoukakuOptions } from "shoukaku";
 import { config } from "../config";
 import { setShoukakuContext } from "../services/ShoukakuContext";
 import logger from "../lib/winston";
@@ -46,7 +46,10 @@ async function createBotApp() {
     
     if (!process.env["MUTE"] && process.env["MUTE"] !== "1") { 
         logger.info("Initializing Shoukaku connector");
-        const manager = new Shoukaku(new Connectors.DiscordJS(client), nodes);
+        const option: ShoukakuOptions = {
+            resume: true,
+        }
+        const manager = new Shoukaku(new Connectors.DiscordJS(client), nodes, option);
         setShoukakuContext(manager);
         logger.info("Shoukaku manager initialized with nodes:", nodes.map(node => node.name).join(", "));
         manager.on("error", (node, err) => {

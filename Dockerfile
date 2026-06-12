@@ -1,4 +1,4 @@
-FROM node:18 as builder
+FROM node:22 as builder
 SHELL ["/bin/bash", "-c"]
 WORKDIR /tmp
 COPY package.json yarn.lock tsconfig.json /tmp/
@@ -8,14 +8,14 @@ RUN npx prisma generate
 COPY ./src ./src
 RUN yarn build
 
-FROM node:18-alpine as web-builder
+FROM node:22-alpine as web-builder
 WORKDIR /tmp/web
 COPY web/package.json web/yarn.lock ./
 RUN yarn install --frozen-lockfile
 COPY web ./
 RUN yarn build
 
-FROM node:18-alpine
+FROM node:22-alpine
 LABEL org.opencontainers.image.source="https://github.com/arung-agamani/izuna"
 WORKDIR /usr/src/app
 COPY package.json yarn.lock ./

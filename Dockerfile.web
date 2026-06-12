@@ -1,4 +1,4 @@
-FROM node:16-buster-slim as web-builder
+FROM node:22-buster-slim as web-builder
 WORKDIR /tmp
 COPY web /tmp
 WORKDIR /tmp/web
