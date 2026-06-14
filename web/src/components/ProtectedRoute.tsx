@@ -3,9 +3,9 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useUser } from "../hooks/useUser";
 
 const ProtectedRoute = () => {
-    const { data: user, isLoading } = useUser();
+    const { data: user, isPending } = useUser();
 
-    if (isLoading) {
+    if (isPending) {
         return (
             <div className="flex justify-center items-center h-64">
                 <p className="text-xl">Checking authentication...</p>

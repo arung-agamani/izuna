@@ -20,15 +20,6 @@ interface UserResponse {
     };
 }
 
-const emptyUser: UserState = {
-    name: "",
-    loginType: null,
-    email: "",
-    dateCreated: new Date(),
-    id: -1,
-    uid: "",
-};
-
 export function useUser() {
     return useQuery<UserState>({
         queryKey: ["user"],
@@ -41,6 +32,5 @@ export function useUser() {
         refetchInterval: 55 * 60 * 1000,
         retry: false,
         refetchOnMount: false,
-        placeholderData: emptyUser,
     });
 }

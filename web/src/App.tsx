@@ -34,6 +34,8 @@ function App() {
                     <ToastContainer hideProgressBar={true} autoClose={3000} pauseOnHover={false} />
                     <Routes>
                         <Route index element={<Home />} />
+                        <Route path="login" element={<Login />} />
+                        <Route path="test" element={<Test />} />q
                         <Route element={<ProtectedRoute />}>
                             <Route path="closure" element={<Main />}>
                                 <Route index element={<p>Please select above menu</p>} />
@@ -45,11 +47,9 @@ function App() {
                                 </Route>
                                 <Route path="*" element={<p>Menu non existent</p>} />{" "}
                             </Route>
-                        </Route>
-                        <Route path="login" element={<Login />} />
-                        <Route path="test" element={<Test />} />
-                        <Route path="profile">
-                            <Route index element={<ProfilePage />} />
+                            <Route path="profile">
+                                <Route index element={<ProfilePage />} />
+                            </Route>
                         </Route>
                     </Routes>
                 </div>

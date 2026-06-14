@@ -12,7 +12,7 @@ export default fp(async (fastify) => {
   // Register CORS plugin
   await fastify.register(fastifyCors, {
     origin:
-      config.domainPrefix === 'http://127.0.0.1:8000'
+      config.domainPrefix === 'http://localhost:8000'
         ? ['http://localhost:5173', 'http://localhost:8000', 'https://izuna.howlingmoon.dev']
         : ['https://izuna.howlingmoon.dev'],
     methods: ['GET', 'POST', 'OPTIONS'],
@@ -23,6 +23,8 @@ export default fp(async (fastify) => {
   await fastify.register(fastifyStatic, {
     root: path.resolve(__dirname, '..', '..', '..', 'web', 'dist'),
     wildcard: false,
+    lastModified: false,
+    cacheControl: false,
   });
 
   // Register routes plugin

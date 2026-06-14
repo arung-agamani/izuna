@@ -18,11 +18,11 @@ const getDomain = (): string => {
 };
 
 const getDomainPrefix = (): string => {
-    return env.NODE_ENV === "development" ? "http://127.0.0.1:8000" : "https://izuna.howlingmoon.dev";
+    return env.NODE_ENV === "development" ? "http://localhost:8000" : "https://izuna.howlingmoon.dev";
 };
 
 const getSwaggerHost = (): string => {
-    return env.NODE_ENV === "development" ? "127.0.0.1:8000" : "izuna.howlingmoon.dev";
+    return env.NODE_ENV === "development" ? "localhost:8000" : "izuna.howlingmoon.dev";
 };
 
 const getSwaggerSchemes = (): string[] => {
@@ -31,7 +31,7 @@ const getSwaggerSchemes = (): string[] => {
 
 export const config = {
     // Server
-    host: env.NODE_ENV === "development" ? "127.0.0.1" : "0.0.0.0",
+    host: env.NODE_ENV === "development" ? "localhost" : "0.0.0.0",
     port: 8000,
 
     // Features

@@ -37,7 +37,9 @@ const Guilds = () => {
             try {
                 const data = await api.get("api/closure/user/me/guilds").json<GuildsResponse>();
                 setGuilds(data.guilds);
-                selectGuild(data.guilds[0]);
+                if (data.guilds.length > 0) {
+                    selectGuild(data.guilds[0]);
+                }
             } catch (error) {
                 toast.error("Error when fetching current user's guilds");
             }
@@ -56,7 +58,7 @@ const Guilds = () => {
         })();
     };
 
-    if (guilds.length === 0) return <p>Fetching guilds...</p>;
+    if (guilds.length === 0) return <p>No guilds found.</p>;
     return (
         <div>
             <p className="text-2xl">Total guilds: {guilds.length}</p>

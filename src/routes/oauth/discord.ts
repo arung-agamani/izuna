@@ -10,6 +10,7 @@ const GRACE_PERIOD_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
 const setAuthCookie = (reply: FastifyReply, token: string) => {
     return reply.setCookie(COOKIE_NAME, token, {
+        domain: config.domain,
         path: "/",
         secure: config.domain !== "localhost",
         httpOnly: true,

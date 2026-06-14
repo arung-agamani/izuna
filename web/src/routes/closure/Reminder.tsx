@@ -23,7 +23,7 @@ const Reminder = () => {
         })();
     }, []);
 
-    if (reminders.length === 0) return <p>Fetching data...</p>;
+    if (reminders.length === 0) return <p>No reminders found.</p>;
     return (
         <div>
             <Outlet />

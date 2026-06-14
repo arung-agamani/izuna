@@ -12,13 +12,7 @@ export async function get(req: FastifyRequest, res: FastifyReply) {
             userId: req.user!.uid,
         },
     });
-
-    if (tags.length === 0) {
-        return res.status(404).send({
-            message: "No tags found with given id",
-        });
-    }
-
+    
     const payload = {
         count: tags.length,
         tags,
