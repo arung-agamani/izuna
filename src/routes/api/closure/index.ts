@@ -1,12 +1,11 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
-import { FastifyDiscordOAuthBody } from "../../../types";
 import prisma from "../../../lib/prisma";
 import logger from "../../../lib/winston";
 import discordOauth2 from "discord-oauth2";
 
 import * as tagsHandler from "./tag";
 import { PermissionsBitField } from "discord.js";
-import discordSession, { GuildMembership } from "../../../lib/session";
+import discordSession, { GuildMembership, discordAccessTokens } from "../../../lib/session";
 
 import { z } from "zod";
 
@@ -78,10 +77,15 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
     });
 
     fastify.get("/user/me/guildsAll", { onRequest: [fastify.authenticate] }, async (req, res) => {
-        const { user, token } = fastify.jwt.decode<FastifyDiscordOAuthBody>(req.cookies["ninpou"]!)!;
+        let tokenEntry = discordAccessTokens.get(req.user.uid);
+        if (!tokenEntry) {
+            const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+            if (!user?.discordAccessToken) return res.status(401).send({ message: "Discord session expired. Please re-login." });
+            tokenEntry = { access_token: user.discordAccessToken, refresh_token: user.discordRefreshToken || "", expires_at: 0 };
+        }
         const oauth = new discordOauth2();
         try {
-            const guilds = await getUserGuilds(user.uid, oauth, token.access_token);
+            const guilds = await getUserGuilds(req.user.uid, oauth, tokenEntry.access_token);
             if (!guilds)
                 return res.status(500).send({
                     message: "Internal server error",
@@ -116,10 +120,15 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
     });
 
     fastify.get("/user/me/guilds", { onRequest: [fastify.authenticate] }, async (req, res) => {
-        const { user, token } = fastify.jwt.decode<FastifyDiscordOAuthBody>(req.cookies["ninpou"]!)!;
+        let tokenEntry = discordAccessTokens.get(req.user.uid);
+        if (!tokenEntry) {
+            const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+            if (!user?.discordAccessToken) return res.status(401).send({ message: "Discord session expired. Please re-login." });
+            tokenEntry = { access_token: user.discordAccessToken, refresh_token: user.discordRefreshToken || "", expires_at: 0 };
+        }
         const oauth = new discordOauth2();
         try {
-            const guilds = await getUserGuilds(user.uid, oauth, token.access_token);
+            const guilds = await getUserGuilds(req.user.uid, oauth, tokenEntry.access_token);
             if (!guilds)
                 return res.status(500).send({
                     message: "Internal server error",
@@ -156,15 +165,12 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
     fastify.get(
         "/user/reminder",
         {
-            onRequest: [
-                /* fastify.authenticate */
-            ],
+            onRequest: [fastify.authenticate],
         },
         async (req, _res) => {
-            const decodedValue = fastify.jwt.decode<{ uid: string }>(req.cookies["ninpou"]!)!;
             const userReminder = await prisma.reminder.findMany({
                 where: {
-                    uid: decodedValue.uid,
+                    uid: req.user.uid,
                 },
             });
             return {
@@ -177,12 +183,11 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
         Params: {
             id: number;
         };
-    }>("/user/reminder/:id", { onRequest: [] }, async (req, res) => {
+    }>("/user/reminder/:id", { onRequest: [fastify.authenticate] }, async (req, res) => {
         try {
-            const decodedValue = fastify.jwt.decode<{ uid: string }>(req.cookies["ninpou"]!)!;
             const userReminder = await prisma.reminder.findFirst({
                 where: {
-                    uid: decodedValue.uid,
+                    uid: req.user.uid,
                     id: Number(req.params.id),
                 },
             });
@@ -201,13 +206,11 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
         } catch (error) {
             logger.error(`Error when fetching reminder with id ${req.params.id}`);
             logger.error(error);
-            console.log(error);
         }
     });
 
-    fastify.post("/user/reminder", { onRequest: [] }, async (req, res) => {
+    fastify.post("/user/reminder", { onRequest: [fastify.authenticate] }, async (req, res) => {
         try {
-            const decodedValue = fastify.jwt.decode<{ uid: string }>(req.cookies["ninpou"]!)!;
             const { id, content, cron } = req.body as unknown as any;
             const payload: ReminderUpdatePayload = { id, content, cron };
 
@@ -231,7 +234,6 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
                 },
             });
             if (!reminder) {
-                // throw record not found
                 res.status(404).send({
                     success: false,
                     message: "Reminder not found",

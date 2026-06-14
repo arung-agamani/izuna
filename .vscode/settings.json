@@ -1,5 +1,6 @@
 {
     "yaml.schemas": {
         "https://json.schemastore.org/github-workflow.json": "file:///e%3A/Work/Personal/izuna/.github/workflows/deploy.yaml"
-    }
+    },
+    "tailwindCSS.experimental.configFile": "web/src/index.css"
 }

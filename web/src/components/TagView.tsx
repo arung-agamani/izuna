@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "../routes/lib/axios";
+import api from "../routes/lib/api";
 
 export interface TagFields {
     id: number;
@@ -46,14 +46,14 @@ const TagView: React.FC<Props> = (props) => {
     const delHandler = async () => {
         try {
             if (props.isGuild) {
-                await axios.delete(`/api/closure/tags/me/guilds/${props.guildId}/${props.id}`, { withCredentials: true });
+                await api.delete(`api/closure/tags/me/guilds/${props.guildId}/${props.id}`);
             } else {
-                await axios.delete(`/api/closure/tags/me/${props.id}`, { withCredentials: true });
+                await api.delete(`api/closure/tags/me/${props.id}`);
             }
             alert(`Tag "${props.name} deleted!"`);
         } catch (error) {
             alert(`Error when deleting tag "${props.name}"`);
-            console.error((error as any).response.data.message);
+            if (error instanceof Error) console.error(error.message);
         }
     };
     return (

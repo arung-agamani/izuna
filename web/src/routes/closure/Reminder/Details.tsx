@@ -2,12 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router-dom";
 import cronstrue from "cronstrue";
-// import cronparser from "cron-parser"
 import cronvalidate from "cron-validate";
-import { Cron } from "react-js-cron";
-import "react-js-cron/dist/styles.css";
 
-import axios from "../../lib/axios";
+import api from "../../lib/api";
 import Button from "../../../components/Button";
 import TextInput from "../../../components/Input/TextInput";
 import { toast } from "react-toastify";
@@ -21,6 +18,15 @@ interface Reminder {
     id: number;
     message: string;
     uid: string;
+}
+
+interface ReminderResponse {
+    reminder: Reminder;
+}
+
+interface UpdateResponse {
+    success: boolean;
+    [key: string]: unknown;
 }
 
 const emptyReminder: Reminder = {
@@ -48,15 +54,19 @@ const ReminderDetails = () => {
                 toast.error("Invalid cron string. Please make it correct smh");
                 return;
             }
-            const res = await axios.post(`/api/closure/user/reminder`, {
-                ...data,
-                id: Number(id),
-            });
-            if (res.data.success) {
+            const res = await api
+                .post("api/closure/user/reminder", {
+                    json: {
+                        ...data,
+                        id: Number(id),
+                    },
+                })
+                .json<UpdateResponse>();
+            if (res.success) {
                 toast.success("Reminder updated!");
             } else {
                 toast.error("Reminder update failed but request succeed");
-                console.error(res.data);
+                console.error(res);
             }
         } catch (error) {
             toast.error("Reminder update failed.");
@@ -68,9 +78,8 @@ const ReminderDetails = () => {
         (async () => {
             try {
                 setHasSet(false);
-                const res = await axios.get(`/api/closure/user/reminder/${id}`);
-                console.log(res.data);
-                setReminder(res.data.reminder);
+                const data = await api.get(`api/closure/user/reminder/${id}`).json<ReminderResponse>();
+                setReminder(data.reminder);
             } catch (error) {
                 console.error("Error happend");
                 console.error(error);
@@ -88,14 +97,10 @@ const ReminderDetails = () => {
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <Button onClick={() => setIsEditing(false)}>Cancel</Button>
                     <TextAreaInput {...register("content", { value: reminder.message })} label="Content" />
-                    <Cron
-                        value={cron}
-                        setValue={(val: string) => {
-                            setValue("cron", val);
-                            setCron(val);
-                        }}
-                    />
                     <TextInput {...register("cron", { value: reminder.cronString })} label="Cron String" />
+                    {cronstrue.toString(watch("cron")) !== "An error has occurred while parsing the cron expression" && (
+                        <p className="text-lg text-gray-600">Human Readable: {cronstrue.toString(watch("cron"))}</p>
+                    )}
                     <p>{cronvalidate(watch("cron")).isValid() ? "Valid cron string" : "Not a valid cron string"}</p>
                     <Button submit>Submit</Button>
                 </form>

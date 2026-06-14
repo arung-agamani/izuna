@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
-import axios from "../lib/axios";
+import api from "../lib/api";
 import TagView, { TagFields as Tag } from "../../components/TagView";
 import Filterer from "../../components/Filterer";
+
+interface TagsResponse {
+    tags: Tag[];
+}
 
 const Tags = () => {
     const [tags, setTags] = useState<Tag[]>([]);
@@ -10,7 +14,7 @@ const Tags = () => {
     useEffect(() => {
         (async () => {
             try {
-                const { data } = await axios.get("/api/closure/tags/me", { withCredentials: true });
+                const data = await api.get("api/closure/tags/me").json<TagsResponse>();
                 setTags(data.tags);
                 setFilteredTags(data.tags);
             } catch (error) {

@@ -137,3 +137,8 @@ build
 test.[tj]s
 Dockerfile.test
 .envrc
+
+# Lavalink-related
+Lavalink.jar
+application.yml
+*.jar

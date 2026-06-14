@@ -2,18 +2,14 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import DiscordOAuth2 from "discord-oauth2";
 import prisma from "../../../lib/prisma";
 import logger from "../../../lib/winston";
-import { FastifyDiscordOAuthBody } from "../../../types";
-import discordSession from "../../../lib/session";
+import discordSession, { discordAccessTokens } from "../../../lib/session";
 
 const oauth = new DiscordOAuth2();
 
 export async function get(req: FastifyRequest, res: FastifyReply) {
-    const fastify = req.server;
-    const decodedValue = fastify.jwt.decode(req.cookies["ninpou"]!) as any;
-    console.log(decodedValue);
     const tags = await prisma.tag.findMany({
         where: {
-            userId: decodedValue.user.uid,
+            userId: req.user!.uid,
         },
     });
 
@@ -27,15 +23,13 @@ export async function get(req: FastifyRequest, res: FastifyReply) {
         count: tags.length,
         tags,
     };
-    logger.debug(`Sent request for id ${decodedValue.uid} with count ${tags.length}`);
+    logger.debug(`Sent request for id ${req.user!.uid} with count ${tags.length}`);
     return res.send(payload);
 }
 
 export async function getGuildTags(req: FastifyRequest, res: FastifyReply) {
-    const fastify = req.server;
     const { id } = req.params as { id: string };
-    const { user } = fastify.jwt.decode<FastifyDiscordOAuthBody>(req.cookies["ninpou"]!)!;
-    const guilds = discordSession.get(user.uid);
+    const guilds = discordSession.get(req.user!.uid);
     if (!guilds || guilds.findIndex((x) => x.guildId === id) === -1)
         return res.status(403).send({
             message: "You cannot fetch other guild's tag as you're not a member of it",
@@ -109,13 +103,11 @@ export async function del(req: FastifyRequest, reply: FastifyReply) {
             message: "Bad request",
         });
 
-    const fastify = req.server;
-    const { user } = fastify.jwt.decode(req.cookies["ninpou"]!) as any;
     try {
         await prisma.tag.delete({
             where: {
                 id: Number(id),
-                userId: user.uid,
+                userId: req.user!.uid,
             },
         });
         return reply.status(200).send({
@@ -136,9 +128,7 @@ export async function delFromGuild(req: FastifyRequest, reply: FastifyReply) {
             message: "Bad request",
         });
 
-    const fastify = req.server;
-    const { user } = fastify.jwt.decode<FastifyDiscordOAuthBody>(req.cookies["ninpou"]!)!;
-    const guilds = discordSession.get(user.uid);
+    const guilds = discordSession.get(req.user!.uid);
     if (!guilds || guilds.findIndex((x) => x.guildId === guildId && x.isAdmin) === -1)
         return reply.status(403).send({
             message: "You cannot delete other guild's tag as you're not an admin of it",

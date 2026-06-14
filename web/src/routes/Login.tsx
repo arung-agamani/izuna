@@ -1,6 +1,5 @@
 import React from "react";
 import Button from "../components/Button";
-import axios from "axios";
 
 const Login = () => {
     const onLogin = (loginUrl: string) => {
@@ -10,7 +9,7 @@ const Login = () => {
         //         state: params.get("redirect"),
         //     },
         // });
-        window.location.href = `${import.meta.env.DEV ? `http://localhost:8000` : "https://izuna.howlingmoon.dev"}${loginUrl}?r=${params.get("redirect")}`;
+        window.location.href = `${loginUrl}?r=${params.get("redirect")}`;
     };
     return (
         <div>

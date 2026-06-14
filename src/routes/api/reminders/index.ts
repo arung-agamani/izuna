@@ -70,9 +70,9 @@ async function reminderRoutes(fastify: FastifyInstance, _: FastifyPluginOptions)
         },
         async (req: FastifyRequest, res: FastifyReply) => {
             try {
-                const decodedValue = fastify.jwt.decode<{ uid: string }>(req.cookies["ninpou"]!)!;
+
                 const reminders = await reminderService.listReminders({
-                    userId: decodedValue.uid,
+                    userId: req.user!.uid,
                 });
 
                 return {
@@ -140,7 +140,7 @@ async function reminderRoutes(fastify: FastifyInstance, _: FastifyPluginOptions)
         },
         async (req: FastifyRequest<{ Params: ReminderIdParams }>, res: FastifyReply) => {
             try {
-                const decodedValue = fastify.jwt.decode<{ uid: string }>(req.cookies["ninpou"]!)!;
+
                 const reminderId = parseInt(req.params.id, 10);
 
                 if (isNaN(reminderId)) {
@@ -150,7 +150,7 @@ async function reminderRoutes(fastify: FastifyInstance, _: FastifyPluginOptions)
                     });
                 }
 
-                const reminder = await reminderService.getReminderForUser(reminderId, decodedValue.uid);
+                const reminder = await reminderService.getReminderForUser(reminderId, req.user!.uid);
 
                 if (!reminder) {
                     return res.status(404).send({
@@ -221,7 +221,7 @@ async function reminderRoutes(fastify: FastifyInstance, _: FastifyPluginOptions)
         },
         async (req: FastifyRequest, res: FastifyReply) => {
             try {
-                const decodedValue = fastify.jwt.decode<{ uid: string }>(req.cookies["ninpou"]!)!;
+
                 const payload = req.body as CreateReminderPayload;
 
                 // Validate the payload
@@ -244,7 +244,7 @@ async function reminderRoutes(fastify: FastifyInstance, _: FastifyPluginOptions)
 
                 // Create the reminder
                 const reminder = await reminderService.createReminder({
-                    uid: decodedValue.uid,
+                    uid: req.user!.uid,
                     message: payload.message,
                     cronString: payload.cronString,
                     channelType: payload.channelType,
@@ -321,7 +321,7 @@ async function reminderRoutes(fastify: FastifyInstance, _: FastifyPluginOptions)
         },
         async (req: FastifyRequest<{ Params: ReminderIdParams }>, res: FastifyReply) => {
             try {
-                const decodedValue = fastify.jwt.decode<{ uid: string }>(req.cookies["ninpou"]!)!;
+
                 const reminderId = parseInt(req.params.id, 10);
                 const payload = req.body as UpdateReminderPayload;
 
@@ -343,7 +343,7 @@ async function reminderRoutes(fastify: FastifyInstance, _: FastifyPluginOptions)
                 }
 
                 // Check if reminder exists and belongs to user
-                const existing = await reminderService.getReminderForUser(reminderId, decodedValue.uid);
+                const existing = await reminderService.getReminderForUser(reminderId, req.user!.uid);
                 if (!existing) {
                     return res.status(404).send({
                         success: false,
@@ -415,7 +415,7 @@ async function reminderRoutes(fastify: FastifyInstance, _: FastifyPluginOptions)
         },
         async (req: FastifyRequest<{ Params: ReminderIdParams }>, res: FastifyReply) => {
             try {
-                const decodedValue = fastify.jwt.decode<{ uid: string }>(req.cookies["ninpou"]!)!;
+
                 const reminderId = parseInt(req.params.id, 10);
 
                 if (isNaN(reminderId)) {
@@ -426,7 +426,7 @@ async function reminderRoutes(fastify: FastifyInstance, _: FastifyPluginOptions)
                 }
 
                 // Check if reminder exists and belongs to user
-                const existing = await reminderService.getReminderForUser(reminderId, decodedValue.uid);
+                const existing = await reminderService.getReminderForUser(reminderId, req.user!.uid);
                 if (!existing) {
                     return res.status(404).send({
                         success: false,
@@ -483,9 +483,9 @@ async function reminderRoutes(fastify: FastifyInstance, _: FastifyPluginOptions)
         },
         async (req: FastifyRequest, res: FastifyReply) => {
             try {
-                const decodedValue = fastify.jwt.decode<{ uid: string }>(req.cookies["ninpou"]!)!;
+
                 const reminders = await reminderService.listReminders({
-                    userId: decodedValue.uid,
+                    userId: req.user!.uid,
                 });
 
                 const stats = {

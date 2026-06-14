@@ -9,6 +9,7 @@ import TextAreaInput from "../components/Input/TextAreaInput";
 import { useForm } from "react-hook-form";
 import Button from "../components/Button";
 import Popover from "../components/Popover";
+import { BodyText, Heading, SubHeading } from "../components/Typography";
 
 const guilds = [
     {
@@ -30,6 +31,12 @@ const Test = () => {
     return (
         <div>
             <h1>Testing Components Style and Functionality Page</h1>
+            <h2>Typography Components</h2>
+            <div className="border-y-2 border-slate-800 py-2">
+                <Heading>This is a heading</Heading>
+                <SubHeading>This is a subheading</SubHeading>
+                <BodyText>This is a body text</BodyText>
+            </div>
             <label htmlFor="">Popover and Relative Drop Down</label>
             <Popover />
             <label htmlFor="">Inputs and Forms</label>

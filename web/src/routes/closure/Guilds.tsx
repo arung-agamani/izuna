@@ -2,24 +2,30 @@ import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import Filterer from "../../components/Filterer";
 import Listbox from "../../components/Listbox";
-import TagView, { TagFields } from "../../components/TagView";
-import axios from "../lib/axios";
-
-interface PartialGuild {
-    id: string;
-    name: string;
-    icon: string;
-    owner: boolean;
-    permissions: string;
-    features: string[];
-}
+import TagView, { type TagFields } from "../../components/TagView";
+import api from "../lib/api";
 
 interface GuildMembership {
     name: string;
     guildId: string;
     isAdmin: boolean;
     permissionInteger: number;
-    guildPartial: PartialGuild;
+    guildPartial: {
+        id: string;
+        name: string;
+        icon: string;
+        owner: boolean;
+        permissions: string;
+        features: string[];
+    };
+}
+
+interface GuildsResponse {
+    guilds: GuildMembership[];
+}
+
+interface TagsResponse {
+    tags: TagFields[];
 }
 
 const Guilds = () => {
@@ -29,7 +35,7 @@ const Guilds = () => {
     useEffect(() => {
         (async () => {
             try {
-                const { data } = await axios.get("/api/closure/user/me/guilds", { withCredentials: true });
+                const data = await api.get("api/closure/user/me/guilds").json<GuildsResponse>();
                 setGuilds(data.guilds);
                 selectGuild(data.guilds[0]);
             } catch (error) {
@@ -41,7 +47,7 @@ const Guilds = () => {
     const selectGuild = (guild: GuildMembership) => {
         (async () => {
             try {
-                const { data } = await axios.get(`/api/closure/tags/me/guilds/${guild.guildId}`);
+                const data = await api.get(`api/closure/tags/me/guilds/${guild.guildId}`).json<TagsResponse>();
                 setTags(data.tags);
                 setFilteredTags(data.tags);
             } catch (error) {

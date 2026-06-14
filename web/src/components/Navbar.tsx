@@ -1,11 +1,10 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { useRecoilState } from "recoil";
 import logo from "../assets/favicon_izuna_icon.png";
-import { userAtom } from "../state/user";
+import { useUser } from "../hooks/useUser";
 
 const Navbar = () => {
-    const [user] = useRecoilState(userAtom);
+    const { data: user } = useUser();
 
     return (
         <nav className="bg-white shadow-lg mb-8 w-full fixed h-16">
@@ -20,27 +19,27 @@ const Navbar = () => {
                         </div>
                         <div className="hidden md:flex items-center space-x-1 w-full">
                             <Link to="/" className="no-underline">
-                                <span className="py-4 px-2 text-green-500 border-b-4 border-green-500 font-semibold">Home</span>
+                                <span className="py-4 px-2 text-purple-500 font-semibold">Home</span>
                             </Link>
                             <Link to="/closure" className="no-underline">
-                                <span className="py-4 px-2 text-green-500 border-b-4 border-green-500 font-semibold">Bot</span>
+                                <span className="py-4 px-2 text-green-500 font-semibold">Bot</span>
                             </Link>
                             {import.meta.env.DEV && (
                                 <Link to="/test" className="no-underline">
-                                    <span className="py-4 px-2 text-green-500 border-b-4 border-green-500 font-semibold">Test Components</span>
+                                    <span className="py-4 px-2 text-green-500 font-semibold">Test Components</span>
                                 </Link>
                             )}
-                            <div className="flex-grow" />
+                            <div className="grow" />
                             <Link
                                 to={
-                                    user.loginType
+                                    user?.loginType
                                         ? "/profile"
                                         : { pathname: "/login", search: `?redirect=${window.btoa(encodeURIComponent(window.location.href))}` }
                                 }
                                 className="no-underline"
                             >
-                                <span className="py-4 px-2 text-green-500 border-b-4 border-green-500 font-semibold">
-                                    {user.loginType ? user.name : "Login"}
+                                <span className="py-4 px-2 text-green-500 font-semibold">
+                                    {user?.loginType ? user.name : "Login"}
                                 </span>
                             </Link>
                         </div>

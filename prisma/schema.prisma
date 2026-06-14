@@ -9,11 +9,13 @@ datasource db {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
-  uid         String   @unique
-  name        String
-  email       String
-  dateCreated DateTime
+  id                  Int      @id @default(autoincrement())
+  uid                 String   @unique
+  name                String
+  email               String
+  dateCreated         DateTime
+  discordAccessToken  String?
+  discordRefreshToken String?
 }
 
 model Reminder {

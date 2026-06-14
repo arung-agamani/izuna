@@ -1,52 +1,16 @@
-import { AxiosResponse } from "axios";
-import axios from "../lib/axios";
-import { useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { useRecoilState } from "recoil";
-import { userAtom } from "../../state/user";
-import { GuildMembership, GuildsAtom } from "../../state/guilds";
-
-interface APIMeResponse {
-    data: {
-        name: string;
-        email: string;
-        dateCreated: Date;
-        id: number;
-        uid: string;
-    };
-}
-
-interface APIMeGuildResponse {
-    count: number;
-    guilds: GuildMembership[];
-}
+import { useUser } from "../../hooks/useUser";
+import { useGuilds } from "../../hooks/useGuilds";
 
 const Main = () => {
-    const [user, setUser] = useRecoilState(userAtom);
-    const [guilds, setGuilds] = useRecoilState(GuildsAtom);
+    const { data: user } = useUser();
+    const { data: guilds, isLoading: guildsLoading } = useGuilds();
     const location = useLocation();
-    useEffect(() => {
-        (async () => {
-            if (user.loginType) return;
-            {
-                const { data } = await axios.get<{}, AxiosResponse<APIMeResponse>>("/api/closure/user/me", { withCredentials: true });
-                setUser({ ...data.data, loginType: "DISCORD" });
-            }
-            let cachedGuilds = localStorage.getItem("closure-guilds");
-            if (!cachedGuilds) {
-                const { data } = await axios.get<{}, AxiosResponse<APIMeGuildResponse>>("/api/closure/user/me/guildsAll", { withCredentials: true });
-                localStorage.setItem("closure-guilds", JSON.stringify({ name: user.name, uid: user.uid, id: 0, guilds: data.guilds }));
-                setGuilds({ name: user.name, uid: user.uid, id: 0, guilds: data.guilds });
-            } else {
-                setGuilds(JSON.parse(cachedGuilds));
-            }
-        })();
-    }, []);
-    if (!user.loginType) return <p>Loading...</p>;
+    if (guildsLoading) return <p>Loading...</p>;
     return (
         <div>
             <p>
-                Main on Izuna/Closure. You are {user.name}. Total mutual servers with Izuna/Closure: {guilds.guilds && guilds.guilds.length}
+                Main on Izuna/Closure. You are {user?.name}. Total mutual servers with Izuna/Closure: {guilds?.guilds && guilds.guilds.length}
             </p>
             <div className="flex w-full justify-evenly mx-[-0.5rem]">
                 {["Reminder", "Tags", "Playlists", "Guilds"].map((x) => (

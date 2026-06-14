@@ -19,9 +19,10 @@ export default fp(async (fastify) => {
     credentials: true,
   });
 
-  // Register static file serving
+  // Register static file serving — only serve actual files, pass SPA routes to 404 handler
   await fastify.register(fastifyStatic, {
     root: path.resolve(__dirname, '..', '..', '..', 'web', 'dist'),
+    wildcard: false,
   });
 
   // Register routes plugin

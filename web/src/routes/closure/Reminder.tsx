@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { useRecoilState } from "recoil";
-import { GuildsAtom } from "../../state/guilds";
-import axios from "../lib/axios";
+import { useGuilds } from "../../hooks/useGuilds";
+import api from "../lib/api";
 import { Link, Outlet } from "react-router-dom";
 
 interface ReminderObject {
@@ -16,11 +15,10 @@ interface ReminderObject {
 
 const Reminder = () => {
     const [reminders, setReminders] = useState<ReminderObject[]>([]);
-    const [guilds] = useRecoilState(GuildsAtom);
-    console.log(guilds);
+    const { data: guilds } = useGuilds();
     useEffect(() => {
         (async () => {
-            const { data } = await axios.get("/api/closure/user/reminder", { withCredentials: true });
+            const data = await api.get("api/closure/user/reminder").json<{ data: ReminderObject[] }>();
             setReminders(data.data);
         })();
     }, []);
@@ -36,7 +34,7 @@ const Reminder = () => {
                             <p className="text-lg">ID: {reminder.id}</p>
                             <p>
                                 Guilds: {reminder.guildId ? reminder.guildId : "Not guild"}
-                                {reminder.guildId && guilds.guilds && <span> -&gt; {guilds.guilds.find((x) => x.guildId === reminder.guildId)?.name}</span>}
+                                {reminder.guildId && guilds?.guilds && <span> -&gt; {guilds.guilds.find((x) => x.guildId === reminder.guildId)?.name}</span>}
                             </p>
                             <p>Channel ID: {reminder.channelId}</p>
                             <p>Channel Type: {reminder.channelType}</p>

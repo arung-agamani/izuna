@@ -1,13 +1,53 @@
 import { FastifyPluginAsync, FastifyRequest, FastifyReply } from "fastify";
 import discordOAuth from "discord-oauth2";
 import prisma from "../../lib/prisma";
-import { oauthSessionState } from "../../lib/session";
+import { oauthSessionState, discordAccessTokens } from "../../lib/session";
 import { config } from "../../config";
 import { COOKIE_NAME, JWT_EXPIRY } from "../../config/constants";
 import logger from "../../lib/winston";
-import { FastifyDiscordOAuthBody } from "../../types";
+
+const GRACE_PERIOD_SECONDS = 7 * 24 * 60 * 60; // 7 days
+
+const setAuthCookie = (reply: FastifyReply, token: string) => {
+    return reply.setCookie(COOKIE_NAME, token, {
+        path: "/",
+        secure: config.domain !== "localhost",
+        httpOnly: true,
+        sameSite: "lax",
+    });
+};
 
 const discordOAuthRoutes: FastifyPluginAsync = async (fastify) => {
+    // Token refresh endpoint — accepts recently expired JWTs within grace period
+    fastify.post("/auth/refresh", async (req, reply) => {
+        try {
+            await req.jwtVerify({ ignoreExpiration: true });
+        } catch {
+            return reply.status(401).send({ message: "Invalid token" });
+        }
+
+        const payload = req.user as { id: number; uid: string; exp?: number } | undefined;
+        if (!payload?.id || !payload?.uid) {
+            return reply.status(401).send({ message: "Invalid token payload" });
+        }
+
+        if (payload.exp && Date.now() / 1000 > payload.exp + GRACE_PERIOD_SECONDS) {
+            return reply.status(401).send({ message: "Session expired, please re-login" });
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: payload.id } });
+        if (!user) {
+            return reply.status(401).send({ message: "User not found" });
+        }
+
+        const newToken = await reply.jwtSign(
+            { id: user.id, uid: user.uid },
+            { expiresIn: JWT_EXPIRY },
+        );
+
+        setAuthCookie(reply, newToken).send({ success: true });
+    });
+
     // Closure authentication check endpoint
     fastify.get<{
         Params: {
@@ -86,11 +126,24 @@ const discordOAuthRoutes: FastifyPluginAsync = async (fastify) => {
                 });
             }
 
+            discordAccessTokens.set(discordUser.id, {
+                access_token: token.token.access_token,
+                refresh_token: token.token.refresh_token || "",
+                expires_at: Date.now() + (Number(token.token.expires_in) || 604800) * 1000,
+            });
+
+            await prisma.user.update({
+                where: { id: user.id },
+                data: {
+                    discordAccessToken: token.token.access_token,
+                    discordRefreshToken: token.token.refresh_token || "",
+                },
+            });
+
             const signingToken = await reply.jwtSign(
                 {
                     id: user.id,
-                    user,
-                    token: token.token,
+                    uid: user.uid,
                 },
                 {
                     expiresIn: JWT_EXPIRY,
@@ -99,15 +152,7 @@ const discordOAuthRoutes: FastifyPluginAsync = async (fastify) => {
 
             oauthSessionState.delete(state);
 
-            reply
-                .setCookie(COOKIE_NAME, signingToken, {
-                    domain: config.domain,
-                    path: "/",
-                    secure: true,
-                    httpOnly: true,
-                    sameSite: "strict",
-                })
-                .redirect(decodeURIComponent(redirectUrl));
+            setAuthCookie(reply, signingToken).redirect(decodeURIComponent(redirectUrl));
         } catch (error) {
             logger.error(error);
             reply.status(500).send({

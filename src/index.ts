@@ -84,6 +84,7 @@ declare module "@fastify/jwt" {
     interface FastifyJWT {
         user: {
             id: number;
+            uid: string;
         };
     }
 }
