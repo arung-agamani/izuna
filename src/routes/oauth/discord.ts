@@ -4,8 +4,12 @@ import prisma from "../../lib/prisma";
 import { oauthSessionState, discordAccessTokens } from "../../lib/session";
 import { config } from "../../config";
 import { COOKIE_NAME, JWT_EXPIRY } from "../../config/constants";
-import logger, { logError } from "../../lib/winston"
+import logger, { logError } from "../../lib/winston";
+import { AuthService } from "../../services/AuthService";
+import { UserRepository } from "../../repositories/UserRepository";
+const userRepo = new UserRepository(prisma);
 
+const authService = AuthService.getInstance();
 const GRACE_PERIOD_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
 const setAuthCookie = (reply: FastifyReply, token: string) => {
@@ -36,13 +40,13 @@ const discordOAuthRoutes: FastifyPluginAsync = async (fastify) => {
             return reply.status(401).send({ message: "Session expired, please re-login" });
         }
 
-        const user = await prisma.user.findUnique({ where: { id: payload.id } });
+        const user = await userRepo.findById(payload.id);
         if (!user) {
             return reply.status(401).send({ message: "User not found" });
         }
 
         const newToken = await reply.jwtSign(
-            { id: user.id, uid: user.uid },
+            { id: user.id, uid: user.uid, aud: "izuna" },
             { expiresIn: JWT_EXPIRY },
         );
 
@@ -57,6 +61,7 @@ const discordOAuthRoutes: FastifyPluginAsync = async (fastify) => {
     }>(
         "/auth/closure/:discordUserId",
         {
+            onRequest: [fastify.authenticate],
             schema: {
                 params: {
                     discordUserId: { type: "string" },
@@ -92,7 +97,8 @@ const discordOAuthRoutes: FastifyPluginAsync = async (fastify) => {
         try {
             const state = req.query.state;
 
-            if (!oauthSessionState.has(state)) {
+            const parsedState = authService.validateState(state, oauthSessionState);
+            if (!parsedState) {
                 reply.status(403).send({
                     success: false,
                     message: "誰だお前。。。",
@@ -100,62 +106,31 @@ const discordOAuthRoutes: FastifyPluginAsync = async (fastify) => {
                 return;
             }
 
-            const decodedState = Buffer.from(state, "base64").toString();
-            const parsedState = JSON.parse(decodedState) as { redirect: string; initiator: string };
-            const redirectUrl = Buffer.from(parsedState.redirect, "base64").toString();
+            const redirectUrl = authService.decodeRedirect(parsedState.redirect);
 
             const token = await fastify.discordOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
             const oauth = new discordOAuth();
             const discordUser = await oauth.getUser(token.token.access_token);
 
-            logger.info(`User login from Discord for user ${discordUser.username}`);
-
-            let user = await prisma.user.findUnique({
-                where: {
-                    uid: discordUser.id,
+            const user = await authService.processDiscordLogin(
+                { id: discordUser.id, username: discordUser.username, email: discordUser.email ?? undefined },
+                {
+                    accessToken: token.token.access_token,
+                    refreshToken: token.token.refresh_token || "",
+                    expiresIn: Number(token.token.expires_in) || undefined,
                 },
-            });
-
-            if (!user) {
-                user = await prisma.user.create({
-                    data: {
-                        uid: discordUser.id,
-                        name: discordUser.username,
-                        email: discordUser.email || "",
-                        dateCreated: new Date(),
-                    },
-                });
-            }
-
-            discordAccessTokens.set(discordUser.id, {
-                access_token: token.token.access_token,
-                refresh_token: token.token.refresh_token || "",
-                expires_at: Date.now() + (Number(token.token.expires_in) || 604800) * 1000,
-            });
-
-            await prisma.user.update({
-                where: { id: user.id },
-                data: {
-                    discordAccessToken: token.token.access_token,
-                    discordRefreshToken: token.token.refresh_token || "",
-                },
-            });
+            );
 
             const signingToken = await reply.jwtSign(
-                {
-                    id: user.id,
-                    uid: user.uid,
-                },
-                {
-                    expiresIn: JWT_EXPIRY,
-                },
+                { id: user.id, uid: user.uid, aud: "izuna" },
+                { expiresIn: JWT_EXPIRY },
             );
 
             oauthSessionState.delete(state);
 
             setAuthCookie(reply, signingToken).redirect(decodeURIComponent(redirectUrl));
         } catch (error) {
-            logger.error(error);
+            logError("Discord OAuth callback failed", error);
             reply.status(500).send({
                 statusCode: 500,
                 error: "Something went wrong.",

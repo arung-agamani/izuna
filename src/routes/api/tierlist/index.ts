@@ -1,12 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 
-async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
-    fastify.get("/test", async (_req, _res) => {
-        return {
-            status: 200,
-            message: "hello",
-        };
-    });
+async function routes(_fastify: FastifyInstance, _opts: FastifyPluginOptions) {
+    // Tierlist routes — to be implemented
 }
 
 export default routes;

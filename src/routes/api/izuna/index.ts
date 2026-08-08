@@ -167,9 +167,6 @@ async function izunaRoutes(fastify: FastifyInstance, _: FastifyPluginOptions) {
         }
     });
 
-    fastify.get("/", async (request, reply) => {
-        return reply.send({ message: "Izuna API is running." });
-    });
 }
 
 export default izunaRoutes;

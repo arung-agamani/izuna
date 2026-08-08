@@ -7,6 +7,7 @@ import { config } from '../../config';
 import authPlugin from './auth';
 import oauthPlugin from './oauth';
 import swaggerPlugin from './swagger';
+import rateLimitPlugin from './rateLimit';
 
 export default fp(async (fastify) => {
   // Register CORS plugin
@@ -38,4 +39,6 @@ export default fp(async (fastify) => {
 
   // Register Swagger documentation
   await fastify.register(swaggerPlugin);
+  // Register rate limiting
+  await fastify.register(rateLimitPlugin);
 });

@@ -1,11 +1,13 @@
+import { UserRepository } from "../repositories/UserRepository";
 import prisma from "../lib/prisma";
-import logger, { logError, getErrorMessage } from "../lib/winston"
+import logger, { logError, getErrorMessage } from "../lib/winston";
 
 export class UserService {
     private static instance: UserService | null = null;
+    private readonly repo: UserRepository;
 
-    private constructor() {
-        // Private constructor to enforce singleton
+    private constructor(repository?: UserRepository) {
+        this.repo = repository ?? new UserRepository(prisma);
     }
 
     public static getInstance(): UserService {
@@ -17,7 +19,7 @@ export class UserService {
 
     async getUserById(id: number) {
         try {
-            return await prisma.user.findUnique({ where: { id } });
+            return await this.repo.findById(id);
         } catch (error) {
             logError("Error fetching user by id:", error);
             throw new Error("Failed to fetch user");
@@ -26,7 +28,7 @@ export class UserService {
 
     async getUserByUid(uid: string) {
         try {
-            return await prisma.user.findUnique({ where: { uid } });
+            return await this.repo.findByUid(uid);
         } catch (error) {
             logError("Error fetching user by uid:", error);
             throw new Error("Failed to fetch user");
@@ -35,14 +37,7 @@ export class UserService {
 
     async createUser(data: { uid: string; name: string; email: string }) {
         try {
-            return await prisma.user.create({
-                data: {
-                    uid: data.uid,
-                    name: data.name,
-                    email: data.email || "",
-                    dateCreated: new Date(),
-                },
-            });
+            return await this.repo.create(data);
         } catch (error) {
             logError("Error creating user:", error);
             throw new Error("Failed to create user");
@@ -50,26 +45,17 @@ export class UserService {
     }
 
     async findOrCreateUser(discordUser: { id: string; username: string; email?: string }) {
-        let user = await this.getUserByUid(discordUser.id);
-        if (!user) {
-            user = await this.createUser({
-                uid: discordUser.id,
-                name: discordUser.username,
-                email: discordUser.email || "",
-            });
+        try {
+            return await this.repo.findOrCreateFromDiscord(discordUser);
+        } catch (error) {
+            logError("Error finding or creating user:", error);
+            throw new Error("Failed to find or create user");
         }
-        return user;
     }
 
     async updateDiscordTokens(id: number, accessToken: string, refreshToken: string) {
         try {
-            return await prisma.user.update({
-                where: { id },
-                data: {
-                    discordAccessToken: accessToken,
-                    discordRefreshToken: refreshToken,
-                },
-            });
+            return await this.repo.updateDiscordTokens(id, accessToken, refreshToken);
         } catch (error) {
             logError("Error updating Discord tokens:", error);
             throw new Error("Failed to update Discord tokens");
@@ -78,11 +64,7 @@ export class UserService {
 
     async getDiscordAccessToken(uid: string): Promise<string | null> {
         try {
-            const user = await prisma.user.findUnique({
-                where: { uid },
-                select: { discordAccessToken: true },
-            });
-            return user?.discordAccessToken || null;
+            return await this.repo.getDiscordAccessToken(uid);
         } catch (error) {
             logError("Error fetching Discord access token:", error);
             return null;
