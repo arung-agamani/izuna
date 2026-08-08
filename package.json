@@ -9,7 +9,9 @@
         "start": "npx prisma migrate deploy && npx prisma generate && node build/index.js",
         "dev": "cross-env NODE_ENV=development node build/index.js",
         "dev-ts": "ts-node-dev src/index.ts",
-        "dev-mute": "cross-env NODE_ENV=development MUTE=1 node build/index.js"
+        "dev-mute": "cross-env NODE_ENV=development MUTE=1 node build/index.js",
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.521.0",
@@ -68,6 +70,7 @@
         "ts-node": "^10.9.1",
         "ts-node-dev": "^2.0.0",
         "typescript": "^5.5.0",
+        "vitest": "^4.1.10",
         "winston-transport": "^4.9.0"
     },
     "resolutions": {

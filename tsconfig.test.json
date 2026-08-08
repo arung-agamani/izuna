@@ -1,0 +1,9 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "rootDir": ".",
+        "outDir": "./build-test"
+    },
+    "include": ["src/**/*.test.ts", "vitest.config.mts"],
+    "exclude": []
+}
