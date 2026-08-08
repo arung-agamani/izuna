@@ -25,7 +25,7 @@ export class AuthService {
     private static instance: AuthService | null = null;
     private readonly userRepo: UserRepository;
 
-    private constructor(repository?: UserRepository) {
+    constructor(repository?: UserRepository) {
         this.userRepo = repository ?? new UserRepository(prisma);
     }
 

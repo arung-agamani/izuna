@@ -2,6 +2,7 @@ import winston, { format } from "winston";
 import LokiTransport from "winston-loki";
 
 const isDevelopment = process.env["NODE_ENV"] === "development";
+const isTest = process.env["NODE_ENV"] === "test";
 const appVersion: string = (() => { try { return require("../../package.json").version; } catch { return "unknown"; } })();
 
 /**
@@ -30,23 +31,26 @@ const logger = winston.createLogger({
         format.errors({ stack: true }),
         format.json(),
     ),
-    transports: [
-        new winston.transports.File({ filename: "log/error.log", level: "error" }),
-        new winston.transports.File({ filename: "log/combined.log", level: "info" }),
-        new winston.transports.File({ filename: "log/debug.log", level: "debug" }),
-        new winston.transports.Console({
-            format: format.combine(
-                format.colorize({ all: true }),
-                format.timestamp(),
-                format.printf((info) => {
-                    const { timestamp, level, message, ...rest } = info as Record<string, unknown>;
-                    const meta = Object.keys(rest).length > 0 ? ` ${JSON.stringify(rest)}` : "";
-                    return `${timestamp} [${level}] - ${message}${meta}`;
-                }),
-            ),
-            level: isDevelopment ? "debug" : "info",
-        }),
-    ],
+    // Under NODE_ENV=test (vitest) use a silent transport — no log files, no console noise.
+    transports: isTest
+        ? [new winston.transports.Console({ silent: true })]
+        : [
+              new winston.transports.File({ filename: "log/error.log", level: "error" }),
+              new winston.transports.File({ filename: "log/combined.log", level: "info" }),
+              new winston.transports.File({ filename: "log/debug.log", level: "debug" }),
+              new winston.transports.Console({
+                  format: format.combine(
+                      format.colorize({ all: true }),
+                      format.timestamp(),
+                      format.printf((info) => {
+                          const { timestamp, level, message, ...rest } = info as Record<string, unknown>;
+                          const meta = Object.keys(rest).length > 0 ? ` ${JSON.stringify(rest)}` : "";
+                          return `${timestamp} [${level}] - ${message}${meta}`;
+                      }),
+                  ),
+                  level: isDevelopment ? "debug" : "info",
+              }),
+          ],
 });
 
 // Loki transport — only when LOKI_HOST is set (same opt-in pattern as USE_LOCAL_LAVALINK / MUTE)

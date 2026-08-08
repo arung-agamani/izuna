@@ -6,7 +6,7 @@ export class UserService {
     private static instance: UserService | null = null;
     private readonly repo: UserRepository;
 
-    private constructor(repository?: UserRepository) {
+    constructor(repository?: UserRepository) {
         this.repo = repository ?? new UserRepository(prisma);
     }
 

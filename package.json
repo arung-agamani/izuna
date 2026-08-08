@@ -11,7 +11,8 @@
         "dev-ts": "ts-node-dev src/index.ts",
         "dev-mute": "cross-env NODE_ENV=development MUTE=1 node build/index.js",
         "test": "vitest run",
-        "test:watch": "vitest"
+        "test:watch": "vitest",
+        "test:types": "tsc -p tsconfig.test.json"
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.521.0",
