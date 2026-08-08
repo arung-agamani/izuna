@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import prisma from "../../../lib/prisma";
-import logger, { logError, getErrorMessage } from "../../../lib/winston"
+import logger, { logError } from "../../../lib/winston";
 import discordOauth2 from "discord-oauth2";
 
 import * as tagsHandler from "./tag";
@@ -8,6 +8,8 @@ import { PermissionsBitField } from "discord.js";
 import discordSession, { GuildMembership, discordAccessTokens } from "../../../lib/session";
 import UserService from "../../../services/UserService";
 import { UserRepository } from "../../../repositories/UserRepository";
+import { TagService } from "../../../services/TagService";
+const tagService = TagService.getInstance();
 const userRepo = new UserRepository(prisma);
 
 
@@ -64,51 +66,9 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
         });
     });
 
-    fastify.get("/user/me/guildsAll", { onRequest: [fastify.authenticate] }, async (req, res) => {
-        let tokenEntry = discordAccessTokens.get(req.user.uid);
-        if (!tokenEntry) {
-            const user = await userRepo.findByUid(req.user.uid);
-            if (!user?.discordAccessToken) return res.status(401).send({ message: "Discord session expired. Please re-login." });
-            tokenEntry = { access_token: user.discordAccessToken, refresh_token: user.discordRefreshToken || "", expires_at: 0 };
-            discordAccessTokens.set(req.user.uid, tokenEntry);
-        }
-        const oauth = new discordOauth2();
-        try {
-            const guilds = await getUserGuilds(req.user.uid, oauth, tokenEntry.access_token);
-            if (!guilds)
-                return res.status(500).send({
-                    message: "Internal server error",
-                });
-            const guildsIds = guilds.map((x: GuildMembership) => x.guildId);
-            const closureGuilds = await prisma.tag.findMany({
-                where: {
-                    guildId: { in: guildsIds },
-                },
-            });
-            const filteredGuilds = guilds.filter((x) => {
-                if (
-                    closureGuilds.findIndex(
-                        (y: (typeof closureGuilds)[0]) =>
-                            y.guildId === x.guildId && new PermissionsBitField(x.permissionInteger as any).has(PermissionsBitField.Flags.SendMessages),
-                    ) > -1
-                )
-                    return true;
-                return false;
-            });
-            return res.send({
-                count: guilds.length,
-                guilds: filteredGuilds,
-            });
-        } catch (error) {
-            logger.error("Error occured when doing /user/me/guildsAll");
-            logger.error(error);
-            return res.status(500).send({
-                message: "Something went wrong",
-            });
-        }
-    });
+    fastify.get<{ Querystring: { filter?: string } }>("/user/me/guilds", { onRequest: [fastify.authenticate] }, async (req, res) => {
+        const filter = req.query.filter === "admin" ? "admin" : "sendMessages";
 
-    fastify.get("/user/me/guilds", { onRequest: [fastify.authenticate] }, async (req, res) => {
         let tokenEntry = discordAccessTokens.get(req.user.uid);
         if (!tokenEntry) {
             const user = await userRepo.findByUid(req.user.uid);
@@ -116,39 +76,24 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
             tokenEntry = { access_token: user.discordAccessToken, refresh_token: user.discordRefreshToken || "", expires_at: 0 };
             discordAccessTokens.set(req.user.uid, tokenEntry);
         }
+
         const oauth = new discordOauth2();
         try {
             const guilds = await getUserGuilds(req.user.uid, oauth, tokenEntry.access_token);
-            if (!guilds)
-                return res.status(500).send({
-                    message: "Internal server error",
-                });
+            if (!guilds) return res.status(500).send({ message: "Internal server error" });
+
             const guildsIds = guilds.map((x: GuildMembership) => x.guildId);
-            const closureGuilds = await prisma.tag.findMany({
-                where: {
-                    guildId: { in: guildsIds },
-                },
-            });
-            const filteredGuilds = guilds.filter((x) => {
-                if (
-                    closureGuilds.findIndex(
-                        (y: (typeof closureGuilds)[0]) =>
-                            y.guildId === x.guildId && new PermissionsBitField(x.permissionInteger as any).has(PermissionsBitField.Flags.Administrator),
-                    ) > -1
-                )
-                    return true;
-                return false;
-            });
-            return res.send({
-                count: guilds.length,
-                guilds: filteredGuilds,
-            });
+            const closureGuilds = await tagService.findGuildsWithTags(guildsIds);
+
+            const requiredFlag = filter === "admin" ? PermissionsBitField.Flags.Administrator : PermissionsBitField.Flags.SendMessages;
+            const filteredGuilds = guilds.filter((x) =>
+                closureGuilds.some((y) => y.guildId === x.guildId && new PermissionsBitField(x.permissionInteger as unknown as bigint).has(requiredFlag)),
+            );
+
+            return res.send({ count: guilds.length, guilds: filteredGuilds });
         } catch (error) {
-            logger.error("Error occured when doing /user/me/guilds");
-            logger.error(error);
-            return res.status(500).send({
-                message: "Something went wrong",
-            });
+            logError("Error fetching user guilds", error, { userId: req.user.uid });
+            return res.status(500).send({ message: "Something went wrong" });
         }
     });
 

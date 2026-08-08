@@ -3,7 +3,7 @@ import { Shoukaku, Connectors, NodeOption, ShoukakuOptions } from "shoukaku";
 import { config } from "../config";
 import { setShoukakuContext } from "../services/ShoukakuContext";
 import logger from "../lib/winston";
-import prisma from "../lib/prisma";
+import { TagService } from "../services/TagService";
 import { channelTrackingManager, deleteFromEphemeralVCManager, initializeChannelTrackingManager, initializeJoinToCreateVCManager } from "../lib/channelTracker";
 import { Message, Partials, VoiceBasedChannel } from "discord.js";
 import "@sapphire/plugin-hmr/register";
@@ -99,22 +99,7 @@ async function createBotApp() {
             }
             let tag = null;
             try {
-                tag = await prisma.tag.findFirst({
-                    where: {
-                        userId: message.author.id,
-                        isGuild: false,
-                        name: foundTag,
-                    },
-                });
-                if (!tag) {
-                    tag = await prisma.tag.findFirst({
-                        where: {
-                            guildId: message.guildId || "",
-                            isGuild: true,
-                            name: foundTag,
-                        },
-                    });
-                }
+                tag = await TagService.getInstance().resolve(message.author.id, message.guildId, foundTag);
             } catch (err) {
                 logger.error("Tag lookup failed", { foundTag, error: err });
                 return;
