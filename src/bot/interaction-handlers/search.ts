@@ -1,6 +1,6 @@
 import { InteractionHandler, InteractionHandlerTypes } from "@sapphire/framework";
 import { ButtonInteraction } from "discord.js";
-import logger from "../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../lib/winston"
 import { MusicService } from "../../services/MusicService";
 import { fancyTimeFormat } from "../../lib/utils";
 import { Track } from "shoukaku";
@@ -119,10 +119,10 @@ export class SearchInteractionHandler extends InteractionHandler {
 
             // Delete the search message after successful selection
             await interaction.message.delete().catch((err) => {
-                logger.warn("Failed to delete search message:", err);
+                logError("Failed to delete search message", err);
             });
         } catch (error) {
-            logger.error("Error in search interaction handler:", error);
+            logError("Error in search interaction handler:", error);
             await interaction.message.edit({
                 embeds: [],
                 components: [],

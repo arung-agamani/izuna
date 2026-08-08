@@ -3,6 +3,7 @@ import { Formatters, Message, EmbedBuilder } from "discord.js";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { PaginatedMessage } from "@sapphire/discord.js-utilities";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 
 interface NyaaItems {
     title: string;
@@ -100,7 +101,7 @@ export class NyaaCommand extends Command {
             }));
             await paginatedMessage.run(message);
         } catch (error) {
-            console.error(error);
+            logError("Nyaa search failed", error);
             await message.author.send(`Command returned error. Did you type non-number for the codes?`);
         }
     }

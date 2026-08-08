@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import prisma from "../../../lib/prisma";
-import logger from "../../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 import discordOauth2 from "discord-oauth2";
 
 import * as tagsHandler from "./tag";
@@ -37,7 +37,7 @@ export async function getUserGuilds(userId: string, oauth: discordOauth2, access
         discordSession.set(userId, tempGuilds);
         return tempGuilds;
     } catch (error) {
-        logger.error(`Error when fetching user ${userId} guilds`);
+        logError(`Error fetching guilds for user ${userId}`, error);
         return null;
     }
 }

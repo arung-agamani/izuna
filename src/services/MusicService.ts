@@ -4,7 +4,7 @@ import { PlayerState } from "../lib/ongaku/PlayerState";
 import { PlayerManager } from "./PlayerManager";
 import { resolveLavalinkNode } from "./ShoukakuContext";
 import { parseUrl, getLavalinkQuery, type ParsedUrl } from "../lib/urlParser";
-import logger from "../lib/winston";
+import logger, { logError, getErrorMessage } from "../lib/winston"
 
 export type LavalinkLoadType = "TRACK_LOADED" | "PLAYLIST_LOADED" | "SEARCH_RESULT" | "NO_MATCHES" | "LOAD_FAILED";
 
@@ -125,7 +125,7 @@ export class MusicService {
 
                 if (textChannel?.isSendable()) await textChannel.send(`✅ Moved to voice channel: **${voiceChannel.name}**`);
             } catch (error) {
-                logger.error("Error during voice channel move:", error);
+                logError("Error during voice channel move:", error);
                 if (textChannel?.isSendable()) await textChannel.send("❌ Failed to move voice channels. Please try stopping and starting again.");
             }
             return existing;
@@ -167,7 +167,7 @@ export class MusicService {
 
         // Track exception - provide user feedback
         player.on?.("exception", (err: any) => {
-            logger.error("Player exception:", err);
+            logError("Player exception:", err);
             // Always get fresh session from map to avoid stale references
             const currentSession = MusicService.sessions.get(guildId);
             if (!currentSession) return;
@@ -191,9 +191,16 @@ export class MusicService {
         player.on?.("end", async (data: { reason?: string }) => {
             if (data.reason === "replaced") return; // Track was replaced
 
-            // Always get fresh session from map to avoid stale references
             const currentSession = MusicService.sessions.get(guildId);
             if (!currentSession) return;
+
+            const endedTrack = currentSession.queue[currentSession.currentPosition];
+            logger.info("track_ended", {
+                event: "track_ended",
+                guildId,
+                trackTitle: endedTrack?.info.title,
+                reason: data.reason,
+            });
 
             // Progress queue based on repeat mode
             const currentPosition = currentSession.currentPosition;
@@ -250,8 +257,12 @@ export class MusicService {
                 track: { encoded: track.encoded },
                 position: track.info?.position || 0,
             });
-
-            session.isPlaying = true;
+            logger.info("track_started", {
+                event: "track_started",
+                guildId: session.guildId,
+                trackTitle: track.info.title,
+                durationMs: track.info.length,
+            });
 
             const fancyTimeFormat = (seconds: number) => {
                 const hours = Math.floor(seconds / 3600);
@@ -266,7 +277,7 @@ export class MusicService {
 
             if (session.textChannel?.isSendable()) await session.textChannel.send(`▶️ **${track.info.title}** | ${duration}${position !== "0:00" ? ` (seek: ${position})` : ""}`);
         } catch (error) {
-            logger.error("Error playing track:", error);
+            logError("Error playing track:", error);
             session.textChannel?.isSendable() && session.textChannel.send("❌ Failed to play track. Skipping...").catch(logger.error);
         }
     }
@@ -742,7 +753,7 @@ export class MusicService {
 
             logger.info(`[MusicService] Successfully moved bot to channel ${newVoiceChannel.name}`);
         } catch (error: any) {
-            logger.error(`[MusicService] Failed to move bot to channel:`, error);
+            logError(`[MusicService] Failed to move bot to channel:`, error);
 
             // Handle DiscordAPIError[50013] - Missing Permissions
             if (error?.code === 50013 || error?.message?.includes("Missing Permissions")) {

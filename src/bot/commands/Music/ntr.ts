@@ -2,7 +2,7 @@ import { ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
 import { MusicService } from "../../../services/MusicService";
-import logger from "../../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 
 /**
  * NTR/VCMove Command (Refactored)
@@ -72,7 +72,7 @@ You must be in a voice channel to use this command.`,
                 ephemeral: true,
             });
         } catch (error) {
-            logger.error("Error in ntr command:", error);
+            logError("Error in ntr command:", error);
             await interaction.followUp({
                 content: `❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`,
                 ephemeral: true,
@@ -102,7 +102,7 @@ You must be in a voice channel to use this command.`,
         try {
             await this.moveBot(guildId, voiceChannel.id, message.guild, message.channel);
         } catch (error) {
-            logger.error("Error in ntr command:", error);
+            logError("Error in ntr command:", error);
             if (message.channel.isSendable()) await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
@@ -134,7 +134,7 @@ You must be in a voice channel to use this command.`,
             await this.musicService.moveToChannel(guildId, newVoiceChannel, guild);
             await textChannel.send("✅ Yes, yes, I'm coming!");
         } catch (error) {
-            logger.error("Error moving to channel:", error);
+            logError("Error moving to channel:", error);
 
             // Display the error message to the user (MusicService provides user-friendly messages)
             if (error instanceof Error) {

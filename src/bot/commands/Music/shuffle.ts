@@ -2,7 +2,7 @@ import { ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
 import { MusicService } from "../../../services/MusicService";
-import logger from "../../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 
 /**
  * Shuffle Command (Refactored)
@@ -63,7 +63,7 @@ If nothing is playing, the entire queue will be shuffled.`,
                 ephemeral: true,
             });
         } catch (error) {
-            logger.error("Error in shuffle command:", error);
+            logError("Error in shuffle command:", error);
             await interaction.followUp({
                 content: `❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`,
                 ephemeral: true,
@@ -91,7 +91,7 @@ If nothing is playing, the entire queue will be shuffled.`,
         try {
             await this.shuffle(guildId, message.channel);
         } catch (error) {
-            logger.error("Error in shuffle command:", error);
+            logError("Error in shuffle command:", error);
             if (message.channel.isSendable()) await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
@@ -115,7 +115,7 @@ If nothing is playing, the entire queue will be shuffled.`,
             this.musicService.shuffleQueue(guildId);
             await textChannel.send("🔀 Playlist shuffled! Review the shuffled playlist by using `nowplaying2` command.");
         } catch (error) {
-            logger.error("Error shuffling queue:", error);
+            logError("Error shuffling queue:", error);
             throw error;
         }
     }

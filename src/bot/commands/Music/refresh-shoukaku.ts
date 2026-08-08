@@ -1,7 +1,7 @@
 import { ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import { MusicService } from "../../../services/MusicService";
-import logger from "../../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 import { config } from "../../../config";
 import { NodeOption } from "shoukaku";
 import { fetch } from "undici";
@@ -55,7 +55,7 @@ This is an admin utility command and should be used only when experiencing conne
                 content: "✅ Lavalink nodes refreshed successfully",
             });
         } catch (error) {
-            logger.error("Error refreshing nodes:", error);
+            logError("Error refreshing nodes:", error);
             await interaction.followUp({
                 content: `❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`,
             });
@@ -77,7 +77,7 @@ This is an admin utility command and should be used only when experiencing conne
         try {
             if (message.channel.isSendable()) await this.refresh(message.channel);
         } catch (error) {
-            logger.error("Error refreshing nodes:", error);
+            logError("Error refreshing nodes:", error);
             if (message.channel.isSendable()) await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
@@ -109,7 +109,7 @@ This is an admin utility command and should be used only when experiencing conne
                     await this.musicService.destroySession(guildId);
                     logger.info(`Stopped session for guild ${guildId} during node refresh`);
                 } catch (error) {
-                    logger.error(`Error stopping session for guild ${guildId}:`, error);
+                    logError(`Error stopping session for guild ${guildId}:`, error);
                 }
             }
 
@@ -124,7 +124,7 @@ This is an admin utility command and should be used only when experiencing conne
             nodes = lavalinkNodeConfig;
             await textChannel.send(`✅ Retrieved ${nodes.length} node(s) from config`);
         } catch (error) {
-            logger.error("Error fetching node config:", error);
+            logError("Error fetching node config:", error);
             await textChannel.send("❌ Failed to fetch node configuration");
             throw error;
         }
@@ -139,7 +139,7 @@ This is an admin utility command and should be used only when experiencing conne
                 logger.info(`Added node: ${node.name}`);
                 addedCount++;
             } catch (error) {
-                logger.error(`Error adding node ${node.name}:`, error);
+                logError(`Error adding node ${node.name}:`, error);
             }
         }
         await textChannel.send(`✅ Added ${addedCount} node(s)`);

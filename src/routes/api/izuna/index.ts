@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyPluginOptions } from "fastify";
 import { z } from "zod";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 import { PublicLavalinkNodeService, ZodPublicLavalinkNode } from "../../../services/PublicLavalinkNodeService";
 
 const PublicLavalinkNodeListResponse = z.object({
@@ -111,6 +112,7 @@ async function izunaRoutes(fastify: FastifyInstance, _: FastifyPluginOptions) {
                 });
                 return reply.status(200).send(res);
             } catch (error) {
+                logError("Failed to fetch public Lavalink nodes", error);
                 const res = PublicLavalinkNodeListResponse.parse({
                     success: false,
                     data: [],
@@ -156,6 +158,7 @@ async function izunaRoutes(fastify: FastifyInstance, _: FastifyPluginOptions) {
                 data: results,
             });
         } catch (error) {
+            logError("Failed to test Lavalink node connectivity", error);
             return reply.status(500).send({
                 success: false,
                 data: [],

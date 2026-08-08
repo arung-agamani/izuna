@@ -14,7 +14,7 @@ Sentry.init({
 import type { SapphireClient } from "@sapphire/framework";
 import { config } from "./config";
 import createBot from "./bot/index";
-import logger from "./lib/winston";
+import logger, { logError, getErrorMessage } from "./lib/winston"
 import ReminderService from "./services/ReminderService";
 import { startWebServer } from "./app";
 
@@ -49,7 +49,7 @@ async function initializeBot() {
 
         logger.info("✅ Bot initialization complete");
     } catch (error) {
-        logger.error("❌ Critical error during bot initialization:", error);
+        logError("❌ Critical error during bot initialization:", error);
         logger.warn("⚠️ Application continuing without Discord bot");
     }
 }
@@ -70,13 +70,28 @@ async function main() {
 
         logger.info("✅ Izuna fully initialized and ready");
     } catch (error) {
-        logger.error("❌ Fatal error during initialization:", error);
+        logError("❌ Fatal error during initialization", error);
+        await Sentry.close(2000);
+        await new Promise<void>((resolve) => logger.end(() => resolve()));
         process.exit(1);
     }
 }
 
-main().catch((error) => {
-    logger.error("❌ Uncaught error:", error);
+// Global safety nets — after Sentry.init so capture works
+process.on("uncaughtException", (error) => {
+    logError("Uncaught exception", error, { stack: error.stack });
+    Sentry.captureException(error);
+    Sentry.close(2000).then(() => process.exit(1));
+});
+process.on("unhandledRejection", (reason) => {
+    logError("Unhandled rejection", reason);
+    Sentry.captureException(reason);
+});
+
+main().catch(async (error) => {
+    logError("❌ Uncaught error", error);
+    await Sentry.close(2000);
+    await new Promise<void>((resolve) => logger.end(() => resolve()));
     process.exit(1);
 });
 

@@ -14,7 +14,7 @@ export const env = {
   DISCORD_OAUTH_CLIENT_ID: getEnv("DISCORD_OAUTH_CLIENT_ID"),
   DISCORD_OAUTH_CLIENT_SECRET: getEnv("DISCORD_OAUTH_CLIENT_SECRET"),
   DISCORD_BOT_TOKEN: getEnv("DISCORD_BOT_TOKEN"),
-  SENTRY_DNS: process.env["SENTRY_DNS"],
+  SENTRY_DNS: process.env["SENTRY_DNS"], // NOTE: env var is misspelled "DNS" (should be "DSN"); matches deployed config
   RUN_BOT: process.env["RUN_BOT"] === "1",
   RUN_WEB: process.env["RUN_WEB"] === "1",
   LAVALINK_CONFIG_PATH: process.env["RUN_BOT"] === "1" ? getEnv("LAVALINK_CONFIG_PATH") : "",

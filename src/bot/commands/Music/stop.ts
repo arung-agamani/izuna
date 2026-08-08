@@ -3,7 +3,7 @@ import type { Message } from "discord.js";
 import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
 import { MusicService } from "../../../services/MusicService";
 import prisma from "../../../lib/prisma";
-import logger from "../../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 
 /**
  * Stop Music Command (Refactored)
@@ -69,7 +69,7 @@ export class StopMusicCommand extends Command {
                 await session.player.stopTrack();
                 logger.info(`Stopped player for guild ${guildId}`);
             } catch (error) {
-                logger.warn(`Failed to stop player track for guild ${guildId}:`, error);
+                logError(`Failed to stop player track for guild ${guildId}`, error);
             }
 
             // Clean up database records
@@ -81,7 +81,7 @@ export class StopMusicCommand extends Command {
                 });
                 logger.info(`Cleaned up player session records for guild ${guildId}`);
             } catch (error) {
-                logger.warn(`Failed to clean up player session for guild ${guildId}:`, error);
+                logError(`Failed to clean up player session for guild ${guildId}`, error);
             }
 
             // Destroy the session (leaves voice channel, clears session from memory)
@@ -89,13 +89,13 @@ export class StopMusicCommand extends Command {
                 await this.musicService.destroySession(guildId);
                 logger.info(`Destroyed session for guild ${guildId}`);
             } catch (error) {
-                logger.warn(`Failed to destroy session for guild ${guildId}:`, error);
+                logError(`Failed to destroy session for guild ${guildId}`, error);
             }
 
             // Send confirmation message
             if (message.channel.isSendable()) await message.channel.send("⏹️ Stopped music and left voice channel");
         } catch (error) {
-            logger.error(`Error in stop2 command for guild ${guildId}:`, error);
+            logError(`Error in stop2 command for guild ${guildId}:`, error);
             if (message.channel.isSendable()) await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error occurred"}`);
         }
     }

@@ -1,7 +1,7 @@
 import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message, TextBasedChannel, VoiceBasedChannel } from "discord.js";
 import { fancyTimeFormat } from "../../../lib/utils";
-import logger from "../../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
 import { MusicService } from "../../../services/MusicService";
 
@@ -90,8 +90,7 @@ Use --seek or -s flag to jump to a specific timestamp if available.`,
                 ephemeral: true,
             });
         } catch (error) {
-            logger.error("Error in play command:", error);
-            console.error(error);
+            logError("Error in play command:", error);
             await interaction.followUp({
                 content: `❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`,
                 ephemeral: true,
@@ -132,8 +131,7 @@ Use --seek or -s flag to jump to a specific timestamp if available.`,
                 isSeeking,
             });
         } catch (error) {
-            logger.error("Error in play command:", error);
-            console.error(error);
+            logError("Error in play command:", error);
             if (message.channel.isSendable()) await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
@@ -212,7 +210,7 @@ Use --seek or -s flag to jump to a specific timestamp if available.`,
                 await this.musicService.playNextTrackForGuild(guildId);
             }
         } catch (error) {
-            logger.error("Error queuing tracks:", error);
+            logError("Error queuing tracks:", error);
             throw new Error("Failed to queue tracks");
         }
     }

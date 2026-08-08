@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Socket } from "net";
+import logger, { logError } from "../lib/winston"
 
 export const ZodPublicLavalinkNode = z.object({
     "unique-id": z.string(),
@@ -39,6 +40,7 @@ export class PublicLavalinkNodeService {
         const now = Date.now();
         // Cache nodes for 10 minutes
         if (this._cachedNodes && now - this._lastFetchTime < 10 * 60 * 1000) {
+            logger.debug("Public Lavalink nodes: cache hit", { count: this._cachedNodes.length });
             return this._cachedNodes;
         }
 
@@ -61,7 +63,7 @@ export class PublicLavalinkNodeService {
             throw new Error(`Failed to fetch public Lavalink nodes: ${response.statusText}`);
         }
         const nodes: PublicLavalinkNode[] = await response.json();
-        this._cachedNodes = nodes;
+        logger.info("Public Lavalink nodes fetched", { count: nodes.length, type });
         this._lastFetchTime = now;
         return nodes;
     }

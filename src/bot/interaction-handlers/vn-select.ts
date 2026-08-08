@@ -2,7 +2,7 @@ import { InteractionHandler, InteractionHandlerTypes } from "@sapphire/framework
 import { EmbedBuilder, StringSelectMenuInteraction } from "discord.js";
 import { getKanaInstance, Kana } from "../../lib/kana";
 import { SearchCharacterResult } from "../../lib/kana/collections/chara";
-import logger from "../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../lib/winston"
 import { debounceInteraction } from "../../lib/interactionTimeout";
 
 export class VNDBSelectInteractionHandler extends InteractionHandler {

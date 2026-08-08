@@ -2,7 +2,7 @@ import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type Message } from "discord.js";
 import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
 import { MusicService } from "../../../services/MusicService";
-import logger from "../../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 
 const ytsearch = require("youtube-search-api");
 
@@ -62,7 +62,7 @@ export class SearchCommand extends Command {
             await this.performSearch(query, authorId, interaction.channel!);
             await interaction.followUp({ content: "Search complete!", ephemeral: true });
         } catch (error) {
-            logger.error("Error in search command (slash):", error);
+            logError("Error in search command (slash):", error);
             await interaction.followUp({
                 content: `Error: ${error instanceof Error ? error.message : "Failed to search"}`,
                 ephemeral: true,
@@ -86,7 +86,7 @@ export class SearchCommand extends Command {
                 // Sapphire argument error
                 if (message.channel.isSendable()) await message.channel.send("Error: Please provide a search query.");
             } else {
-                logger.error("Error in search command (message):", error);
+                logError("Error in search command (message):", error);
                 if (message.channel.isSendable()) await message.channel.send("Error: Failed to search. Please try again.");
             }
         }
@@ -141,7 +141,7 @@ export class SearchCommand extends Command {
                 components: [row1, row2],
             });
         } catch (error) {
-            logger.error("YouTube search error:", error);
+            logError("YouTube search error:", error);
             throw new Error("Failed to search YouTube. Please try again later.");
         }
     }

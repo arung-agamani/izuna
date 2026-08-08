@@ -3,7 +3,7 @@ import type { Message } from "discord.js";
 import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
 import { MusicService } from "../../../services/MusicService";
 import { parseTimeString, fancyTimeFormat } from "../../../lib/utils";
-import logger from "../../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 
 /**
  * Seek Command (Refactored)
@@ -74,7 +74,7 @@ The position must not exceed the track's length.`,
                 ephemeral: true,
             });
         } catch (error) {
-            logger.error("Error in seek command:", error);
+            logError("Error in seek command:", error);
             await interaction.followUp({
                 content: `❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`,
                 ephemeral: true,
@@ -103,7 +103,7 @@ The position must not exceed the track's length.`,
             const positionString = await args.pick("string");
             const formattedTime = await this.seek(guildId, positionString, message.channel);
         } catch (error) {
-            logger.error("Error in seek command:", error);
+            logError("Error in seek command:", error);
             if (error instanceof Error && error.message.includes("There was no input")) {
                 if (message.channel.isSendable()) await message.channel.send("❌ Error: Please provide a time position (e.g., `40`, `1:10`, `1:1:10`)");
             } else {
@@ -160,7 +160,7 @@ The position must not exceed the track's length.`,
             await textChannel.send(`⏩ Player seeked to position ${formattedTime}`);
             return formattedTime;
         } catch (error) {
-            logger.error("Error seeking track:", error);
+            logError("Error seeking track:", error);
             throw error;
         }
     }

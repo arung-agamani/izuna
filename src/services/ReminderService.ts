@@ -1,7 +1,7 @@
 import type { SapphireClient } from "@sapphire/framework";
 import { CronJob } from "cron";
 import type { TextChannel } from "discord.js";
-import logger from "../lib/winston";
+import logger, { logError, getErrorMessage } from "../lib/winston"
 import prisma from "../lib/prisma";
 import type { Reminder } from "@prisma/client";
 
@@ -108,14 +108,14 @@ export class ReminderService {
                 try {
                     this.startReminderJob(reminder);
                 } catch (error) {
-                    logger.error(`Failed to start reminder job ${reminder.id}:`, error);
+                    logError(`Failed to start reminder job ${reminder.id}:`, error);
                 }
             }
 
             this.initialized = true;
             logger.info(`ReminderService initialized with ${this.reminderJobs.size} active jobs`);
         } catch (error) {
-            logger.error("Failed to initialize ReminderService:", error);
+            logError("Failed to initialize ReminderService:", error);
             throw error;
         }
     }
@@ -312,7 +312,7 @@ export class ReminderService {
             this.reminderJobs.set(reminder.id, cronJob);
             logger.debug(`Started cron job for reminder ${reminder.id}`);
         } catch (error) {
-            logger.error(`Failed to create cron job for reminder ${reminder.id}:`, error);
+            logError(`Failed to create cron job for reminder ${reminder.id}:`, error);
             throw error;
         }
     }
@@ -377,7 +377,7 @@ export class ReminderService {
                 }
             }
         } catch (error) {
-            logger.error(`Error executing reminder ${reminder.id}:`, error);
+            logError(`Error executing reminder ${reminder.id}:`, error);
         }
     }
 

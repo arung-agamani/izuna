@@ -2,6 +2,7 @@ import { Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import { config } from "../../../config";
 import ReminderService from "../../../services/ReminderService";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 
 export class ListReminderCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -70,6 +71,7 @@ export class ListReminderCommand extends Command {
                 }
             }
         } catch (error) {
+            logError("Failed to list reminders", error);
             if (message.channel.isSendable()) await message.channel.send(
                 `Failed to list reminders: ${error instanceof Error ? error.message : "Unknown error"}`
             );

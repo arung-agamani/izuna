@@ -2,7 +2,7 @@ import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
 import { MusicService } from "../../../services/MusicService";
-import logger from "../../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 
 /**
  * Move Command (Refactored)
@@ -75,7 +75,7 @@ export class MoveCommand extends Command {
             const message = await this.moveTrack(guildId, fromPosition, toPosition);
             await interaction.reply(message);
         } catch (error) {
-            logger.error("Error in move command (slash):", error);
+            logError("Error in move command (slash):", error);
             await interaction.reply({
                 content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
                 ephemeral: true,
@@ -110,7 +110,7 @@ export class MoveCommand extends Command {
                 // Sapphire argument error
                 if (message.channel.isSendable()) await message.channel.send("Error: Please provide two valid track numbers (positive integers)");
             } else {
-                logger.error("Error in move command (message):", error);
+                logError("Error in move command (message):", error);
                 if (message.channel.isSendable()) await message.channel.send(`Error: ${error.message || "Unknown error"}`);
             }
         }

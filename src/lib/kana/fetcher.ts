@@ -1,5 +1,5 @@
 import axios from "axios";
-import chalk from "chalk";
+
 import logger from "../winston";
 
 const fetcher = axios.create({
@@ -7,7 +7,7 @@ const fetcher = axios.create({
 });
 
 fetcher.interceptors.request.use((config) => {
-    logger.info(`Kana: ${chalk.greenBright(config.method?.toUpperCase())} request to /${chalk.blueBright(config.url)}`);
+    logger.debug(`Kana: ${config.method?.toUpperCase()} request to ${config.url}`);
     return config;
 });
 

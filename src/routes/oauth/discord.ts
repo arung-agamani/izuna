@@ -4,7 +4,7 @@ import prisma from "../../lib/prisma";
 import { oauthSessionState, discordAccessTokens } from "../../lib/session";
 import { config } from "../../config";
 import { COOKIE_NAME, JWT_EXPIRY } from "../../config/constants";
-import logger from "../../lib/winston";
+import logger, { logError } from "../../lib/winston"
 
 const GRACE_PERIOD_SECONDS = 7 * 24 * 60 * 60; // 7 days
 

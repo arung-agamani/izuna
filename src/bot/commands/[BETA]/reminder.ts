@@ -2,6 +2,7 @@ import { Args, Command } from "@sapphire/framework";
 import { ChannelType, Message } from "discord.js";
 import { config } from "../../../config";
 import ReminderService from "../../../services/ReminderService";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 
 export class ReminderCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -48,6 +49,7 @@ export class ReminderCommand extends Command {
                 `Set reminder for <@${message.author.id}> with id "${reminder.id}", cron string \`"${cronString}"\`, and message "${msg}"`,
             );
         } catch (error) {
+            logError("Failed to create reminder", error);
             await message.channel.send(`Failed to create reminder: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }

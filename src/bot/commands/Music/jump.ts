@@ -2,7 +2,7 @@ import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
 import { MusicService } from "../../../services/MusicService";
-import logger from "../../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 
 /**
  * Jump Command (Refactored)
@@ -66,7 +66,7 @@ export class JumpCommand extends Command {
             await this.jumpToTrack(guildId, position, interaction.channel!);
             await interaction.followUp({ content: "Jump command complete!", ephemeral: true });
         } catch (error) {
-            logger.error("Error in jump command (slash):", error);
+            logError("Error in jump command (slash):", error);
             await interaction.followUp({
                 content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
                 ephemeral: true,
@@ -99,7 +99,7 @@ export class JumpCommand extends Command {
                 // Sapphire argument error
                 if (message.channel.isSendable()) await message.channel.send("Error: Please provide a valid track number (positive integer)");
             } else {
-                logger.error("Error in jump command (message):", error);
+                logError("Error in jump command (message):", error);
                 if (message.channel.isSendable()) await message.channel.send(`Error: ${error.message || "Unknown error"}`);
             }
         }

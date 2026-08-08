@@ -2,7 +2,7 @@ import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
 import { MusicService } from "../../../services/MusicService";
-import logger from "../../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 
 /**
  * Remove Command (Refactored)
@@ -63,7 +63,7 @@ export class RemoveCommand extends Command {
             const message = await this.removeTrack(guildId, position);
             await interaction.reply(message);
         } catch (error) {
-            logger.error("Error in remove command (slash):", error);
+            logError("Error in remove command (slash):", error);
             await interaction.reply({
                 content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
                 ephemeral: true,
@@ -97,7 +97,7 @@ export class RemoveCommand extends Command {
                 // Sapphire argument error
                 if (message.channel.isSendable()) await message.channel.send("Error: Please provide a valid track number (positive integer)");
             } else {
-                logger.error("Error in remove command (message):", error);
+                logError("Error in remove command (message):", error);
                 if (message.channel.isSendable()) await message.channel.send(`Error: ${error.message || "Unknown error"}`);
             }
         }

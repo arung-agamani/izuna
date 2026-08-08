@@ -1,8 +1,7 @@
 import { Command } from "@sapphire/framework";
 import { MessageCommandRunPayload } from "@sapphire/framework";
 import { Events, Listener } from "@sapphire/framework";
-import type { Client } from "discord.js";
-import { Message } from "discord.js";
+import type { Message } from "discord.js";
 import logger from "../../lib/winston";
 
 export class MessageRunListener extends Listener {
@@ -13,14 +12,13 @@ export class MessageRunListener extends Listener {
         });
     }
 
-    public run(message: Message, command: Command, payload: MessageCommandRunPayload) {
-        // console.log(`${command.name} command is being run with message "${message.content}"`);
-        logger.debug({
-            message: `${command.name} command executed with message: ` + message.content,
-            label: {
-                source: this.event,
-                handler: command.name,
-            },
+    public run(message: Message, command: Command, _payload: MessageCommandRunPayload) {
+        logger.info("command_invoked", {
+            event: "command_invoked",
+            command: command.name,
+            source: "message",
+            guildId: message.guildId,
+            userId: message.author.id,
         });
     }
 }

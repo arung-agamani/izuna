@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma";
-import logger from "../lib/winston";
+import logger, { logError, getErrorMessage } from "../lib/winston"
 
 export class UserService {
     private static instance: UserService | null = null;
@@ -19,7 +19,7 @@ export class UserService {
         try {
             return await prisma.user.findUnique({ where: { id } });
         } catch (error) {
-            logger.error("Error fetching user by id:", error);
+            logError("Error fetching user by id:", error);
             throw new Error("Failed to fetch user");
         }
     }
@@ -28,7 +28,7 @@ export class UserService {
         try {
             return await prisma.user.findUnique({ where: { uid } });
         } catch (error) {
-            logger.error("Error fetching user by uid:", error);
+            logError("Error fetching user by uid:", error);
             throw new Error("Failed to fetch user");
         }
     }
@@ -44,7 +44,7 @@ export class UserService {
                 },
             });
         } catch (error) {
-            logger.error("Error creating user:", error);
+            logError("Error creating user:", error);
             throw new Error("Failed to create user");
         }
     }
@@ -71,7 +71,7 @@ export class UserService {
                 },
             });
         } catch (error) {
-            logger.error("Error updating Discord tokens:", error);
+            logError("Error updating Discord tokens:", error);
             throw new Error("Failed to update Discord tokens");
         }
     }
@@ -84,7 +84,7 @@ export class UserService {
             });
             return user?.discordAccessToken || null;
         } catch (error) {
-            logger.error("Error fetching Discord access token:", error);
+            logError("Error fetching Discord access token:", error);
             return null;
         }
     }

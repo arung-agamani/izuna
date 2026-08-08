@@ -2,7 +2,7 @@ import { ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
 import { MusicService } from "../../../services/MusicService";
-import logger from "../../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 
 /**
  * Pause/Resume Command (Refactored)
@@ -60,7 +60,7 @@ export class PauseCommand extends Command {
             const message = await this.togglePause(guildId);
             await interaction.reply(message);
         } catch (error) {
-            logger.error("Error in pause command (slash):", error);
+            logError("Error in pause command (slash):", error);
             await interaction.reply({
                 content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
                 ephemeral: true,
@@ -89,7 +89,7 @@ export class PauseCommand extends Command {
             const responseMessage = await this.togglePause(guildId);
             if (message.channel.isSendable()) await message.channel.send(responseMessage);
         } catch (error) {
-            logger.error("Error in pause command (message):", error);
+            logError("Error in pause command (message):", error);
             if (message.channel.isSendable()) await message.channel.send(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }

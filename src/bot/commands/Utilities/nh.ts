@@ -2,7 +2,7 @@ import { Command, Args, ChatInputCommand } from "@sapphire/framework";
 import axios from "axios";
 import { Message, EmbedBuilder } from "discord.js";
 import * as cheerio from "cheerio";
-import logger from "../../../lib/winston";
+import logger, { logError } from "../../../lib/winston"
 
 interface Title {
     english: string;

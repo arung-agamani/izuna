@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { config } from '../../config';
 import { closureGoogleOauthState, closureGoogleOauthTracker } from '../../lib/google';
-import logger from '../../lib/winston';
+import logger, { logError, getErrorMessage } from '../../lib/winston'
 
 const googleOAuthRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get<{
@@ -16,11 +16,9 @@ const googleOAuthRoutes: FastifyPluginAsync = async (fastify) => {
         const token = await fastify.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
         const state = req.query.state || '';
 
-        const decodedState = Buffer.from(state, 'base64').toString();
-        logger.info(decodedState);
-
-        const [source, uid] = decodedState.split('-');
-        logger.info(`Source: ${source} || UID: ${uid}`);
+        const decodedState = Buffer.from(state, "base64").toString();
+        const [source, uid] = decodedState.split("-");
+        logger.debug("Google OAuth callback received", { source, uid });
 
         if (source === 'closure' && closureGoogleOauthState.has(state)) {
           closureGoogleOauthTracker.set(uid || '', token.token);
@@ -36,7 +34,7 @@ const googleOAuthRoutes: FastifyPluginAsync = async (fastify) => {
           };
         }
       } catch (error) {
-        logger.error(error);
+        logError("Google OAuth callback failed", error);
         reply.status(500).send({
           statusCode: 500,
           error: 'Something went wrong.',

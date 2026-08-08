@@ -2,7 +2,7 @@ import { ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
 import { MusicService } from "../../../services/MusicService";
-import logger from "../../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 
 /**
  * Skip Music Command (Refactored)
@@ -62,7 +62,7 @@ export class SkipMusicCommand extends Command {
                 ephemeral: true,
             });
         } catch (error) {
-            logger.error("Error in skip command:", error);
+            logError("Error in skip command:", error);
             await interaction.followUp({
                 content: `❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`,
                 ephemeral: true,
@@ -90,7 +90,7 @@ export class SkipMusicCommand extends Command {
         try {
             await this.skip(guildId, message.channel);
         } catch (error) {
-            logger.error("Error in skip command:", error);
+            logError("Error in skip command:", error);
             if (message.channel.isSendable()) await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
@@ -115,7 +115,7 @@ export class SkipMusicCommand extends Command {
             await session.player.stopTrack();
             await textChannel.send("⏭️ Skipping current track");
         } catch (error) {
-            logger.error("Error stopping track:", error);
+            logError("Error stopping track:", error);
             throw new Error("Failed to skip track");
         }
     }

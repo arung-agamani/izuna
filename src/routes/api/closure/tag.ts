@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import DiscordOAuth2 from "discord-oauth2";
 import prisma from "../../../lib/prisma";
-import logger from "../../../lib/winston";
+import logger, { logError } from "../../../lib/winston"
 import discordSession, { discordAccessTokens } from "../../../lib/session";
 
 const oauth = new DiscordOAuth2();

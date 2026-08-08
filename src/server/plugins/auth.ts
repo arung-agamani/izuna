@@ -4,6 +4,7 @@ import cookie from '@fastify/cookie';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { env } from '../../config/env';
 import { COOKIE_NAME, JWT_EXPIRY } from '../../config/constants';
+import logger from '../../lib/winston';
 
 export default fp(async (fastify) => {
   // Register cookie plugin first
@@ -23,6 +24,7 @@ export default fp(async (fastify) => {
     try {
       await request.jwtVerify();
     } catch (err) {
+      logger.warn("Authentication failed", { url: request.url.split("?")[0] });
       reply.status(401).send(err);
     }
   });

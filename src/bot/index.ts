@@ -5,7 +5,7 @@ import { setShoukakuContext } from "../services/ShoukakuContext";
 import logger from "../lib/winston";
 import prisma from "../lib/prisma";
 import { channelTrackingManager, deleteFromEphemeralVCManager, initializeChannelTrackingManager, initializeJoinToCreateVCManager } from "../lib/channelTracker";
-import { Partials, VoiceBasedChannel } from "discord.js";
+import { Message, Partials, VoiceBasedChannel } from "discord.js";
 import "@sapphire/plugin-hmr/register";
 
 async function createBotApp() {
@@ -65,7 +65,6 @@ async function createBotApp() {
                 error: err instanceof Error ? err.message : String(err),
                 stack: err instanceof Error ? err.stack : undefined,
             });
-            logger.error(err);
         });
         manager.on("ready", () => {
             logger.info("✅ Shoukaku manager ready", {
@@ -99,30 +98,52 @@ async function createBotApp() {
                 return;
             }
             let tag = null;
-            tag = await prisma.tag.findFirst({
-                where: {
-                    userId: message.author.id,
-                    isGuild: false,
-                    name: foundTag,
-                },
-            });
-            if (!tag) {
+            try {
                 tag = await prisma.tag.findFirst({
                     where: {
-                        guildId: message.guildId || "",
-                        isGuild: true,
+                        userId: message.author.id,
+                        isGuild: false,
                         name: foundTag,
                     },
                 });
+                if (!tag) {
+                    tag = await prisma.tag.findFirst({
+                        where: {
+                            guildId: message.guildId || "",
+                            isGuild: true,
+                            name: foundTag,
+                        },
+                    });
+                }
+            } catch (err) {
+                logger.error("Tag lookup failed", { foundTag, error: err });
+                return;
             }
+
+            // Resolve reply target: if the user is replying to a message, respond to that message instead
+            let replyTarget: Message | undefined;
+            if (message.reference?.messageId) {
+                try {
+                    replyTarget = await message.channel.messages.fetch(message.reference.messageId);
+                } catch {
+                    // message deleted or inaccessible — fall through to channel send
+                }
+            }
+
+            const respond = async (content: string | { content: string }) => {
+                if (replyTarget) {
+                    await replyTarget.reply(content);
+                } else if (message.channel.isSendable()) {
+                    await message.channel.send(content);
+                }
+            };
+
             if (!tag) {
-                await message.channel.send(`No tag **${foundTag}** found.`);
+                await respond(`No tag **${foundTag}** found.`);
                 return;
             }
             if (tag.isMedia) {
-                await message.channel.send({
-                    content: tag.message,
-                });
+                await respond({ content: tag.message });
                 logger.debug({
                     message: `${tag.message} invoked`,
                     label: {
@@ -133,7 +154,7 @@ async function createBotApp() {
                 });
                 return;
             }
-            await message.channel.send(`${tag.message}`);
+            await respond(tag.message);
             return;
         }
     });

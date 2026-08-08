@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import ReminderService from "../../../services/ReminderService";
-import logger from "../../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 
 // Validation schemas
 const CreateReminderSchema = z.object({
@@ -81,7 +81,7 @@ async function reminderRoutes(fastify: FastifyInstance, _: FastifyPluginOptions)
                     count: reminders.length,
                 };
             } catch (error) {
-                logger.error("Error listing reminders:", error);
+                logError("Error listing reminders:", error);
                 res.status(500).send({
                     success: false,
                     message: "Failed to list reminders",
@@ -164,7 +164,7 @@ async function reminderRoutes(fastify: FastifyInstance, _: FastifyPluginOptions)
                     data: reminder,
                 };
             } catch (error) {
-                logger.error(`Error fetching reminder ${req.params.id}:`, error);
+                logError(`Error fetching reminder ${req.params.id}:`, error);
                 res.status(500).send({
                     success: false,
                     message: "Failed to fetch reminder",
@@ -258,7 +258,7 @@ async function reminderRoutes(fastify: FastifyInstance, _: FastifyPluginOptions)
                     data: reminder,
                 });
             } catch (error) {
-                logger.error("Error creating reminder:", error);
+                logError("Error creating reminder:", error);
                 res.status(500).send({
                     success: false,
                     message: "Failed to create reminder",
@@ -374,7 +374,7 @@ async function reminderRoutes(fastify: FastifyInstance, _: FastifyPluginOptions)
                     data: reminder,
                 };
             } catch (error) {
-                logger.error(`Error updating reminder ${req.params.id}:`, error);
+                logError(`Error updating reminder ${req.params.id}:`, error);
                 res.status(500).send({
                     success: false,
                     message: "Failed to update reminder",
@@ -442,7 +442,7 @@ async function reminderRoutes(fastify: FastifyInstance, _: FastifyPluginOptions)
                     message: "Reminder deleted successfully",
                 };
             } catch (error) {
-                logger.error(`Error deleting reminder ${req.params.id}:`, error);
+                logError(`Error deleting reminder ${req.params.id}:`, error);
                 res.status(500).send({
                     success: false,
                     message: "Failed to delete reminder",
@@ -499,7 +499,7 @@ async function reminderRoutes(fastify: FastifyInstance, _: FastifyPluginOptions)
                     data: stats,
                 };
             } catch (error) {
-                logger.error("Error fetching reminder stats:", error);
+                logError("Error fetching reminder stats:", error);
                 res.status(500).send({
                     success: false,
                     message: "Failed to fetch reminder statistics",

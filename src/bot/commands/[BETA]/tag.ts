@@ -2,6 +2,7 @@ import { Args, Command } from "@sapphire/framework";
 import { Formatters, Message, EmbedBuilder, ChannelType, PermissionFlagsBits } from "discord.js";
 import prisma from "../../../lib/prisma";
 import axios from "../../../lib/axios";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 import { uploadFile } from "../../../lib/s3client";
 import mime from "mime-types";
 
@@ -221,6 +222,7 @@ export class TagCommand extends Command {
                 );
                 await message.channel.send({ embeds: [embed] });
             } catch (error) {
+                logError("Tag list failed", error);
                 const embed = new EmbedBuilder();
                 embed.setTitle(`Izuna: Tags${!isGuild ? " (User-only)" : ""}`);
                 embed.setDescription(`Registered tags: \n ${tags.map((x: any) => `\`${x.name}\``).join(" ")}`);

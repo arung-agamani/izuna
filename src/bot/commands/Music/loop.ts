@@ -2,7 +2,7 @@ import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
 import { MusicService } from "../../../services/MusicService";
-import logger from "../../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 
 const aliases = {
     single: ["one", "1", "single", "this"],
@@ -85,7 +85,7 @@ export class LoopCommand extends Command {
             const message = await this.setLoopMode(guildId, mode);
             await interaction.reply(message);
         } catch (error) {
-            logger.error("Error in loop command (slash):", error);
+            logError("Error in loop command (slash):", error);
             await interaction.reply({
                 content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
                 ephemeral: true,
@@ -119,7 +119,7 @@ export class LoopCommand extends Command {
                 // Sapphire argument error
                 if (message.channel.isSendable()) await message.channel.send('No arguments given. Please specify "all", "one", or "none"');
             } else {
-                logger.error("Error in loop command (message):", error);
+                logError("Error in loop command (message):", error);
                 if (message.channel.isSendable()) await message.channel.send(`Error: ${error.message || "Unknown error"}`);
             }
         }

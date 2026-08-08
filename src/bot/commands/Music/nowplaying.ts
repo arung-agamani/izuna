@@ -3,7 +3,7 @@ import { Message, EmbedBuilder, Colors, ActionRowBuilder, ButtonBuilder, ButtonS
 import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
 import { MusicService } from "../../../services/MusicService";
 import { fancyTimeFormat } from "../../../lib/utils";
-import logger from "../../../lib/winston";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 
 /**
  * Now Playing 2 Command - User-Friendly Now Playing Display
@@ -84,7 +84,7 @@ export class NowPlayingMusicCommand extends Command {
                 if (message.channel.isSendable()) await message.channel.send({ embeds: [embed] });
             }
         } catch (error) {
-            logger.error("Error in nowplaying2 command:", error);
+            logError("Error in nowplaying2 command:", error);
             if (message.channel.isSendable()) await message.channel.send(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }

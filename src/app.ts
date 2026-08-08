@@ -1,5 +1,5 @@
 import { buildServer } from './server/fastify';
-import logger from './lib/winston';
+import logger, { logError, getErrorMessage } from './lib/winston'
 
 /**
  * Application factory that builds and configures the Fastify server
@@ -11,7 +11,7 @@ export async function buildApp() {
     logger.info('✅ Application built successfully');
     return server;
   } catch (error) {
-    logger.error('❌ Failed to build application:', error);
+    logError('❌ Failed to build application:', error);
     throw error;
   }
 }
@@ -31,7 +31,7 @@ export async function startWebServer(port: number, host: string) {
 
     return server;
   } catch (error) {
-    logger.error('❌ Failed to start web server:', error);
+    logError('❌ Failed to start web server:', error);
     throw error;
   }
 }

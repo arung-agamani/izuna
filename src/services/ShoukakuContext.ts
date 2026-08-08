@@ -1,5 +1,5 @@
 import type { Shoukaku } from "shoukaku";
-import logger from "../lib/winston"
+import logger, { logError } from "../lib/winston"
 
 let shoukaku: Shoukaku | undefined;
 

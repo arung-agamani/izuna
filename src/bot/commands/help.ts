@@ -1,9 +1,6 @@
-import { Args, Command } from "@sapphire/framework";
+import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import { EmbedBuilder } from "discord.js";
-import logger from "../../lib/winston";
-
-type CategoryMap = Map<string, Set<string>>;
 
 export class HelpCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -14,55 +11,95 @@ export class HelpCommand extends Command {
         });
     }
 
-    public override async messageRun(message: Message, args: Args) {
-        try {
-            const arg1 = await args.rest("string");
-            const command = this.container.stores.get("commands").get(arg1);
-            if (!command) {
-                if (message.channel.isSendable()) await message.channel.send(`Command \`${arg1}\` not found.`);
-                return;
-            }
-            const helpEmbedBuilder = new EmbedBuilder();
-            helpEmbedBuilder.setTitle(`Help Section - ${arg1}`);
-            helpEmbedBuilder.addFields({ name: "Name", value: command.name });
-            if (command.aliases.length > 0) helpEmbedBuilder.addFields({ name: "Aliases", value: command.aliases.map((x) => `\`${x}\``).join(" ") });
-            helpEmbedBuilder.addFields({ name: "Description", value: command.description });
-            if (command.detailedDescription === "") {
-                helpEmbedBuilder.addFields({ name: "Details", value: "No info" });
-            } else helpEmbedBuilder.addFields({ name: "Details", value: command.detailedDescription.toString() });
-            if (message.channel.isSendable()) await message.channel.send({ embeds: [helpEmbedBuilder] });
-            return;
-        } catch (error) {
-            const commandIter = this.container.stores.get("commands").entries();
-            const categories: CategoryMap = new Map<string, Set<string>>();
-            for (const command of commandIter) {
-                let fullCategory = command[1].fullCategory;
-                if (fullCategory.length === 0) fullCategory = ["Others"];
-                for (const category of fullCategory) {
-                    if (categories.has(category)) {
-                        const categorySet = categories.get(category);
-                        categorySet?.add(command[0]);
-                    } else {
-                        const newCategory = new Set<string>();
-                        newCategory.add(command[0]);
-                        categories.set(category, newCategory);
-                    }
-                }
-            }
-            const helpEmbedBuilder = new EmbedBuilder();
-            helpEmbedBuilder.setTitle("Help Section");
-            for (const [category, categorySet] of Array.from(categories.entries())) {
-                let description = "";
-                for (const command of categorySet) {
-                    description += `\`${command}\` `;
-                }
-                helpEmbedBuilder.addFields({ name: `**${category}**`, value: description });
-            }
-            helpEmbedBuilder.setDescription("Use `izuna help [command-name]` for further detail on each command.");
-            helpEmbedBuilder.setTimestamp().setFooter({
-                text: process.env["BUILD_REF"] || "Eggs",
-            });
-            if (message.channel.isSendable()) await message.channel.send({ embeds: [helpEmbedBuilder] });
+    public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
+        registry.registerChatInputCommand((builder) =>
+            builder
+                .setName("help")
+                .setDescription("List available commands")
+                .addStringOption((option) =>
+                    option.setName("command").setDescription("Specific command to get help for").setRequired(false),
+                ),
+        );
+    }
+
+    public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+        const commandName = interaction.options.getString("command");
+        const payload = commandName ? this.buildCommandHelp(commandName) : this.buildFullHelp();
+        if (interaction.replied || interaction.deferred) {
+            await interaction.editReply(payload);
+        } else {
+            await interaction.reply({ ...payload, ephemeral: true });
         }
+    }
+
+    public override async messageRun(message: Message, args: Args) {
+        const query = args.finished ? null : await args.rest("string").catch(() => null);
+        const payload = query ? this.buildCommandHelp(query) : this.buildFullHelp();
+        if (message.channel.isSendable()) {
+            await message.channel.send(payload);
+        }
+    }
+
+    /**
+     * Build the full command listing embed, grouped by category and sorted alphabetically.
+     */
+    private buildFullHelp() {
+        const store = this.container.stores.get("commands");
+        const categories = new Map<string, string[]>();
+
+        for (const [name, cmd] of store.entries()) {
+            const category = cmd.category || "Uncategorized";
+            if (!categories.has(category)) categories.set(category, []);
+            const desc = cmd.description;
+            const summary = desc.length > 56 ? desc.slice(0, 56) + "…" : desc;
+            categories.get(category)!.push(`\`${name}\` — ${summary}`);
+        }
+
+        const embed = new EmbedBuilder()
+            .setTitle("Help Section")
+            .setColor("#5865F2")
+            .setDescription("Use `izuna help <command>` or `/help <command>` for details on a specific command.");
+
+        const sortedCategories = [...categories.entries()].sort(([a], [b]) => a.localeCompare(b));
+        for (const [category, lines] of sortedCategories) {
+            lines.sort((a, b) => a.localeCompare(b));
+            embed.addFields({ name: category, value: lines.join("\n") });
+        }
+
+        embed.setTimestamp().setFooter({ text: `${store.size} commands` });
+        return { embeds: [embed] };
+    }
+
+    /**
+     * Build a single-command help embed. Returns a not-found message if the command doesn't exist.
+     */
+    private buildCommandHelp(commandName: string) {
+        const command = this.container.stores.get("commands").get(commandName);
+        if (!command) {
+            return { content: `Command \`${commandName}\` not found.` };
+        }
+
+        const embed = new EmbedBuilder()
+            .setTitle(`Help: \`${command.name}\``)
+            .setColor("#5865F2");
+
+        const category = command.category || "Uncategorized";
+        embed.addFields({ name: "Category", value: category, inline: true });
+
+        const hasSlash = command.supportsChatInputCommands();
+        embed.addFields({ name: "Slash", value: hasSlash ? "✅" : "❌", inline: true });
+
+        embed.addFields({ name: "Description", value: command.description });
+
+        if (command.detailedDescription && command.detailedDescription !== "") {
+            const detail = command.detailedDescription.toString();
+            embed.addFields({ name: "Details", value: detail.length > 1024 ? detail.slice(0, 1021) + "…" : detail });
+        }
+
+        if (command.aliases.length > 0) {
+            embed.addFields({ name: "Aliases", value: command.aliases.map((a) => `\`${a}\``).join(", ") });
+        }
+
+        return { embeds: [embed] };
     }
 }

@@ -2,6 +2,7 @@ import { Args, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import { config } from "../../../config";
 import ReminderService from "../../../services/ReminderService";
+import logger, { logError, getErrorMessage } from "../../../lib/winston"
 
 export class DelReminderCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -31,6 +32,7 @@ export class DelReminderCommand extends Command {
             await reminderService.deleteReminder(Number(id));
             if (message.channel.isSendable()) await message.channel.send(`Reminder for <@${message.author.id}> with id "${reminder.id}" has been deleted`);
         } catch (error) {
+            logError("Failed to delete reminder", error);
             if (message.channel.isSendable()) await message.channel.send(`Failed to delete reminder: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }

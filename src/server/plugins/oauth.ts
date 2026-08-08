@@ -6,7 +6,7 @@ import { config } from '../../config';
 import { GOOGLE_OAUTH_SCOPE, DISCORD_OAUTH_SCOPE } from '../../config/constants';
 import { closureGoogleOauthState } from '../../lib/google';
 import { oauthSessionState } from '../../lib/session';
-import logger from '../../lib/winston';
+import logger, { logError } from '../../lib/winston'
 
 export default fp(async (fastify) => {
   // Google OAuth2 Configuration
