@@ -129,20 +129,8 @@ This is an admin utility command and should be used only when experiencing conne
             throw error;
         }
 
-        // Remove all existing nodes
-        await textChannel.send("🗑️ Removing all current nodes...");
-        const currentNodes = Array.from(shoukaku.nodes.keys());
-        for (const nodeName of currentNodes) {
-            try {
-                shoukaku.removeNode(nodeName);
-                logger.info(`Removed node: ${nodeName}`);
-            } catch (error) {
-                logger.error(`Error removing node ${nodeName}:`, error);
-            }
-        }
-        await textChannel.send("✅ Removed all nodes");
+        // Add nodes from config (add-only; Shoukaku auto-ejects disconnected nodes)
 
-        // Add nodes from config
         await textChannel.send("➕ Adding nodes from configuration...");
         let addedCount = 0;
         for (const node of nodes) {
@@ -161,7 +149,7 @@ This is an admin utility command and should be used only when experiencing conne
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
         // Check node status
-        const connectedNodes = Array.from(shoukaku.nodes.values()).filter((node) => node.state === 2); // 2 = CONNECTED
+        const connectedNodes = Array.from(shoukaku.nodes.values()).filter((node) => node.state === 1); // State.CONNECTED (shoukaku's State enum is not exported at runtime)
         await textChannel.send(`📊 Node status: ${connectedNodes.length}/${nodes.length} connected`);
 
         if (connectedNodes.length === 0) {

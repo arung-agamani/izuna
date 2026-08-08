@@ -48,6 +48,13 @@ async function createBotApp() {
         logger.info("Initializing Shoukaku connector");
         const option: ShoukakuOptions = {
             resume: true,
+            resumeTimeout: 60,
+            resumeByLibrary: true,
+            moveOnDisconnect: true,
+            reconnectTries: 5,
+            reconnectInterval: 5,
+            restTimeout: 60,
+            voiceConnectionTimeout: 15,
         }
         const manager = new Shoukaku(new Connectors.DiscordJS(client), nodes, option);
         setShoukakuContext(manager);

@@ -8,6 +8,7 @@ import { PermissionsBitField } from "discord.js";
 import discordSession, { GuildMembership, discordAccessTokens } from "../../../lib/session";
 
 import { z } from "zod";
+import UserService from "../../../services/UserService";
 
 const ReminderUpdatePayload = z.object({
     id: z.number(),
@@ -63,7 +64,7 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
     );
 
     fastify.get("/user/me", { onRequest: [fastify.authenticate] }, async (req, res) => {
-        const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+        const user = await UserService.getInstance().getUserById(req.user.id);
         logger.debug("/user/me request for id " + req.user.id);
         if (!user) {
             res.code(404).send({
