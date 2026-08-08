@@ -3,9 +3,9 @@ import { Shoukaku, Connectors, NodeOption, ShoukakuOptions } from "shoukaku";
 import { config } from "../config";
 import { setShoukakuContext } from "../services/ShoukakuContext";
 import logger from "../lib/winston";
-import { TagService } from "../services/TagService";
+import { handleTagMessage } from "./handlers/tagHandler";
 import { channelTrackingManager, deleteFromEphemeralVCManager, initializeChannelTrackingManager, initializeJoinToCreateVCManager } from "../lib/channelTracker";
-import { Message, Partials, VoiceBasedChannel } from "discord.js";
+import { Partials, VoiceBasedChannel } from "discord.js";
 import "@sapphire/plugin-hmr/register";
 
 async function createBotApp() {
@@ -81,67 +81,7 @@ async function createBotApp() {
             await message.reply("Awoo!");
             return;
         }
-        if (message.content.split(process.env["NODE_ENV"] === "development" ? "&" : "#").length >= 3) {
-            const msgSplit = message.content.split(process.env["NODE_ENV"] === "development" ? "&" : "#");
-            let foundTag = "";
-            for (let i = 0; i < (msgSplit.length - 1) / 2; i++) {
-                if (msgSplit[2 * i + 1] !== "") {
-                    foundTag = msgSplit[2 * i + 1]!;
-                    break;
-                }
-            }
-            if (foundTag === "") {
-                return;
-            }
-            const AlphanumericRegex = /^[A-Za-z0-9]+$/;
-            if (!AlphanumericRegex.test(foundTag)) {
-                return;
-            }
-            let tag = null;
-            try {
-                tag = await TagService.getInstance().resolve(message.author.id, message.guildId, foundTag);
-            } catch (err) {
-                logger.error("Tag lookup failed", { foundTag, error: err });
-                return;
-            }
-
-            // Resolve reply target: if the user is replying to a message, respond to that message instead
-            let replyTarget: Message | undefined;
-            if (message.reference?.messageId) {
-                try {
-                    replyTarget = await message.channel.messages.fetch(message.reference.messageId);
-                } catch {
-                    // message deleted or inaccessible — fall through to channel send
-                }
-            }
-
-            const respond = async (content: string | { content: string }) => {
-                if (replyTarget) {
-                    await replyTarget.reply(content);
-                } else if (message.channel.isSendable()) {
-                    await message.channel.send(content);
-                }
-            };
-
-            if (!tag) {
-                await respond(`No tag **${foundTag}** found.`);
-                return;
-            }
-            if (tag.isMedia) {
-                await respond({ content: tag.message });
-                logger.debug({
-                    message: `${tag.message} invoked`,
-                    label: {
-                        handler: "tag_index",
-                        source: "messageCreate",
-                        tag: tag.message,
-                    },
-                });
-                return;
-            }
-            await respond(tag.message);
-            return;
-        }
+        await handleTagMessage(message);
     });
 
     setInterval(() => {

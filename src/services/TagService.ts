@@ -15,7 +15,7 @@ export class TagService {
     private static instance: TagService | null = null;
     private readonly repo: TagRepository;
 
-    private constructor(repository?: TagRepository) {
+    constructor(repository?: TagRepository) {
         this.repo = repository ?? new TagRepository(prisma);
     }
 
