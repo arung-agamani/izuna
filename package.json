@@ -7,12 +7,13 @@
     "scripts": {
         "build": "tsc -p tsconfig.json",
         "start": "npx prisma migrate deploy && npx prisma generate && node build/index.js",
-        "dev": "cross-env NODE_ENV=development node build/index.js",
-        "dev-ts": "ts-node-dev src/index.ts",
-        "dev-mute": "cross-env NODE_ENV=development MUTE=1 node build/index.js",
+        "dev": "tsx watch src/index.ts",
+        "dev:bot": "cross-env RUN_WEB=0 tsx watch src/index.ts",
+        "dev:web": "cross-env RUN_BOT=0 tsx watch src/index.ts",
+        "dev:mute": "cross-env MUTE=1 tsx watch src/index.ts",
         "test": "vitest run",
-        "test:watch": "vitest",
-        "test:types": "tsc -p tsconfig.test.json"
+        "test:types": "tsc -p tsconfig.test.json",
+        "test:watch": "vitest"
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.521.0",
@@ -29,7 +30,6 @@
         "@sapphire/discord-utilities": "^2.11.6",
         "@sapphire/discord.js-utilities": "^6.0.4",
         "@sapphire/framework": "^5.5.0",
-        "@sapphire/plugin-hmr": "^2.0.0",
         "@sentry/node": "^8.55.2",
         "axios": "^0.27.2",
         "cheerio": "^1.0.0-rc.12",
@@ -69,7 +69,7 @@
         "prisma": "^4.12.0",
         "tailwindcss": "^3.1.8",
         "ts-node": "^10.9.1",
-        "ts-node-dev": "^2.0.0",
+        "tsx": "^4.23.11",
         "typescript": "^5.5.0",
         "vitest": "^4.1.10",
         "winston-transport": "^4.9.0"

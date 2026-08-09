@@ -6,7 +6,6 @@ import logger from "../lib/winston";
 import { handleTagMessage } from "./handlers/tagHandler";
 import { channelTrackingManager, deleteFromEphemeralVCManager, initializeChannelTrackingManager, initializeJoinToCreateVCManager } from "../lib/channelTracker";
 import { Partials, VoiceBasedChannel } from "discord.js";
-import "@sapphire/plugin-hmr/register";
 
 async function createBotApp() {
     const client = new SapphireClient({
@@ -23,9 +22,6 @@ async function createBotApp() {
         regexPrefix: config.botPrefix,
         partials: [Partials.User, Partials.Channel, Partials.Reaction, Partials.Message],
         loadMessageCommandListeners: true,
-        hmr: {
-            enabled: process.env["NODE_ENV"] === "development",
-        },
     });
 
     const nodes: NodeOption[] = [];
