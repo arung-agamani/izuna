@@ -7,10 +7,10 @@
     "scripts": {
         "build": "tsc -p tsconfig.json",
         "start": "npx prisma migrate deploy && npx prisma generate && node build/index.js",
-        "dev": "tsx watch src/index.ts",
-        "dev:bot": "cross-env RUN_WEB=0 tsx watch src/index.ts",
-        "dev:web": "cross-env RUN_BOT=0 tsx watch src/index.ts",
-        "dev:mute": "cross-env MUTE=1 tsx watch src/index.ts",
+        "dev": "tsx watch -r dotenv/config src/index.ts",
+        "dev:bot": "cross-env RUN_WEB=0 tsx watch -r dotenv/config src/index.ts",
+        "dev:web": "cross-env RUN_BOT=0 tsx watch -r dotenv/config src/index.ts",
+        "dev:mute": "cross-env MUTE=1 tsx watch -r dotenv/config src/index.ts",
         "test": "vitest run",
         "test:types": "tsc -p tsconfig.test.json",
         "test:watch": "vitest"

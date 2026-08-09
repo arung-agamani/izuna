@@ -1,6 +1,4 @@
-import dotenv from "dotenv";
-dotenv.config();
-
+import "dotenv/config";
 // Sentry Initialization
 import * as Sentry from "@sentry/node";
 import { env } from "./config/env";
