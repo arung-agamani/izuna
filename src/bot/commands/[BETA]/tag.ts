@@ -1,9 +1,9 @@
 import { Args, Command } from "@sapphire/framework";
 import { Formatters, Message, EmbedBuilder, ChannelType, PermissionFlagsBits } from "discord.js";
-import prisma from "../../../lib/prisma";
 import axios from "../../../lib/axios";
-import logger, { logError, getErrorMessage } from "../../../lib/winston"
+import logger, { logError, getErrorMessage } from "../../../lib/winston";
 import { uploadFile } from "../../../lib/s3client";
+import { TagService } from "../../../services/TagService";
 import mime from "mime-types";
 
 const MAX_SIZE = 8 * 1024 * 1024;
@@ -30,7 +30,6 @@ export class TagCommand extends Command {
 
             Calling any tag will first check if user has tag stored in user-scoped, then fallbacks to searching the server-scoped tags (if done in server).
             If no tag is found, bot will respond with stating that there is no such tag.
-            
             `,
             flags: ["delete", "d"],
         });
@@ -46,6 +45,7 @@ export class TagCommand extends Command {
             )
         )
             return;
+
         const arg1 = await args.pick("string");
         if (arg1 === "add") {
             const arg2 = await args.pick("string");
@@ -54,156 +54,49 @@ export class TagCommand extends Command {
                 await message.channel.send("Invalid tag validation. Please input only alphanumeric characters in single word.");
                 return;
             }
+
+            const tagService = TagService.getInstance();
+            const scope = message.inGuild()
+                ? ({ type: "guild" as const, guildId: message.guildId! })
+                : ({ type: "user" as const, userId: message.author.id });
+
             const attachments = Array.from(message.attachments.values());
             if (message.attachments.size === 0) {
                 const arg3 = await args.rest("string", { minimum: 1 });
-                const data = {
-                    name: arg2,
-                    userId: message.author.id,
-                    guildId: message.guildId || "",
-                    dateCreated: new Date(),
-                    message: arg3,
-                    isMedia: false,
-                    isGuild: message.inGuild(),
-                };
-                if (message.inGuild()) {
-                    const tag = await prisma.tag.findFirst({
-                        where: {
-                            guildId: message.guildId,
-                            name: arg2,
-                        },
-                    });
-                    if (tag) {
-                        await prisma.tag.updateMany({
-                            data,
-                            where: {
-                                guildId: message.guildId,
-                                name: arg2,
-                            },
-                        });
-                    } else {
-                        await prisma.tag.create({
-                            data,
-                        });
-                    }
-                } else {
-                    const tag = await prisma.tag.findFirst({
-                        where: {
-                            userId: message.author.id,
-                            name: arg2,
-                        },
-                    });
-                    if (tag) {
-                        await prisma.tag.updateMany({
-                            data,
-                            where: {
-                                userId: message.author.id,
-                                name: arg2,
-                            },
-                        });
-                    } else {
-                        await prisma.tag.create({
-                            data,
-                        });
-                    }
-                }
-                await message.channel.send(`Tag **${arg2}** registered`);
-                return;
-            } else {
-                // TODO: Remove previous linked remote object in case of key mismatch
-                // Validate file size (max 8 MB)
-                const file = attachments[0];
-                if (file.size > MAX_SIZE) {
-                    await message.channel.send("Attachment size exceed the limit (8MB). Aborting...");
-                    return;
-                }
-                if (!file.contentType) {
-                    await message.channel.send("Cannot detect file type. Aborting...");
-                    return;
-                }
-                const scopeId = message.inGuild() ? message.guildId : message.author.id;
-                const remoteFile = await axios.get(file.url, { responseType: "arraybuffer" });
-                const buf = Buffer.from(remoteFile.data);
-                const remoteUrl = await uploadFile(scopeId, `${arg2}.${mime.extension(file.contentType)}`, buf, file.contentType);
-                if (!remoteUrl) {
-                    await message.channel.send("Failed to upload attachment to remote server.");
-                    return;
-                }
-                const data = {
-                    name: arg2,
-                    userId: message.author.id,
-                    guildId: message.guildId || "",
-                    dateCreated: new Date(),
-                    message: remoteUrl,
-                    isMedia: true,
-                    isGuild: message.inGuild(),
-                };
-                if (message.inGuild()) {
-                    const tag = await prisma.tag.findFirst({
-                        where: {
-                            guildId: message.guildId,
-                            name: arg2,
-                            isGuild: true,
-                        },
-                    });
-                    if (tag) {
-                        await prisma.tag.updateMany({
-                            data,
-                            where: {
-                                guildId: message.guildId,
-                                name: arg2,
-                                isGuild: true,
-                            },
-                        });
-                    } else {
-                        await prisma.tag.create({
-                            data,
-                        });
-                    }
-                } else {
-                    const tag = await prisma.tag.findFirst({
-                        where: {
-                            userId: message.author.id,
-                            isGuild: false,
-                            name: arg2,
-                        },
-                    });
-                    if (tag) {
-                        await prisma.tag.updateMany({
-                            data,
-                            where: {
-                                userId: message.author.id,
-                                name: arg2,
-                                isGuild: false,
-                            },
-                        });
-                    } else {
-                        await prisma.tag.create({
-                            data,
-                        });
-                    }
-                }
+                await tagService.upsertTextTag(scope, arg2, arg3, message.author.id);
                 await message.channel.send(`Tag **${arg2}** registered`);
                 return;
             }
-        } else if (arg1 === "list") {
+
+            // Media tag — upload to S3, then upsert
+            const file = attachments[0];
+            if (file.size > MAX_SIZE) {
+                await message.channel.send("Attachment size exceed the limit (8MB). Aborting...");
+                return;
+            }
+            if (!file.contentType) {
+                await message.channel.send("Cannot detect file type. Aborting...");
+                return;
+            }
+            const scopeId = message.inGuild() ? message.guildId : message.author.id;
+            const remoteFile = await axios.get(file.url, { responseType: "arraybuffer" });
+            const buf = Buffer.from(remoteFile.data);
+            const remoteUrl = await uploadFile(scopeId, `${arg2}.${mime.extension(file.contentType)}`, buf, file.contentType);
+            if (!remoteUrl) {
+                await message.channel.send("Failed to upload attachment to remote server.");
+                return;
+            }
+            await tagService.upsertMediaTag(scope, arg2, remoteUrl, message.author.id);
+            await message.channel.send(`Tag **${arg2}** registered`);
+            return;
+        }
+
+        if (arg1 === "list") {
             const isGuild = message.inGuild();
-            let tags;
-            if (isGuild) {
-                tags = await prisma.tag.findMany({
-                    where: {
-                        guildId: message.guildId,
-                        isGuild: true,
-                    },
-                });
-            } else {
-                tags = await prisma.tag.findMany({
-                    where: {
-                        userId: message.author.id,
-                        isGuild: false,
-                    },
-                });
-            }
+            const tagService = TagService.getInstance();
+            const tags = isGuild
+                ? await tagService.list({ type: "guild", guildId: message.guildId! })
+                : await tagService.list({ type: "user", userId: message.author.id });
 
             try {
                 const arg2 = await args.pick("string");
@@ -216,23 +109,25 @@ export class TagCommand extends Command {
                 embed.setTitle(`Izuna: Tags (search mode)${!isGuild ? " - (User-only)" : ""}`);
                 embed.setDescription(
                     `Registered tags similar with ${arg2}: \n ${tags
-                        .map((x: any) => `\`${x.name}\``)
-                        .filter((x: any) => x.match(new RegExp(arg2, "i")))
-                        .join(" ")}`
+                        .map((x) => `\`${x.name}\``)
+                        .filter((x) => x.match(new RegExp(arg2, "i")))
+                        .join(" ")}`,
                 );
                 await message.channel.send({ embeds: [embed] });
-            } catch (error) {
-                logError("Tag list failed", error);
+            } catch {
                 const embed = new EmbedBuilder();
                 embed.setTitle(`Izuna: Tags${!isGuild ? " (User-only)" : ""}`);
-                embed.setDescription(`Registered tags: \n ${tags.map((x: any) => `\`${x.name}\``).join(" ")}`);
+                embed.setDescription(`Registered tags: \n ${tags.map((x) => `\`${x.name}\``).join(" ")}`);
                 await message.channel.send({ embeds: [embed] });
             }
-        } else if (arg1 === "info") {
-            let arg2;
+            return;
+        }
+
+        if (arg1 === "info") {
+            let arg2: string;
             try {
                 arg2 = await args.pick("string");
-            } catch (error) {
+            } catch {
                 await message.channel.send("Incorrect value for arg2. Please input tag name");
                 return;
             }
@@ -241,13 +136,8 @@ export class TagCommand extends Command {
                 await message.channel.send("Invalid tag validation. Please input only alphanumeric characters in single word.");
                 return;
             }
-            const isGuild = message.inGuild();
-            const tag = await prisma.tag.findFirst({
-                where: {
-                    name: arg2,
-                    isGuild,
-                },
-            });
+
+            const tag = await TagService.getInstance().resolve(message.author.id, message.guildId, arg2);
             if (!tag) {
                 await message.channel.send(`There is no tag with name \`${arg2}\`.`);
                 return;
@@ -262,44 +152,33 @@ export class TagCommand extends Command {
             `);
             await message.channel.send({ embeds: [embed] });
             return;
-        } else if (arg1 === "delete") {
-            // WIP
+        }
+
+        if (arg1 === "delete") {
             let arg2: string;
             try {
                 arg2 = await args.pick("string");
-            } catch (error) {
+            } catch {
                 await message.channel.send("No tag name provided.");
                 return;
             }
+
             const isGuild = message.inGuild();
             if (isGuild) {
                 if (message.member?.permissions.has(PermissionFlagsBits.Administrator) === false) {
                     await message.channel.send(`This command is for admin only.`);
                     return;
                 }
-                await prisma.tag.deleteMany({
-                    where: {
-                        guildId: message.guildId,
-                        name: arg2,
-                        isGuild: true,
-                    },
-                });
+                await TagService.getInstance().delete({ type: "guild", guildId: message.guildId! }, arg2);
                 await message.channel.send(`Tag **${arg2}** has been deleted from this server`);
                 return;
-            } else {
-                await prisma.tag.deleteMany({
-                    where: {
-                        userId: message.author.id,
-                        name: arg2,
-                        isGuild: false,
-                    },
-                });
-                await message.channel.send(`Tag **${arg2}** has been deleted from this user`);
-                return;
             }
-        } else {
-            await message.channel.send("Unrecognized command");
+
+            await TagService.getInstance().delete({ type: "user", userId: message.author.id }, arg2);
+            await message.channel.send(`Tag **${arg2}** has been deleted from this user`);
             return;
         }
+
+        await message.channel.send("Unrecognized command");
     }
 }

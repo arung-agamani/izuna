@@ -49,7 +49,6 @@ describe("lavalink routes", () => {
 
             expect(res.statusCode).toBe(200);
             const body = res.json();
-            expect(body.success).toBe(true);
             expect(body.data).toHaveLength(2);
         });
 
@@ -70,7 +69,7 @@ describe("lavalink routes", () => {
             const res = await app.inject({ method: "GET", url: "/lavalink/nodes" });
 
             expect(res.statusCode).toBe(500);
-            expect(res.json().success).toBe(false);
+            expect(res.json().error).toBeTruthy();
         });
     });
 

@@ -100,6 +100,9 @@ declare module "@fastify/jwt" {
         user: {
             id: number;
             uid: string;
+            exp?: number;
+            aud?: string;
+            iat?: number;
         };
     }
 }
