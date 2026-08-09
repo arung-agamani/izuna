@@ -21,11 +21,13 @@ interface GuildMembership {
 }
 
 interface GuildsResponse {
-    guilds: GuildMembership[];
+    data: GuildMembership[];
+    count: number;
 }
 
 interface TagsResponse {
-    tags: TagFields[];
+    data: TagFields[];
+    count: number;
 }
 
 const Guilds = () => {
@@ -35,10 +37,10 @@ const Guilds = () => {
     useEffect(() => {
         (async () => {
             try {
-                const data = await api.get("api/closure/user/me/guilds").json<GuildsResponse>();
-                setGuilds(data.guilds);
-                if (data.guilds.length > 0) {
-                    selectGuild(data.guilds[0]);
+                const data = await api.get("api/izuna/users/me/guilds?filter=admin").json<GuildsResponse>();
+                setGuilds(data.data);
+                if (data.data.length > 0) {
+                    selectGuild(data.data[0]);
                 }
             } catch (error) {
                 toast.error("Error when fetching current user's guilds");
@@ -49,9 +51,9 @@ const Guilds = () => {
     const selectGuild = (guild: GuildMembership) => {
         (async () => {
             try {
-                const data = await api.get(`api/closure/tags/me/guilds/${guild.guildId}`).json<TagsResponse>();
-                setTags(data.tags);
-                setFilteredTags(data.tags);
+                const data = await api.get(`api/izuna/guilds/${guild.guildId}/tags`).json<TagsResponse>();
+                setTags(data.data);
+                setFilteredTags(data.data);
             } catch (error) {
                 toast.error("Error when fetching guild tags");
             }

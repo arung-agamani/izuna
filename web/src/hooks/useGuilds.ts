@@ -26,8 +26,8 @@ export interface DiscordGuildsState {
 }
 
 interface GuildsResponse {
+    data: GuildMembership[];
     count: number;
-    guilds: GuildMembership[];
 }
 
 const emptyGuilds: DiscordGuildsState = {
@@ -41,8 +41,8 @@ export function useGuilds() {
     return useQuery<DiscordGuildsState>({
         queryKey: ["guilds"],
         queryFn: async () => {
-            const data = await api.get("api/closure/user/me/guildsAll").json<GuildsResponse>();
-            return { name: "", uid: "", id: 0, guilds: data.guilds };
+            const data = await api.get("api/izuna/users/me/guilds").json<GuildsResponse>();
+            return { name: "", uid: "", id: 0, guilds: data.data };
         },
         staleTime: 5 * 60 * 1000,
         retry: false,

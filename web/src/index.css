@@ -1,10 +1,92 @@
 @import "tailwindcss";
 
+/* ── Izuna Design System ─────────────────────────── */
+
 @theme {
+    /* Breakpoints */
     --breakpoint-xs: 320px;
+
+    /* Color palette */
+    --color-navy-900: #0a0a1a;
+    --color-navy-800: #12122a;
+    --color-navy-700: #1a1a3e;
+    --color-navy-600: #222255;
+    --color-blue-900: #16213e;
+    --color-blue-800: #1a2748;
+    --color-blue-700: #0f3460;
+    --color-accent: #e94560;
+    --color-accent-light: #f0627d;
+    --color-accent-glow: rgba(233, 69, 96, 0.3);
+    --color-gold: #ffd700;
+    --color-gold-dim: rgba(255, 215, 0, 0.15);
+    --color-positive: #00d2a0;
+    --color-warning: #ff9f43;
+    --color-surface: rgba(255, 255, 255, 0.03);
+    --color-surface-hover: rgba(255, 255, 255, 0.06);
+    --color-border: rgba(255, 255, 255, 0.08);
+    --color-border-hover: rgba(255, 255, 255, 0.14);
+    --color-text-primary: #f0f0f5;
+    --color-text-secondary: rgba(240, 240, 245, 0.6);
+    --color-text-muted: rgba(240, 240, 245, 0.35);
+
+    /* Typography */
+    --font-display: "Righteous", sans-serif;
+    --font-body: "Nunito", sans-serif;
 }
+
+/* ── Base ────────────────────────────────────────── */
 
 body {
     margin: 0;
-    background-color: rgb(255, 245, 246);
+    background-color: var(--color-navy-900);
+    color: var(--color-text-primary);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle noise texture overlay */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.015;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 256px;
+}
+
+/* ── Scrollbar ───────────────────────────────────── */
+
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-hover);
+}
+
+/* ── Selection ───────────────────────────────────── */
+
+::selection {
+    background: var(--color-accent-glow);
+    color: var(--color-text-primary);
+}
+
+/* ── Reduced motion ──────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
 }

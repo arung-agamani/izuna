@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useGuilds } from "../../hooks/useGuilds";
 import api from "../lib/api";
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet } from "react-router"
 
 interface ReminderObject {
     id: number;
@@ -13,12 +13,17 @@ interface ReminderObject {
     channelType: string;
 }
 
+interface RemindersResponse {
+    data: ReminderObject[];
+    count: number;
+}
+
 const Reminder = () => {
     const [reminders, setReminders] = useState<ReminderObject[]>([]);
     const { data: guilds } = useGuilds();
     useEffect(() => {
         (async () => {
-            const data = await api.get("api/closure/user/reminder").json<{ data: ReminderObject[] }>();
+            const data = await api.get("api/izuna/users/me/reminders").json<RemindersResponse>();
             setReminders(data.data);
         })();
     }, []);

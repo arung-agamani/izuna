@@ -24,13 +24,13 @@ export function useUser() {
     return useQuery<UserState>({
         queryKey: ["user"],
         queryFn: async () => {
-            await api.post("api/auth/refresh").json();
-            const data = await api.get("api/closure/user/me").json<UserResponse>();
+            // Refresh token first (ignores failure — unauthenticated users won't have a token to refresh)
+            await api.post("api/izuna/auth/refresh").catch(() => {});
+            // Get user profile — this is the actual auth gate
+            const data = await api.get("api/izuna/auth/me").json<UserResponse>();
             return { ...data.data, loginType: "DISCORD" satisfies UserState["loginType"] };
         },
-        staleTime: 55 * 60 * 1000,
-        refetchInterval: 55 * 60 * 1000,
+        staleTime: 5 * 60 * 1000, // 5 min — shorter so login state propagates faster
         retry: false,
-        refetchOnMount: false,
     });
 }

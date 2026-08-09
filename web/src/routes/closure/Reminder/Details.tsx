@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useParams } from "react-router-dom";
+import { useParams } from "react-router"
 import cronstrue from "cronstrue";
 import cronvalidate from "cron-validate";
 
@@ -21,12 +21,7 @@ interface Reminder {
 }
 
 interface ReminderResponse {
-    reminder: Reminder;
-}
-
-interface UpdateResponse {
-    success: boolean;
-    [key: string]: unknown;
+    data: Reminder;
 }
 
 const emptyReminder: Reminder = {
@@ -44,30 +39,17 @@ const ReminderDetails = () => {
     const [reminder, setReminder] = useState<Reminder>(emptyReminder);
     const [hasSet, setHasSet] = useState<boolean>(false);
     const [isEditing, setIsEditing] = useState<boolean>(false);
-    const [cron, setCron] = useState<string>(reminder.cronString);
 
-    const { handleSubmit, register, watch, getValues, setValue } = useForm();
+    const { handleSubmit, register, watch } = useForm();
 
-    const onSubmit = async (data: any) => {
+    const onSubmit = async (data: Record<string, unknown>) => {
         try {
-            if (!cronvalidate(getValues("cron")).isValid()) {
+            if (!cronvalidate(watch("cron")).isValid()) {
                 toast.error("Invalid cron string. Please make it correct smh");
                 return;
             }
-            const res = await api
-                .post("api/closure/user/reminder", {
-                    json: {
-                        ...data,
-                        id: Number(id),
-                    },
-                })
-                .json<UpdateResponse>();
-            if (res.success) {
-                toast.success("Reminder updated!");
-            } else {
-                toast.error("Reminder update failed but request succeed");
-                console.error(res);
-            }
+            await api.patch(`api/izuna/users/me/reminders/${id}`, { json: data }).json<ReminderResponse>();
+            toast.success("Reminder updated!");
         } catch (error) {
             toast.error("Reminder update failed.");
             console.error(error);
@@ -78,11 +60,10 @@ const ReminderDetails = () => {
         (async () => {
             try {
                 setHasSet(false);
-                const data = await api.get(`api/closure/user/reminder/${id}`).json<ReminderResponse>();
-                setReminder(data.reminder);
+                const data = await api.get(`api/izuna/users/me/reminders/${id}`).json<ReminderResponse>();
+                setReminder(data.data);
             } catch (error) {
-                console.error("Error happend");
-                console.error(error);
+                console.error("Error fetching reminder", error);
             } finally {
                 setHasSet(true);
             }

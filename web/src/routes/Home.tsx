@@ -13,7 +13,7 @@ const Home = () => {
 
     useEffect(() => {
         (async () => {
-            const data = await api.get("api/status").json<StatusResponse>();
+            const data = await api.get("api/izuna/health").json<StatusResponse>();
             setApiVersion(data.version);
         })();
     }, []);

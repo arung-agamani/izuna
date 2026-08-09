@@ -46,9 +46,9 @@ const TagView: React.FC<Props> = (props) => {
     const delHandler = async () => {
         try {
             if (props.isGuild) {
-                await api.delete(`api/closure/tags/me/guilds/${props.guildId}/${props.id}`);
+                await api.delete(`api/izuna/guilds/${props.guildId}/tags/${props.id}`);
             } else {
-                await api.delete(`api/closure/tags/me/${props.id}`);
+                await api.delete(`api/izuna/users/me/tags/${props.id}`);
             }
             alert(`Tag "${props.name} deleted!"`);
         } catch (error) {

@@ -4,7 +4,8 @@ import TagView, { TagFields as Tag } from "../../components/TagView";
 import Filterer from "../../components/Filterer";
 
 interface TagsResponse {
-    tags: Tag[];
+    data: Tag[];
+    count: number;
 }
 
 const Tags = () => {
@@ -14,9 +15,9 @@ const Tags = () => {
     useEffect(() => {
         (async () => {
             try {
-                const data = await api.get("api/closure/tags/me").json<TagsResponse>();
-                setTags(data.tags);
-                setFilteredTags(data.tags);
+                const data = await api.get("api/izuna/users/me/tags").json<TagsResponse>();
+                setTags(data.data);
+                setFilteredTags(data.data);
             } catch (error) {
                 alert("Failed on fetching tags");
             }
