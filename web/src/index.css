@@ -34,8 +34,6 @@
     --font-body: "Nunito", sans-serif;
 }
 
-/* ── Base ────────────────────────────────────────── */
-
 body {
     margin: 0;
     background-color: var(--color-navy-900);
@@ -43,6 +41,8 @@ body {
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-y: scroll;
+    scroll-behavior: smooth;
 }
 
 /* Subtle noise texture overlay */

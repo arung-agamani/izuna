@@ -1,116 +1,147 @@
-import { useRef } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { Link } from "react-router";
+import { useUser } from "../../hooks/useUser";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import HeroBanner from "../../components/HeroBanner";
 import izunaPlaceholder from "../../assets/izuna.jpg";
+import { heroSlides } from "./slides";
 
-gsap.registerPlugin(useGSAP);
+gsap.registerPlugin(useGSAP, ScrollTrigger);
+
+const navCards = [
+    { to: "/dash/tags", title: "Tags", description: "Browse and manage your saved tags, media, and reaction images.", accent: "var(--color-accent)", emoji: "🏷️" },
+    { to: "/dash/reminders", title: "Reminders", description: "Set cron-based reminders that deliver to your DMs or server channels.", accent: "var(--color-gold)", emoji: "⏰" },
+];
+
+const SECTION_COUNT = 2;
 
 export default function FanHome() {
-    const heroRef = useRef<HTMLDivElement>(null);
+    const { data: user } = useUser();
+    const wrapperRef = useRef<HTMLDivElement>(null);
     const sectionsRef = useRef<HTMLDivElement>(null);
+    const [currentSection, setCurrentSection] = useState(0);
+    const isAnimating = useRef(false);
 
-    useGSAP(() => {
-        const tl = gsap.timeline();
-        tl.from(".fan-hero-img", { opacity: 0, scale: 0.92, duration: 1, ease: "power3.out" });
-        tl.from(".fan-hero-title", { opacity: 0, y: 24, duration: 0.6, ease: "power2.out" }, "-=0.4");
-        tl.from(".fan-hero-sub", { opacity: 0, y: 16, duration: 0.5, ease: "power2.out" }, "-=0.2");
-        tl.from(".fan-hero-cta", { opacity: 0, y: 12, duration: 0.4, ease: "power2.out" }, "-=0.2");
-    }, []);
+    const goToSection = useCallback((index: number) => {
+        if (isAnimating.current) return;
+        const clamped = Math.max(0, Math.min(index, SECTION_COUNT - 1));
+        if (clamped === currentSection) return;
 
+        isAnimating.current = true;
+        setCurrentSection(clamped);
+
+        gsap.to(document.documentElement, {
+            scrollTop: clamped * window.innerHeight,
+            duration: 0.8,
+            ease: "power2.inOut",
+            onComplete: () => {
+                isAnimating.current = false;
+            },
+        });
+    }, [currentSection]);
+
+    // Observer — unified wheel/touch/pointer handling
+    useEffect(() => {
+        const obs = ScrollTrigger.observe({
+            target: window,
+            type: "wheel,touch,pointer",
+            onDown: () => goToSection(currentSection + 1),
+            onUp: () => goToSection(currentSection - 1),
+            wheelSpeed: 0.5,
+            tolerance: 50,
+            preventDefault: true,
+        });
+
+        // Keyboard navigation
+        const handleKey = (e: KeyboardEvent) => {
+            if (e.key === "ArrowDown" || e.key === "PageDown") goToSection(currentSection + 1);
+            if (e.key === "ArrowUp" || e.key === "PageUp") goToSection(currentSection - 1);
+        };
+        document.addEventListener("keydown", handleKey);
+
+        return () => {
+            obs.kill();
+            document.removeEventListener("keydown", handleKey);
+        };
+    }, [currentSection, goToSection]);
+
+    // Reveal section 2 content when it enters viewport
     useGSAP(() => {
         gsap.from(".fan-section", {
-            scrollTrigger: { trigger: sectionsRef.current, start: "top 80%" },
+            scrollTrigger: {
+                trigger: sectionsRef.current,
+                start: "top 75%",
+                toggleActions: "play none none reverse",
+            },
             opacity: 0,
             y: 40,
-            stagger: 0.2,
+            stagger: 0.15,
             duration: 0.7,
             ease: "power3.out",
         });
     }, []);
 
-    return (
-        <div>
-            {/* Hero */}
-            <div ref={heroRef} className="flex flex-col items-center text-center px-6 pt-16 pb-24">
-                <img
-                    src={izunaPlaceholder}
-                    alt="Izuna"
-                    className="fan-hero-img w-48 h-48 sm:w-64 sm:h-64 rounded-full object-cover mb-8"
-                    style={{ border: "3px solid var(--color-accent)", boxShadow: "0 0 60px var(--color-accent-glow)" }}
-                />
-                <h1
-                    className="fan-hero-title text-4xl sm:text-5xl mb-3"
-                    style={{ fontFamily: "var(--font-display)", color: "var(--color-text-primary)" }}
-                >
-                    Izuna{" "}
-                    <span className="text-2xl sm:text-3xl" style={{ color: "var(--color-text-muted)" }}>
-                        —nin!
-                    </span>
-                </h1>
-                <p className="fan-hero-sub text-lg max-w-lg mb-8" style={{ color: "var(--color-text-secondary)" }}>
-                    The ninja fox of Hyakkiyakou Allied Academy. Loyal, energetic, and always ready with a smoke bomb.
-                </p>
-                <div className="fan-hero-cta flex gap-4">
-                    <Link
-                        to="/dash"
-                        className="no-underline px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300"
-                        style={{ background: "var(--color-accent)", color: "#fff" }}
-                    >
-                        Open Dashboard
-                    </Link>
-                    <Link
-                        to="/lore"
-                        className="no-underline px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300"
-                        style={{ border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}
-                    >
-                        Read Lore
-                    </Link>
-                </div>
-            </div>
+    // Nav card hover
+    useGSAP(() => {
+        document.querySelectorAll(".nav-card").forEach((card) => {
+            const accent = card.getAttribute("data-accent") || "var(--color-accent)";
+            card.addEventListener("mouseenter", () => gsap.to(card, { borderColor: accent, boxShadow: `0 0 30px ${accent}15`, y: -4, duration: 0.3, ease: "power2.out" }));
+            card.addEventListener("mouseleave", () => gsap.to(card, { borderColor: "var(--color-border)", boxShadow: "none", y: 0, duration: 0.3, ease: "power2.out" }));
+        });
+    }, []);
 
-            {/* Section cards */}
-            <div ref={sectionsRef} className="px-6 pb-24 max-w-3xl mx-auto">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {[
-                        { to: "/lore", emoji: "📜", title: "Lore", desc: "Character stories and background" },
-                        { to: "/media", emoji: "🖼️", title: "Media", desc: "Official art and screenshots" },
-                        { to: "/fanarts", emoji: "🎨", title: "Fanarts", desc: "Community creations" },
-                    ].map((section) => (
-                        <Link key={section.to} to={section.to} className="fan-section no-underline block group">
-                            <div
-                                className="p-5 rounded-2xl h-full text-center transition-all duration-300"
-                                style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}
-                                onMouseEnter={(e) => {
-                                    gsap.to(e.currentTarget, {
-                                        borderColor: "var(--color-accent)",
-                                        y: -3,
-                                        duration: 0.25,
-                                        ease: "power2.out",
-                                    });
-                                }}
-                                onMouseLeave={(e) => {
-                                    gsap.to(e.currentTarget, {
-                                        borderColor: "var(--color-border)",
-                                        y: 0,
-                                        duration: 0.25,
-                                        ease: "power2.out",
-                                    });
-                                }}
-                            >
-                                <span className="text-3xl block mb-3">{section.emoji}</span>
-                                <h3
-                                    className="text-lg mb-1 font-bold"
-                                    style={{ fontFamily: "var(--font-body)", color: "var(--color-text-primary)" }}
-                                >
-                                    {section.title}
-                                </h3>
-                                <p className="text-xs m-0" style={{ color: "var(--color-text-secondary)" }}>
-                                    {section.desc}
-                                </p>
+    return (
+        <div ref={wrapperRef}>
+            <HeroBanner
+                slides={heroSlides}
+                brandImage={izunaPlaceholder}
+                brandText="Izuna"
+                tagline="The ninja fox of Hyakkaryouran. Loyal, energetic, and always ready with a smoke bomb."
+            />
+
+            <div ref={sectionsRef} className="content-section min-h-screen">
+                <div className="max-w-3xl mx-auto px-6 py-24">
+                    <div className="mb-16">
+                        <p className="fan-section text-lg mb-2" style={{ color: "var(--color-text-secondary)" }}>
+                            {user?.name ? "Welcome back," : "Welcome,"}
+                        </p>
+                        <h1 className="fan-section text-5xl sm:text-6xl mb-6 tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
+                            {user?.name ? (
+                                <>
+                                    <span style={{ color: "var(--color-accent)" }}>{user.name}</span>
+                                    <span className="text-2xl sm:text-3xl ml-3" style={{ color: "var(--color-text-muted)" }}>—nin!</span>
+                                </>
+                            ) : "Izuna Dashboard"}
+                        </h1>
+                        <div className="fan-section flex gap-6">
+                            <div className="px-5 py-3 rounded-xl text-sm font-semibold" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                                <span style={{ color: "var(--color-text-muted)" }}>Status </span>
+                                <span style={{ color: "var(--color-positive)" }}>● Online</span>
                             </div>
-                        </Link>
-                    ))}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {navCards.map((card) => (
+                            <Link key={card.to} to={card.to} className="fan-section nav-card no-underline block group" data-accent={card.accent}>
+                                <div className="p-6 rounded-2xl h-full transition-all duration-300" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                                    <div className="flex items-start gap-4">
+                                        <span className="text-3xl">{card.emoji}</span>
+                                        <div>
+                                            <h2 className="text-xl mb-1 font-bold">{card.title}</h2>
+                                            <p className="text-sm leading-relaxed m-0" style={{ color: "var(--color-text-secondary)" }}>{card.description}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+
+                    <div className="fan-section mt-24 text-center">
+                        <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Izuna v2 — nin nin!</p>
+                    </div>
                 </div>
             </div>
         </div>
