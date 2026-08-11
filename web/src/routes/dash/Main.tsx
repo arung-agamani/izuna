@@ -11,7 +11,9 @@ const navLinks = [
     { to: "/dash", label: "Dashboard" },
     { to: "/dash/tags", label: "Tags" },
     { to: "/dash/reminders", label: "Reminders" },
+    { to: "/dash/admin", label: "Admin" },
 ];
+
 export default function V2Layout() {
     const { data: user } = useUser();
     const location = useLocation();
@@ -82,11 +84,12 @@ export default function V2Layout() {
 
                 {/* User */}
                 {user?.name ? (
-                    <Link to="/profile" className="no-underline">
+                    <Link to="/dash/profile" className="no-underline">
                         <span
                             className="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
                             style={{
-                                color: "var(--color-text-secondary)",
+                                color: location.pathname === "/dash/profile" ? "var(--color-accent)" : "var(--color-text-secondary)",
+                                background: location.pathname === "/dash/profile" ? "var(--color-accent-glow)" : "transparent",
                                 border: "1px solid var(--color-border)",
                             }}
                         >
@@ -109,7 +112,7 @@ export default function V2Layout() {
 
             {/* Content area */}
             <div ref={contentRef} className="pt-16">
-                <div className="mx-auto max-w-3xl px-6 py-12">
+                <div className="mx-auto px-6 py-12 max-w-[120rem]">
                     <Outlet />
                 </div>
             </div>

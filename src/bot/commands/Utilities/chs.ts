@@ -6,7 +6,7 @@ export class ChooseCommand extends Command {
         super(context, {
             ...options,
             name: "chs",
-            aliases: ["choose"],
+            aliases: ["choose", "mending"],
             quotes: [],
             description: "Choose from random items. Can be separated using single or double quotes.",
         });

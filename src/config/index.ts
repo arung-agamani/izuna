@@ -47,6 +47,7 @@ export const config = {
     // Credentials
     ownerUsers: ["145558597424644097"],
     betaTesters: ["145558597424644097"],
+    adminUsers: env.ADMIN_USERS,
 
     // URLs and domains
     domainPrefix: getDomainPrefix(),

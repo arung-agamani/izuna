@@ -5,6 +5,7 @@ import fastifyRoutes from '@fastify/routes';
 import path from 'path';
 import { config } from '../../config';
 import authPlugin from './auth';
+import adminAuthPlugin from './adminAuth';
 import oauthPlugin from './oauth';
 import swaggerPlugin from './swagger';
 import rateLimitPlugin from './rateLimit';
@@ -30,6 +31,8 @@ export default fp(async (fastify) => {
 
   // Register routes plugin
   await fastify.register(fastifyRoutes);
+  // Register admin authentication plugin (whitelist-based)
+  await fastify.register(adminAuthPlugin);
 
   // Register authentication plugin (JWT + Cookie)
   await fastify.register(authPlugin);

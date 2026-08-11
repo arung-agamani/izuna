@@ -23,7 +23,12 @@ import FanLore from "./routes/fan/Lore";
 // Dashboard
 import DashLayout from "./routes/dash/Main";
 import DashHome from "./routes/dash/Home";
+import DashReminders from "./routes/dash/Reminders";
+import DashProfile from "./routes/dash/Profile";
 import DashTags from "./routes/dash/Tags";
+// Admin
+import AdminOverview from "./routes/dash/admin/Overview";
+import AdminGuilds from "./routes/dash/admin/Guilds";
 
 import "react-toastify/dist/ReactToastify.css";
 
@@ -47,7 +52,10 @@ function App() {
                 <Route path="dash" element={<DashLayout />}>
                     <Route index element={<DashHome />} />
                     <Route path="tags" element={<DashTags />} />
-                    <Route path="reminders" element={<p className="text-gray-400">Reminders coming soon.</p>} />
+                    <Route path="admin" element={<AdminOverview />} />
+                    <Route path="admin/guilds" element={<AdminGuilds />} />
+                    <Route path="reminders" element={<DashReminders />} />
+                    <Route path="profile" element={<DashProfile />} />
                 </Route>
 
                 {/* ── Legacy routes — old layout with Navbar + container ── */}

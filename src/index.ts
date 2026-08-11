@@ -15,7 +15,7 @@ import createBot from "./bot/index";
 import logger, { logError, getErrorMessage } from "./lib/winston"
 import ReminderService from "./services/ReminderService";
 import { startWebServer } from "./app";
-
+import { setBotClient } from "./lib/botClient";
 let botClient: SapphireClient | null = null;
 
 async function initializeBot() {
@@ -27,6 +27,7 @@ async function initializeBot() {
     try {
         logger.info("🤖 Starting Discord bot initialization...");
         botClient = await createBot();
+        setBotClient(botClient);
 
         if (!botClient) {
             throw new Error("createBot() returned null or undefined");
