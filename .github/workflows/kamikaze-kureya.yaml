@@ -3,6 +3,7 @@ on:
     push:
         branches:
             - dev
+            - izuna-master
     workflow_dispatch:
 
 concurrency:
