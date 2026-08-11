@@ -32,8 +32,6 @@ jobs:
 
     test:
         runs-on: ubuntu-latest
-        needs: detect-changes
-        if: needs.detect-changes.outputs.src-changed == 'true'
         timeout-minutes: 10
         steps:
             - name: Checkout
@@ -51,11 +49,11 @@ jobs:
               run: yarn test:types
             - name: Run tests
               run: yarn test
-
     package:
         runs-on: ubuntu-latest
         needs: [detect-changes, test]
         if: needs.detect-changes.outputs.src-changed == 'true'
+        environment: packaging
         timeout-minutes: 15
         steps:
             - name: Checkout
