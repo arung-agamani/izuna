@@ -20,7 +20,7 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v7
             - name: Check if there is change on certain paths
-              uses: dorny/paths-filter@v3
+              uses: dorny/paths-filter@v4
               id: changes
               with:
                   filters: |
