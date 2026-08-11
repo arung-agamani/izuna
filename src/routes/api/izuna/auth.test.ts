@@ -1,7 +1,28 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from "vitest";
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import jwt from "@fastify/jwt";
+
+// Hoisted mock for findById
+const { mockFindById } = vi.hoisted(() => ({
+    mockFindById: vi.fn().mockResolvedValue(null),
+}));
+
+// Stub prisma so auth.ts module can load — UserRepository constructor receives this
+vi.mock("../../../lib/prisma", () => ({
+    default: { user: {}, tag: {}, reminder: {} },
+}));
+
+// Intercept UserRepository so new UserRepository() returns a stub
+vi.mock("../../../repositories/UserRepository", () => {
+    const stub = { findById: mockFindById };
+    return {
+        UserRepository: class {
+            findById = mockFindById;
+        },
+    };
+});
+
 import authRoutes from "./auth";
 
 describe("auth routes", () => {
@@ -11,7 +32,6 @@ describe("auth routes", () => {
         await app.register(cookie);
         await app.register(jwt, { secret: "test-secret", cookie: { cookieName: "ninpou", signed: false } });
 
-        // Replicate the authenticate decorator
         app.decorate(
             "authenticate",
             async function (request: { jwtVerify: () => Promise<void> }, reply: { status: (code: number) => { send: (b: unknown) => void } }) {
@@ -31,6 +51,10 @@ describe("auth routes", () => {
         await app.close();
     });
 
+    beforeEach(() => {
+        mockFindById.mockResolvedValue(null);
+    });
+
     describe("POST /auth/refresh", () => {
         it("returns 401 when no token is provided", async () => {
             const res = await app.inject({ method: "POST", url: "/auth/refresh" });
@@ -47,6 +71,8 @@ describe("auth routes", () => {
         });
 
         it("returns 401 for a valid token when user does not exist in DB", async () => {
+            mockFindById.mockResolvedValue(null);
+
             const token = await app.jwt.sign({ id: 99999, uid: "ghost", aud: "izuna" });
 
             const res = await app.inject({
@@ -55,7 +81,6 @@ describe("auth routes", () => {
                 headers: { cookie: `ninpou=${token}` },
             });
 
-            // Valid JWT, but userRepo.findById returns null → 401
             expect(res.statusCode).toBe(401);
             expect(res.json().error).toBe("User not found");
         });
@@ -68,6 +93,8 @@ describe("auth routes", () => {
         });
 
         it("returns 404 for a valid token when user does not exist in DB", async () => {
+            mockFindById.mockResolvedValue(null);
+
             const token = await app.jwt.sign({ id: 99999, uid: "ghost", aud: "izuna" });
 
             const res = await app.inject({
