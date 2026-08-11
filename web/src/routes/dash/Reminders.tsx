@@ -478,7 +478,7 @@ export default function V2Reminders() {
     const list = reminders ?? [];
 
     return (
-        <div ref={containerRef} className="max-w-5xl mx-auto py-8 px-4">
+        <div ref={containerRef} className="mx-auto py-8 px-4">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>

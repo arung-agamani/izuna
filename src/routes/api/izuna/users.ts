@@ -2,11 +2,11 @@ import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import { TagService } from "../../../services/TagService";
 import ReminderService from "../../../services/ReminderService";
 import { UserRepository } from "../../../repositories/UserRepository";
+import { getBotClient } from "../../../lib/botClient";
 import prisma from "../../../lib/prisma";
 import discordOauth2 from "discord-oauth2";
-import discordSession, { GuildMembership, discordAccessTokens } from "../../../lib/session";
+import discordSession, { discordAccessTokens } from "../../../lib/session";
 import { PermissionsBitField } from "discord.js";
-
 const tagService = TagService.getInstance();
 const reminderService = ReminderService.getInstance();
 const userRepo = new UserRepository(prisma);
@@ -200,7 +200,10 @@ async function userRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions)
             response: {
                 200: {
                     type: "object",
-                    properties: { data: { type: "array", items: { type: "object" } }, count: { type: "number" } },
+                    properties: {
+                        data: { type: "array", items: { type: "object", additionalProperties: true } },
+                        count: { type: "number" },
+                    },
                 },
             },
         },
@@ -232,12 +235,13 @@ async function userRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions)
                 return reply.status(502).send({ error: "Failed to fetch guilds from Discord" });
             }
         }
+        // Intersect with guilds the bot is actually in
+        const botClient = getBotClient();
+        const botGuildIds = botClient ? new Set(botClient.guilds.cache.keys()) : new Set<string>();
+        const shared = guilds.filter((g) => botGuildIds.has(g.guildId));
 
-        const guildIds = guilds.map((g) => g.guildId);
-        const closureGuilds = await tagService.findGuildsWithTags(guildIds);
         const requiredFlag = filter === "admin" ? PermissionsBitField.Flags.Administrator : PermissionsBitField.Flags.SendMessages;
-        const filtered = guilds.filter((g) => closureGuilds.some((c) => c.guildId === g.guildId && new PermissionsBitField(BigInt(g.permissionInteger)).has(requiredFlag)));
-
+        const filtered = shared.filter((g) => new PermissionsBitField(BigInt(g.permissionInteger)).has(requiredFlag));
         return reply.send({ data: filtered, count: filtered.length });
     });
 }

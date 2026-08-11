@@ -173,7 +173,7 @@ export default function AdminGuilds() {
     const guilds = data ?? [];
 
     return (
-        <div ref={containerRef} className="max-w-5xl mx-auto py-8 px-4">
+        <div ref={containerRef} className="mx-auto py-8 px-4">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl m-0" style={{ fontFamily: "var(--font-display)" }}>
                     Guilds

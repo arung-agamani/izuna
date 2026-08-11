@@ -116,7 +116,7 @@ export default function DashProfile() {
     }
 
     return (
-        <div ref={containerRef} className="max-w-3xl mx-auto py-8 px-4 space-y-6">
+        <div ref={containerRef} className="mx-auto py-8 px-4 space-y-6">
             {/* User card */}
             <div
                 className="prof-section rounded-2xl p-6"

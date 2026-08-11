@@ -81,11 +81,10 @@ export default function AdminOverview() {
     const bot = data;
 
     return (
-        <div ref={containerRef} className="max-w-5xl mx-auto py-8 px-4">
+        <div ref={containerRef} className="mx-auto py-8 px-4">
             <h1 className="text-2xl mb-6" style={{ fontFamily: "var(--font-display)" }}>
                 Admin Overview
             </h1>
-
             {isLoading && (
                 <div className="text-center py-16" style={{ color: "var(--color-text-muted)" }}>
                     Loading bot info...

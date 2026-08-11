@@ -112,7 +112,7 @@ export default function V2Layout() {
 
             {/* Content area */}
             <div ref={contentRef} className="pt-16">
-                <div className="mx-auto px-6 py-12 max-w-[120rem]">
+                <div className="mx-auto px-6 py-12">
                     <Outlet />
                 </div>
             </div>
