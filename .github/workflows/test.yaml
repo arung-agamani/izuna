@@ -1,0 +1,51 @@
+name: test
+on:
+    push:
+        branches:
+            - dev
+    workflow_dispatch:
+
+concurrency:
+    group: test
+    cancel-in-progress: true
+
+jobs:
+    detect-changes:
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        outputs:
+            src-changed: ${{ steps.changes.outputs.src }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+            - name: Check if there is change on certain paths
+              uses: dorny/paths-filter@v3
+              id: changes
+              with:
+                  filters: |
+                      src:
+                        - 'src/**'
+                        - 'web/**'
+                        - 'Dockerfile'
+                        - 'package.json'
+                        - 'yarn.lock'
+
+    test:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+            - name: Setup Node
+              uses: actions/setup-node@v7
+              with:
+                  node-version: 22
+                  cache: yarn
+            - name: Install dependencies
+              run: yarn install --frozen-lockfile
+            - name: Generate Prisma client
+              run: npx prisma generate
+            - name: Typecheck tests
+              run: yarn test:types
+            - name: Run tests
+              run: yarn test
