@@ -31,7 +31,7 @@ const getSwaggerSchemes = (): string[] => {
 
 export const config = {
     // Server
-    host: env.NODE_ENV === "development" ? "localhost" : "0.0.0.0",
+    host: "0.0.0.0",
     port: 8000,
 
     // Features

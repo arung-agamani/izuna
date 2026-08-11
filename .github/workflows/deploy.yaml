@@ -51,15 +51,14 @@ jobs:
                       echo "Recreating container..."
                       doppler run -- docker compose -f ${{ secrets.COMPOSE_FILE_PATH }} up -d --no-deps --force-recreate izunabot
 
-                      echo "Waiting for container to be healthy..."
-                      for i in $(seq 1 30); do
-                          status=$(docker inspect --format='{{.State.Health.Status}}' kureya_izunabot 2>/dev/null || echo "missing")
-                          if [ "$status" = "healthy" ]; then
-                              echo "Container healthy after ${i}s"
+                      echo "Waiting for app to be ready..."
+                      for i in $(seq 1 60); do
+                          if curl -sf http://localhost:8001/api/status > /dev/null 2>&1; then
+                              echo "App healthy after ${i}s"
                               exit 0
                           fi
                           sleep 1
                       done
-                      echo "WARNING: Container did not report healthy within 30s — last 20 log lines:"
+                      echo "WARNING: App did not respond within 60s — last 20 log lines:"
                       docker logs --tail 20 kureya_izunabot
                       exit 1
