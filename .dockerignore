@@ -5,3 +5,19 @@ build
 .git
 *.log
 logs
+# Test files and coverage
+src/**/*.test.ts
+src/test
+coverage
+# Docs and tooling
+docs
+.github
+AGENTS.md
+LAUNDRY.md
+# Misc
+*.md
+.env.*
+Dockerfile*
+docker-compose*
+vitest.config.*
+tsconfig.test.json

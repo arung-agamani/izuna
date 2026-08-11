@@ -53,7 +53,7 @@ jobs:
 
                       echo "Waiting for container to be healthy..."
                       for i in $(seq 1 30); do
-                          status=$(docker inspect --format='{{.State.Health.Status}}' izunabot 2>/dev/null || echo "missing")
+                          status=$(docker inspect --format='{{.State.Health.Status}}' kureya_izunabot 2>/dev/null || echo "missing")
                           if [ "$status" = "healthy" ]; then
                               echo "Container healthy after ${i}s"
                               exit 0
@@ -61,5 +61,5 @@ jobs:
                           sleep 1
                       done
                       echo "WARNING: Container did not report healthy within 30s — last 20 log lines:"
-                      docker logs --tail 20 izunabot
+                      docker logs --tail 20 kureya_izunabot
                       exit 1
