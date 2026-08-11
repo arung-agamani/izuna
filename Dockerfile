@@ -35,12 +35,18 @@ COPY --from=backend-builder /tmp/build ./build
 COPY --from=web-builder /tmp/web/dist ./web/dist
 COPY prisma ./prisma
 
-# Prisma client already generated during backend build — copy it
+# Copy prisma CLI from builder — needed for migrate at runtime
 COPY --from=backend-builder /tmp/node_modules/.prisma ./node_modules/.prisma
 COPY --from=backend-builder /tmp/node_modules/@prisma ./node_modules/@prisma
+COPY --from=backend-builder /tmp/node_modules/@prisma/engines ./node_modules/@prisma/engines
+COPY --from=backend-builder /tmp/node_modules/prisma ./node_modules/prisma
+COPY --from=backend-builder /tmp/node_modules/.bin/prisma ./node_modules/.bin/prisma
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD node -e "require('http').get('http://localhost:8000/api/status',r=>{process.exit(r.statusCode===200?0:1)})"
+
+# Ensure node user owns everything before dropping root
+RUN chown -R node:node /usr/src/app
 
 # Drop root
 USER node
@@ -48,4 +54,4 @@ USER node
 EXPOSE 8000
 
 
-CMD ["yarn", "start"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node build/index.js"]
