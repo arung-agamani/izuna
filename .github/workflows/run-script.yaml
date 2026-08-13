@@ -1,0 +1,31 @@
+name: run-script
+on:
+    workflow_dispatch:
+        inputs:
+            command:
+                description: "Command to run inside the izunabot container"
+                required: true
+                default: "yarn backfill:timestamps"
+                type: string
+
+concurrency:
+    group: run-script
+    cancel-in-progress: false
+
+jobs:
+    run:
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - name: Run command in container
+              uses: appleboy/ssh-action@v1
+              with:
+                  host: ${{ secrets.KUREYA_SSH_HOST }}
+                  username: ${{ secrets.KUREYA_SSH_USER }}
+                  key: ${{ secrets.KUREYA_SSH_PRIVATE_KEY }}
+                  command_timeout: 15m
+                  script: |
+                      set -e
+                      echo "Running: ${{ github.event.inputs.command }}"
+                      export COMMIT_HASH=latest
+                      doppler run -- docker compose -f ${{ secrets.COMPOSE_FILE_PATH }} run --rm --no-deps --name izunabot-script izunabot sh -c "${{ github.event.inputs.command }}"
