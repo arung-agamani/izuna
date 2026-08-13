@@ -27,7 +27,7 @@ export class ReminderRepository {
 
     async create(data: CreateReminderData): Promise<Reminder> {
         return this.prisma.reminder.create({
-            data: { ...data, guildId: data.guildId ?? "" },
+            data: { ...data, guildId: data.guildId ?? null },
         });
     }
 

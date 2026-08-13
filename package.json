@@ -13,6 +13,7 @@
         "dev:mute": "cross-env MUTE=1 tsx watch -r dotenv/config src/index.ts",
         "test": "vitest run",
         "test:types": "tsc -p tsconfig.test.json",
+        "backfill:timestamps": "tsx scripts/backfill-dateCreated.ts",
         "test:watch": "vitest"
     },
     "dependencies": {

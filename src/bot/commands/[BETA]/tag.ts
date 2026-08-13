@@ -146,7 +146,7 @@ export class TagCommand extends Command {
             embed.setTitle(`Izuna: Tag Info`);
             embed.setDescription(`**${tag.name}**
             Submitter: ${Formatters.userMention(tag.userId)}
-            Date added : ${tag.dateCreated.toLocaleDateString("id")}
+            Date added : ${tag.createdAt.toLocaleDateString("id")}
             Is Media? : ${tag.isMedia ? "True" : "False"}
             Content: ${tag.message.length > 500 ? `${tag.message.slice(0, 499)}... _message truncated_` : tag.message}
             `);

@@ -1,7 +1,6 @@
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
-  previewFeatures = ["extendedWhereUnique"]
 }
 
 datasource db {
@@ -10,23 +9,29 @@ datasource db {
 }
 
 model User {
-  id                  Int      @id @default(autoincrement())
-  uid                 String   @unique
+  id                  Int       @id @default(autoincrement())
+  uid                 String    @unique
   name                String
   email               String
-  dateCreated         DateTime
+  dateCreated         DateTime  @default(now()) // legacy — backfilled into createdAt, drop later
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @default(now()) @updatedAt
   discordAccessToken  String?
   discordRefreshToken String?
 }
 
 model Reminder {
-  id          Int    @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   uid         String
   message     String
   cronString  String
-  guildId     String
+  guildId     String?
   channelId   String
-  channelType String
+  channelType ChannelType
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @default(now()) @updatedAt
+
+  @@index([uid])
 }
 
 model Playlist {
@@ -34,71 +39,70 @@ model Playlist {
   userId      String
   guildId     String
   tracks      Json
-  dateCreated DateTime
+  dateCreated DateTime @default(now()) // legacy — backfilled into createdAt, drop later
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
   name        String
-  private     Boolean?
+  isPrivate   Boolean?
 
   @@unique([userId, name])
+  @@index([userId])
 }
 
 model Tag {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   userId      String
-  guildId     String
+  guildId     String?
   name        String
-  dateCreated DateTime
+  dateCreated DateTime  @default(now()) // legacy — backfilled into createdAt, drop later
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+  deletedAt   DateTime?
   message     String
   isMedia     Boolean
   isGuild     Boolean
+
+  @@index([userId, isGuild])
+  @@index([guildId, isGuild])
 }
 
 model JoinToCreateVC {
-  id Int @id @default(autoincrement())
-  guildId String @unique
+  id              Int      @id @default(autoincrement())
+  guildId         String   @unique
   parentChannelId String
-
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
 }
 
 model EphemeralVC {
-  id Int @id @default(autoincrement())
-  guildId String
+  id        Int      @id @default(autoincrement())
+  guildId   String
   channelId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@unique([guildId, channelId])
 }
 
 model PlayerSession {
-  guildId String @id
-  sessionId String?
+  guildId        String   @id
+  sessionId      String?
   connectionData String
-  playerData String
-}
-
-model ReminderService {
-  id String @id @default(uuid())
-  name String
-  cron String
-  contents String
-  contentType ContentType
-  createdBy String
-  createdAt DateTime
-  updatedBy String?
-  updatedAt DateTime?
-  deleted Boolean @default(false)
-  deletedBy String?
-  deletedAt DateTime?
-}
-
-enum ContentType {
-  TEXT
-  MEDIA_IMAGE
-  MEDIA_VIDEO
-  MEDIA_FILE
+  playerData     String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
 }
 
 model DiscordSlashCommandIdMapping {
-  id String @id @default(uuid())
-  botId String
+  id          String   @id @default(uuid())
+  botId       String
   commandName String
-  idHints String[]
+  idHints     String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+}
+
+enum ChannelType {
+  DM
+  CHANNEL
 }

@@ -7,9 +7,12 @@ function makeTag(overrides: Partial<Tag> = {}): Tag {
     return {
         id: overrides.id ?? 1,
         userId: overrides.userId ?? "123",
-        guildId: overrides.guildId ?? "",
+        guildId: overrides.guildId ?? null,
         name: overrides.name ?? "test",
         dateCreated: overrides.dateCreated ?? new Date(),
+        createdAt: overrides.createdAt ?? new Date(),
+        updatedAt: overrides.updatedAt ?? new Date(),
+        deletedAt: overrides.deletedAt ?? null,
         message: overrides.message ?? "hello world",
         isMedia: overrides.isMedia ?? false,
         isGuild: overrides.isGuild ?? false,
@@ -98,7 +101,7 @@ describe("TagService", () => {
     });
 
     describe("upsertTextTag", () => {
-        it("builds a user-scoped payload with empty guildId and isMedia=false", async () => {
+        it("builds a user-scoped payload with null guildId and isMedia=false", async () => {
             const created = makeTag({ name: "test", isGuild: false, userId: "123" });
             const upsertUserTag = vi.fn().mockResolvedValue(created);
             const service = new TagService(mockTagRepo({ upsertUserTag }));
@@ -109,8 +112,7 @@ describe("TagService", () => {
             const [userIdArg, nameArg, dataArg] = upsertUserTag.mock.calls[0]!;
             expect(userIdArg).toBe("123");
             expect(nameArg).toBe("test");
-            expect(dataArg).toMatchObject({ name: "test", userId: "123", guildId: "", message: "hello", isMedia: false, isGuild: false });
-            expect(dataArg.dateCreated).toBeInstanceOf(Date);
+            expect(dataArg).toMatchObject({ name: "test", userId: "123", guildId: null, message: "hello", isMedia: false, isGuild: false });
         });
 
         it("builds a guild-scoped payload with isGuild=true", async () => {

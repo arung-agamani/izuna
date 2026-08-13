@@ -10,6 +10,8 @@ function makeUser(overrides: Partial<User> = {}): User {
         name: overrides.name ?? "test",
         email: overrides.email ?? "",
         dateCreated: overrides.dateCreated ?? new Date(),
+        createdAt: overrides.createdAt ?? new Date(),
+        updatedAt: overrides.updatedAt ?? new Date(),
         discordAccessToken: overrides.discordAccessToken ?? null,
         discordRefreshToken: overrides.discordRefreshToken ?? null,
     };
@@ -54,7 +56,7 @@ describe("UserRepository", () => {
     });
 
     describe("create", () => {
-        it("stores uid/name/email with a dateCreated timestamp", async () => {
+        it("stores uid/name/email", async () => {
             const { repo, user } = makeRepo();
             const created = makeUser({ uid: "discord-9", name: "alice" });
             user.create.mockResolvedValue(created);
@@ -63,7 +65,6 @@ describe("UserRepository", () => {
             expect(result).toEqual(created);
             const call = user.create.mock.calls[0]![0]!;
             expect(call.data).toMatchObject({ uid: "discord-9", name: "alice", email: "a@b.c" });
-            expect(call.data.dateCreated).toBeInstanceOf(Date);
         });
 
         it("defaults email to empty string", async () => {

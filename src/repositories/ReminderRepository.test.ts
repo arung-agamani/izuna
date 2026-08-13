@@ -9,9 +9,11 @@ function makeReminder(overrides: Partial<Reminder> = {}): Reminder {
         uid: overrides.uid ?? "123",
         message: overrides.message ?? "water the plants",
         cronString: overrides.cronString ?? "0 9 * * *",
-        guildId: overrides.guildId ?? "",
+        guildId: overrides.guildId ?? null,
         channelId: overrides.channelId ?? "",
         channelType: overrides.channelType ?? "DM",
+        createdAt: overrides.createdAt ?? new Date(),
+        updatedAt: overrides.updatedAt ?? new Date(),
     };
 }
 
@@ -62,14 +64,14 @@ describe("ReminderRepository", () => {
     });
 
     describe("create", () => {
-        it("defaults guildId to empty string when omitted (DM reminders)", async () => {
+        it("defaults guildId to null when omitted (DM reminders)", async () => {
             const { repo, reminder } = makeRepo();
             reminder.create.mockResolvedValue(makeReminder());
             const data: CreateReminderData = { uid: "123", message: "m", cronString: "0 9 * * *", channelType: "DM", channelId: "" };
 
             await repo.create(data);
 
-            expect(reminder.create).toHaveBeenCalledWith({ data: { ...data, guildId: "" } });
+            expect(reminder.create).toHaveBeenCalledWith({ data: { ...data, guildId: null } });
         });
 
         it("preserves guildId when provided (channel reminders)", async () => {

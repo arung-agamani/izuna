@@ -58,7 +58,7 @@ export default function TagCard({ tag, onEdit, onDelete, onView }: Props) {
                         {tag.isMedia ? "Media" : "Text"}
                     </span>
                     <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-                        {timeAgo(tag.dateCreated)}
+                        {timeAgo(tag.createdAt)}
                     </span>
                 </div>
 

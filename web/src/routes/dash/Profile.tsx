@@ -99,8 +99,8 @@ export default function DashProfile() {
         { scope: containerRef },
     );
 
-    const createdDate = user?.dateCreated
-        ? new Date(user.dateCreated).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+    const createdDate = user?.createdAt
+        ? new Date(user.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
         : "";
 
     const guilds = guildsData?.guilds ?? [];

@@ -48,7 +48,7 @@ export default function TagDetailModal({ open, tag, onClose }: Props) {
                     </div>
 
                     <div className="flex items-center gap-4 mb-6 text-xs" style={{ color: "var(--color-text-muted)" }}>
-                        <span>Created {new Date(tag.dateCreated).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</span>
+                        <span>Created {new Date(tag.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</span>
                         <span className="font-mono">ID: {tag.id}</span>
                     </div>
 

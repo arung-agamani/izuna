@@ -67,6 +67,7 @@ async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions)
                                 uid: { type: "string" },
                                 name: { type: "string" },
                                 email: { type: "string" },
+                                createdAt: { type: "string" },
                             },
                         },
                     },
@@ -81,7 +82,7 @@ async function authRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions)
         }
 
         return reply.send({
-            data: { id: user.id, uid: user.uid, name: user.name, email: user.email },
+            data: { id: user.id, uid: user.uid, name: user.name, email: user.email, createdAt: user.createdAt },
         });
     });
 }

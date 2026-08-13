@@ -219,6 +219,10 @@ export class ReminderService {
                 const user = await this.client.users.fetch(reminder.uid);
                 await user.send(reminder.message);
             } else {
+                if (!reminder.guildId) {
+                    logError(`Error executing reminder ${reminder.id}: missing guildId`, new Error("Reminder has no guildId"));
+                    return;
+                }
                 const guild = await this.client.guilds.fetch(reminder.guildId);
                 const channel = (await guild.channels.fetch(reminder.channelId)) as TextChannel;
                 if (channel?.isSendable()) {

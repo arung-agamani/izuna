@@ -4,7 +4,7 @@ export interface FastifyDiscordOAuthBody {
     uid: string;
     name: string;
     email: string;
-    dateCreated: string;
+    createdAt: string;
   };
   token: {
     access_token: string;

@@ -9,9 +9,9 @@ const TagResponse = {
     properties: {
         id: { type: "number" },
         userId: { type: "string" },
-        guildId: { type: "string" },
+        guildId: { type: ["string", "null"] },
         name: { type: "string" },
-        dateCreated: { type: "string" },
+        createdAt: { type: "string" },
         message: { type: "string" },
         isMedia: { type: "boolean" },
         isGuild: { type: "boolean" },

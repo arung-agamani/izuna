@@ -1,9 +1,9 @@
 export interface Tag {
     id: number;
     userId: string;
-    guildId: string;
+    guildId: string | null;
     name: string;
-    dateCreated: string;
+    createdAt: string;
     message: string;
     isMedia: boolean;
     isGuild: boolean;

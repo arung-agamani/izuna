@@ -28,7 +28,7 @@ const ProfilePage = () => {
     const { data: user } = useUser();
     const { data: guildsData } = useGuilds();
 
-    const createdDate = user?.dateCreated ? new Date(user.dateCreated).toLocaleDateString("en-US", {
+    const createdDate = user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",

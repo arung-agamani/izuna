@@ -55,11 +55,10 @@ export class TagService {
         const data: CreateTagData = {
             name,
             userId,
-            guildId: scope.type === "guild" ? scope.guildId : "",
+            guildId: scope.type === "guild" ? scope.guildId : null,
             message,
             isMedia: false,
             isGuild: scope.type === "guild",
-            dateCreated: new Date(),
         };
 
         if (scope.type === "guild") {
@@ -75,11 +74,10 @@ export class TagService {
         const data: CreateTagData = {
             name,
             userId,
-            guildId: scope.type === "guild" ? scope.guildId : "",
+            guildId: scope.type === "guild" ? scope.guildId : null,
             message: mediaUrl,
             isMedia: true,
             isGuild: scope.type === "guild",
-            dateCreated: new Date(),
         };
 
         if (scope.type === "guild") {

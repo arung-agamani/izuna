@@ -4,9 +4,9 @@ import api from "../routes/lib/api";
 export interface TagFields {
     id: number;
     userId: string;
-    guildId: string;
+    guildId: string | null;
     name: string;
-    dateCreated: string;
+    createdAt: string;
     message: string;
     isMedia: boolean;
     isGuild: boolean;
@@ -23,7 +23,7 @@ export const examples: TagFields[] = [
         userId: "1",
         guildId: "a",
         name: "awoo",
-        dateCreated: "2023-04-05T23:34:14.737Z",
+        createdAt: "2023-04-05T23:34:14.737Z",
         message: "aaaaa",
         isMedia: false,
         isGuild: false,
@@ -33,7 +33,7 @@ export const examples: TagFields[] = [
         userId: "1",
         guildId: "b",
         name: "uwu",
-        dateCreated: "2023-04-05T23:34:14.737Z",
+        createdAt: "2023-04-05T23:34:14.737Z",
         message: "https://howling-blog-uploads.s3.ap-southeast-1.amazonaws.com/2023/2/3/100827958_p0.jpg",
         isMedia: true,
         isGuild: true,

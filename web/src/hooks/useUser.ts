@@ -5,7 +5,7 @@ export interface UserState {
     name: string;
     loginType: "DISCORD" | "GOOGLE" | null;
     email: string;
-    dateCreated: Date;
+    createdAt: string;
     id: number;
     uid: string;
 }
@@ -14,7 +14,7 @@ interface UserResponse {
     data: {
         name: string;
         email: string;
-        dateCreated: Date;
+        createdAt: string;
         id: number;
         uid: string;
     };

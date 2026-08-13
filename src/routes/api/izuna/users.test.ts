@@ -72,9 +72,12 @@ function makeTag(overrides: Record<string, unknown> = {}) {
     return {
         id: (overrides.id as number) ?? 1,
         userId: (overrides.userId as string) ?? "test-user",
-        guildId: (overrides.guildId as string) ?? "",
+        guildId: (overrides.guildId as string | null) ?? null,
         name: (overrides.name as string) ?? "test-tag",
         dateCreated: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
         message: (overrides.message as string) ?? "hello",
         isMedia: (overrides.isMedia as boolean) ?? false,
         isGuild: (overrides.isGuild as boolean) ?? false,
@@ -87,9 +90,11 @@ function makeReminder(overrides: Record<string, unknown> = {}) {
         uid: (overrides.uid as string) ?? "test-user",
         message: (overrides.message as string) ?? "remind me",
         cronString: (overrides.cronString as string) ?? "0 9 * * *",
-        guildId: (overrides.guildId as string) ?? "",
+        guildId: (overrides.guildId as string | null) ?? null,
         channelId: (overrides.channelId as string) ?? "",
         channelType: (overrides.channelType as string) ?? "DM",
+        createdAt: new Date(),
+        updatedAt: new Date(),
     };
 }
 

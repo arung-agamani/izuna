@@ -50,7 +50,7 @@ export async function patch(req: FastifyRequest, reply: FastifyReply) {
     try {
         // Verify ownership and type before updating
         const existing = await tagService.getById(Number(id));
-        if (!existing || existing.userId !== userId || existing.guildId !== (isGuild ? guildId : "") || existing.isGuild !== isGuild || existing.isMedia) {
+        if (!existing || existing.userId !== userId || existing.guildId !== (isGuild ? guildId : null) || existing.isGuild !== isGuild || existing.isMedia) {
             return reply.status(404).send({ message: "No tag found with specified id" });
         }
 

@@ -22,7 +22,6 @@ export class UserRepository {
                 uid: data.uid,
                 name: data.name,
                 email: data.email || "",
-                dateCreated: new Date(),
             },
         });
     }
