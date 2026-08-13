@@ -6,8 +6,6 @@ export const RATE_LIMIT_WINDOW = '1 minute';
 // OAuth state management
 export const GOOGLE_OAUTH_SCOPE = [
   'profile email',
-  'https://www.googleapis.com/auth/youtube',
-  'https://www.googleapis.com/auth/youtube.readonly',
 ];
 
 export const DISCORD_OAUTH_SCOPE = [

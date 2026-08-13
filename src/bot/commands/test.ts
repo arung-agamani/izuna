@@ -1,7 +1,5 @@
 import { ChatInputCommand, Command } from "@sapphire/framework";
 import { Message, EmbedBuilder } from "discord.js";
-import { google } from "googleapis";
-import { closureGoogleOauthTracker } from "../../lib/google";
 import prisma from "../../lib/prisma";
 
 export class TestCommand extends Command {

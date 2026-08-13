@@ -24,25 +24,25 @@ LABEL org.opencontainers.image.source="https://github.com/arung-agamani/izuna"
 
 WORKDIR /usr/src/app
 
-# Install production deps (includes prisma CLI now)
-COPY package.json yarn.lock ./
+# Install openssl as root, chown workdir, then switch to node
 RUN apk add --no-cache openssl \
-    && yarn install --frozen-lockfile --production \
-    && apk del --no-cache git 2>/dev/null; true
-
-# Copy built artifacts
-COPY --from=backend-builder /tmp/build ./build
-COPY --from=web-builder /tmp/web/dist ./web/dist
-COPY prisma ./prisma
-
-# Generate Prisma client against the final image's @prisma/client package
-RUN npx prisma generate
-# Ensure node user owns everything
-RUN chown -R node:node /usr/src/app
+    && chown -R node:node /usr/src/app
 
 USER node
 
-EXPOSE 8000
+# Install production deps as node (owns node_modules from the start)
+COPY --chown=node:node package.json yarn.lock ./
+RUN yarn install --frozen-lockfile --production \
+    && yarn cache clean
 
+# Copy built artifacts (owned by node)
+COPY --from=backend-builder --chown=node:node /tmp/build ./build
+COPY --from=web-builder --chown=node:node /tmp/web/dist ./web/dist
+COPY --chown=node:node prisma ./prisma
+
+# Generate Prisma client against the final image's @prisma/client package
+RUN npx prisma generate
+
+EXPOSE 8000
 
 CMD ["sh", "-c", "npx prisma migrate deploy && node build/index.js"]
