@@ -11,7 +11,6 @@ function makeUser(overrides: Partial<User> = {}): User {
         uid: overrides.uid ?? "123",
         name: overrides.name ?? "test",
         email: overrides.email ?? "",
-        dateCreated: overrides.dateCreated ?? new Date(),
         createdAt: overrides.createdAt ?? new Date(),
         updatedAt: overrides.updatedAt ?? new Date(),
         discordAccessToken: overrides.discordAccessToken ?? null,

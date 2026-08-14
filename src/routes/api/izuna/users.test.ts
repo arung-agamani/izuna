@@ -74,7 +74,6 @@ function makeTag(overrides: Record<string, unknown> = {}) {
         userId: (overrides.userId as string) ?? "test-user",
         guildId: (overrides.guildId as string | null) ?? null,
         name: (overrides.name as string) ?? "test-tag",
-        dateCreated: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,

@@ -5,7 +5,7 @@ on:
             command:
                 description: "Command to run inside the izunabot container"
                 required: true
-                default: "yarn backfill:timestamps"
+                default: "node --version"
                 type: string
 
 concurrency:

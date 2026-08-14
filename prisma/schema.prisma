@@ -13,7 +13,6 @@ model User {
   uid                 String    @unique
   name                String
   email               String
-  dateCreated         DateTime  @default(now()) // legacy — backfilled into createdAt, drop later
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @default(now()) @updatedAt
   discordAccessToken  String?
@@ -35,32 +34,30 @@ model Reminder {
 }
 
 model Playlist {
-  id          Int      @id @default(autoincrement())
-  userId      String
-  guildId     String
-  tracks      Json
-  dateCreated DateTime @default(now()) // legacy — backfilled into createdAt, drop later
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
-  name        String
-  isPrivate   Boolean?
+  id        Int      @id @default(autoincrement())
+  userId    String
+  guildId   String
+  tracks    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  name      String
+  isPrivate Boolean?
 
   @@unique([userId, name])
   @@index([userId])
 }
 
 model Tag {
-  id          Int       @id @default(autoincrement())
-  userId      String
-  guildId     String?
-  name        String
-  dateCreated DateTime  @default(now()) // legacy — backfilled into createdAt, drop later
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @default(now()) @updatedAt
-  deletedAt   DateTime?
-  message     String
-  isMedia     Boolean
-  isGuild     Boolean
+  id        Int       @id @default(autoincrement())
+  userId    String
+  guildId   String?
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+  deletedAt DateTime?
+  message   String
+  isMedia   Boolean
+  isGuild   Boolean
 
   @@index([userId, isGuild])
   @@index([guildId, isGuild])

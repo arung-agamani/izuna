@@ -9,7 +9,6 @@ function makeTag(overrides: Partial<Tag> = {}): Tag {
         userId: overrides.userId ?? "123",
         guildId: overrides.guildId ?? null,
         name: overrides.name ?? "test",
-        dateCreated: overrides.dateCreated ?? new Date(),
         createdAt: overrides.createdAt ?? new Date(),
         updatedAt: overrides.updatedAt ?? new Date(),
         deletedAt: overrides.deletedAt ?? null,

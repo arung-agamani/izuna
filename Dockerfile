@@ -39,7 +39,6 @@ RUN yarn install --frozen-lockfile --production \
 COPY --from=backend-builder --chown=node:node /tmp/build ./build
 COPY --from=web-builder --chown=node:node /tmp/web/dist ./web/dist
 COPY --chown=node:node prisma ./prisma
-COPY --chown=node:node scripts ./scripts
 # Generate Prisma client against the final image's @prisma/client package
 RUN npx prisma generate
 

@@ -1,6 +1,6 @@
 import type { PrismaClient, Tag } from "@prisma/client";
 
-export type CreateTagData = Omit<Tag, "id" | "dateCreated" | "createdAt" | "updatedAt" | "deletedAt">;
+export type CreateTagData = Omit<Tag, "id" | "createdAt" | "updatedAt" | "deletedAt">;
 
 /**
  * Data-access layer for the Tag model.
