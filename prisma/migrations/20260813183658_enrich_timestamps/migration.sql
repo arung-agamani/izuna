@@ -1,10 +1,10 @@
 /*
-  Warnings:
+  Warnings (and manual fixups):
 
-  - You are about to drop the column `private` on the `Playlist` table. All the data in the column will be lost.
-  - You are about to drop the `ReminderService` table. If the table is not empty, all the data it contains will be lost.
-  - Changed the type of `channelType` on the `Reminder` table. No cast exists, the column would be dropped and recreated, which cannot be done if there is data, since the column is required.
-
+  - Drops the `private` column on `Playlist` (unused table, no data).
+  - Drops the `ReminderService` table (dead schema, never queried).
+  - `channelType` on `Reminder` changes TEXT -> enum. Prisma generated DROP + re-ADD,
+    which fails on NULL values. Hand-edited to backfill NULLs to 'DM' then cast in place.
 */
 -- CreateEnum
 CREATE TYPE "ChannelType" AS ENUM ('DM', 'CHANNEL');
@@ -32,12 +32,14 @@ ADD COLUMN     "isPrivate" BOOLEAN,
 ADD COLUMN     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 ALTER COLUMN "dateCreated" SET DEFAULT CURRENT_TIMESTAMP;
 
+-- Backfill NULL channelType values before the type change (legacy data has NULLs)
+UPDATE "Reminder" SET "channelType" = 'DM' WHERE "channelType" IS NULL;
+
 -- AlterTable
 ALTER TABLE "Reminder" ADD COLUMN     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 ADD COLUMN     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 ALTER COLUMN "guildId" DROP NOT NULL,
-DROP COLUMN "channelType",
-ADD COLUMN     "channelType" "ChannelType" NOT NULL;
+ALTER COLUMN "channelType" TYPE "ChannelType" USING ("channelType"::"ChannelType");
 
 -- AlterTable
 ALTER TABLE "Tag" ADD COLUMN     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
