@@ -1,10 +1,9 @@
 import type { VoiceBasedChannel, TextBasedChannel, Guild } from "discord.js";
 import { LoadType, type Track, type Player } from "shoukaku";
-import { PlayerState } from "../lib/ongaku/PlayerState";
-import { PlayerManager } from "./PlayerManager";
-import { resolveLavalinkNode } from "./ShoukakuContext";
-import { parseUrl, getLavalinkQuery, type ParsedUrl } from "../lib/urlParser";
-import logger, { logError, getErrorMessage } from "../lib/winston"
+import { PlayerManager } from "./PlayerManager.js";
+import { resolveNode } from "./LavalinkService.js";
+import { parseUrl, getLavalinkQuery, type ParsedUrl } from "../lib/urlParser.js";
+import logger, { logError } from "../lib/winston.js";
 
 export type LavalinkLoadType = "TRACK_LOADED" | "PLAYLIST_LOADED" | "SEARCH_RESULT" | "NO_MATCHES" | "LOAD_FAILED";
 
@@ -173,7 +172,9 @@ export class MusicService {
             if (!currentSession) return;
 
             if (err.exception?.message === "This video is not available") {
-                currentSession.textChannel?.isSendable() && currentSession.textChannel.send("⏭️ Skipping unavailable track").catch(logger.error);
+                if (currentSession.textChannel?.isSendable()) {
+                    currentSession.textChannel.send("⏭️ Skipping unavailable track").catch(logger.error);
+                }
             }
         });
 
@@ -184,7 +185,9 @@ export class MusicService {
             const currentSession = MusicService.sessions.get(guildId);
             if (!currentSession) return;
 
-            currentSession.textChannel?.isSendable() && currentSession.textChannel.send("⏭️ Track stuck, skipping...").catch(logger.error);
+            if (currentSession.textChannel?.isSendable()) {
+                currentSession.textChannel.send("⏭️ Track stuck, skipping...").catch(logger.error);
+            }
         });
 
         // Track end - handle queue progression
@@ -278,7 +281,9 @@ export class MusicService {
             if (session.textChannel?.isSendable()) await session.textChannel.send(`▶️ **${track.info.title}** | ${duration}${position !== "0:00" ? ` (seek: ${position})` : ""}`);
         } catch (error) {
             logError("Error playing track:", error);
-            session.textChannel?.isSendable() && session.textChannel.send("❌ Failed to play track. Skipping...").catch(logger.error);
+            if (session.textChannel?.isSendable()) {
+                session.textChannel.send("❌ Failed to play track. Skipping...").catch(logger.error);
+            }
         }
     }
 
@@ -305,7 +310,7 @@ export class MusicService {
      * This mirrors what `play.ts` does today, but is meant to become the single entry point.
      */
     public async resolveTrack(query: string): Promise<LavalinkResolveResult> {
-        const lavalinkNode = resolveLavalinkNode();
+        const lavalinkNode = resolveNode();
 
         const res = (await lavalinkNode.rest.resolve(query)) as any;
         if (res && res.loadType) res.loadType = shoukakuLoadTypeToString(res.loadType);
@@ -778,17 +783,17 @@ export class MusicService {
                     errorMessage += "Please ask a server admin to check my permissions for that voice channel.";
                 }
 
-                throw new Error(errorMessage);
+                throw new Error(errorMessage, { cause: error });
             }
 
             // Re-throw other errors with context
             if (error instanceof Error) {
                 logger.error(`[MusicService] Error message: ${error.message}`);
                 logger.error(`[MusicService] Error name: ${error.name}`);
-                throw new Error(`Failed to move to voice channel: ${error.message}`);
+                throw new Error(`Failed to move to voice channel: ${error.message}`, { cause: error });
             }
 
-            throw new Error("Failed to move to voice channel: Unknown error");
+            throw new Error("Failed to move to voice channel: Unknown error", { cause: error });
         }
     }
 

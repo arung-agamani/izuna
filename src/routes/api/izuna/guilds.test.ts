@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from "vites
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import jwt from "@fastify/jwt";
-import guildRoutes from "./guilds";
+import guildRoutes from "./guilds.js";
 
 const sharedSession = vi.hoisted(() => new Map<string, Array<{ name: string; guildId: string; isAdmin: boolean; permissionInteger: number; guildPartial: unknown }>>());
 

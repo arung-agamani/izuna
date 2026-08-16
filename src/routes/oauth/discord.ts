@@ -1,12 +1,12 @@
-import { FastifyPluginAsync, FastifyRequest, FastifyReply } from "fastify";
+import { FastifyPluginAsync, FastifyReply } from "fastify";
 import discordOAuth from "discord-oauth2";
-import prisma from "../../lib/prisma";
-import { oauthSessionState, discordAccessTokens } from "../../lib/session";
-import { config } from "../../config";
-import { COOKIE_NAME, JWT_EXPIRY } from "../../config/constants";
-import logger, { logError } from "../../lib/winston";
-import { AuthService } from "../../services/AuthService";
-import { UserRepository } from "../../repositories/UserRepository";
+import prisma from "../../lib/prisma.js";
+import { oauthSessionState } from "../../lib/session.js";
+import { config } from "../../config/index.js";
+import { COOKIE_NAME, JWT_EXPIRY } from "../../config/constants.js";
+import { logError } from "../../lib/winston.js";
+import { AuthService } from "../../services/AuthService.js";
+import { UserRepository } from "../../repositories/UserRepository.js";
 const userRepo = new UserRepository(prisma);
 
 const authService = AuthService.getInstance();
@@ -70,7 +70,7 @@ const discordOAuthRoutes: FastifyPluginAsync = async (fastify) => {
         },
         async (req, reply) => {
             const { discordUserId } = req.params;
-            const { closureGoogleOauthTracker } = await import("../../lib/google");
+            const { closureGoogleOauthTracker } = await import("../../lib/google.js");
 
             // check if we have already authenticated this user
             const isAuth = closureGoogleOauthTracker.get(discordUserId);

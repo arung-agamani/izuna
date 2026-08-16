@@ -1,8 +1,8 @@
 import { InteractionHandler, InteractionHandlerTypes } from "@sapphire/framework";
 import { ButtonInteraction } from "discord.js";
-import logger, { logError, getErrorMessage } from "../../lib/winston"
-import { MusicService } from "../../services/MusicService";
-import { fancyTimeFormat } from "../../lib/utils";
+import logger, { logError } from "../../lib/winston.js";
+import { MusicService } from "../../services/MusicService.js";
+import { fancyTimeFormat } from "../../lib/utils.js";
 import { Track } from "shoukaku";
 
 /**

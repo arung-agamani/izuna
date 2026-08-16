@@ -5,8 +5,8 @@ import type {
 } from "fastify";
 import type { FastifyOAuth2Options, OAuth2Namespace } from "@fastify/oauth2";
 import { fastifyOauth2 } from "@fastify/oauth2";
-import { config } from "../../../config";
-import logger, { logError } from "../../../lib/winston"
+import { config } from "../../../config/index.js";
+import logger from "../../../lib/winston.js";
 
 async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
     const plugin =
@@ -26,10 +26,7 @@ async function routes(fastify: FastifyInstance, _: FastifyPluginOptions) {
     });
 
     fastify.get("api/auth/google/callback", {}, async (req, _) => {
-        const token =
-            await fastify.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(
-                req
-            );
+        await fastify.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
         logger.info("Google OAuth callback succeeded");
     });
 }

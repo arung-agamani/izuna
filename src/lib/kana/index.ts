@@ -1,8 +1,8 @@
-import fetcher from "./fetcher";
-import logger from "../winston";
+import fetcher from "./fetcher.js";
+import logger from "../winston.js";
 
-import * as vn from "./collections/vn";
-import * as chara from "./collections/chara";
+import * as vn from "./collections/vn.js";
+import * as chara from "./collections/chara.js";
 export class Kana {
     vn: typeof vn;
     chara: typeof chara;

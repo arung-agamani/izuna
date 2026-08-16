@@ -19,7 +19,7 @@ export class ChooseCommand extends Command {
         try {
             const stringArgs = (await args.rest("string")).replace(/“/g, '"').replace(/”/g, '"');
             // console.log(stringArgs);
-            const splitByQuotes = stringArgs.match(r)?.map((a) => a.trimStart().trimEnd())!;
+            const splitByQuotes = stringArgs.match(r)?.map((a) => a.trimStart().trimEnd()) ?? [];
             splitByQuotes
                 .filter((x) => {
                     if (x.startsWith("'") || x.startsWith('"')) return false;
@@ -39,7 +39,7 @@ export class ChooseCommand extends Command {
             allItems = allItems.filter((x) => x.length > 0);
             const sample = allItems[Math.floor(Math.random() * allItems.length)]!;
             if (message.channel.isSendable()) await message.channel.send(sample);
-        } catch (error) {
+        } catch {
             if (message.channel.isSendable()) await message.channel.send("You do not give any arguments, as it seems...");
             return;
         }

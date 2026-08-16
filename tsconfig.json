@@ -11,7 +11,7 @@
         // "disableReferencedProjectLoad": true,             /* Reduce the number of projects loaded automatically by TypeScript. */
 
         /* Language and Environment */
-        "target": "es2016" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
+        "target": "ES2023" /* Node 22 supports ES2023 */,
         "lib": ["ESNext"] /* Specify a set of bundled library declaration files that describe the target runtime environment. */,
         // "jsx": "preserve",                                /* Specify what JSX code is generated. */
         // "experimentalDecorators": true,                   /* Enable experimental support for TC39 stage 2 draft decorators. */
@@ -25,9 +25,9 @@
         // "moduleDetection": "auto",                        /* Control what method is used to detect module-format JS files. */
 
         /* Modules */
-        "module": "commonjs" /* Specify what module code is generated. */,
+        "module": "ESNext" /* esbuild emits ESM; tsc only type-checks */,
         "rootDir": "./src" /* Specify the root folder within your source files. */,
-        // "moduleResolution": "node",                       /* Specify how TypeScript looks up a file from a given module specifier. */
+        "moduleResolution": "bundler" /* bundler-style resolution matches esbuild's interop for CJS deps */,
         // "baseUrl": "./",                                  /* Specify the base directory to resolve non-relative module names. */
         // "paths": {},                                      /* Specify a set of entries that re-map imports to additional lookup locations. */
         // "rootDirs": [],                                   /* Allow multiple folders to be treated as one when resolving modules. */
@@ -48,7 +48,7 @@
         // "declarationMap": true,                           /* Create sourcemaps for d.ts files. */
         // "emitDeclarationOnly": true,                      /* Only output d.ts files and not JavaScript files. */
         "sourceMap": false /* Create source map files for emitted JavaScript files. */,
-        // "outFile": "./",                                  /* Specify a file that bundles all outputs into one JavaScript file. If 'declaration' is true, also designates a file that bundles all .d.ts output. */
+        "noEmit": true /* esbuild handles emit (scripts/build.mjs); tsc is type-check only */,
         "outDir": "./build" /* Specify an output folder for all emitted files. */,
         // "removeComments": true,                           /* Disable emitting comments. */
         // "noEmit": true,                                   /* Disable emitting files from a compilation. */
@@ -101,5 +101,5 @@
         "skipLibCheck": true /* Skip type checking all .d.ts files. */
     },
     "extends": "@tsconfig/node16/tsconfig.json",
-    "exclude": ["web", "build", "scripts", "test.js", "test.ts", "vitest.config.mjs", "src/**/*.test.ts"]
+    "exclude": ["web", "build", "scripts", "prisma.config.ts", "test.js", "test.ts", "vitest.config.mjs", "src/**/*.test.ts"]
 }

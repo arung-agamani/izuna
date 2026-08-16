@@ -1,6 +1,6 @@
-import { UserRepository } from "../repositories/UserRepository";
-import prisma from "../lib/prisma";
-import logger, { logError, getErrorMessage } from "../lib/winston";
+import { UserRepository } from "../repositories/UserRepository.js";
+import prisma from "../lib/prisma.js";
+import { logError } from "../lib/winston.js";
 
 export class UserService {
     private static instance: UserService | null = null;
@@ -22,7 +22,7 @@ export class UserService {
             return await this.repo.findById(id);
         } catch (error) {
             logError("Error fetching user by id:", error);
-            throw new Error("Failed to fetch user");
+            throw new Error("Failed to fetch user", { cause: error });
         }
     }
 
@@ -31,7 +31,7 @@ export class UserService {
             return await this.repo.findByUid(uid);
         } catch (error) {
             logError("Error fetching user by uid:", error);
-            throw new Error("Failed to fetch user");
+            throw new Error("Failed to fetch user", { cause: error });
         }
     }
 
@@ -40,7 +40,7 @@ export class UserService {
             return await this.repo.create(data);
         } catch (error) {
             logError("Error creating user:", error);
-            throw new Error("Failed to create user");
+            throw new Error("Failed to create user", { cause: error });
         }
     }
 
@@ -49,7 +49,7 @@ export class UserService {
             return await this.repo.findOrCreateFromDiscord(discordUser);
         } catch (error) {
             logError("Error finding or creating user:", error);
-            throw new Error("Failed to find or create user");
+            throw new Error("Failed to find or create user", { cause: error });
         }
     }
 
@@ -58,7 +58,7 @@ export class UserService {
             return await this.repo.updateDiscordTokens(id, accessToken, refreshToken);
         } catch (error) {
             logError("Error updating Discord tokens:", error);
-            throw new Error("Failed to update Discord tokens");
+            throw new Error("Failed to update Discord tokens", { cause: error });
         }
     }
 

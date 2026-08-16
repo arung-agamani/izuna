@@ -1,11 +1,11 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
-import { TagService } from "../../../services/TagService";
-import ReminderService from "../../../services/ReminderService";
-import { UserRepository } from "../../../repositories/UserRepository";
-import { getBotClient } from "../../../lib/botClient";
-import prisma from "../../../lib/prisma";
+import { TagService } from "../../../services/TagService.js";
+import ReminderService from "../../../services/ReminderService.js";
+import { UserRepository } from "../../../repositories/UserRepository.js";
+import { getBotClient } from "../../../lib/botClient.js";
+import prisma from "../../../lib/prisma.js";
 import discordOauth2 from "discord-oauth2";
-import discordSession, { discordAccessTokens } from "../../../lib/session";
+import discordSession, { discordAccessTokens } from "../../../lib/session.js";
 import { PermissionsBitField } from "discord.js";
 const tagService = TagService.getInstance();
 const reminderService = ReminderService.getInstance();

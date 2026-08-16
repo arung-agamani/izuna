@@ -1,7 +1,7 @@
 import { ChatInputCommand, Command } from "@sapphire/framework";
 import { AutocompleteInteraction } from "discord.js";
-import { config } from "../../../config";
-import ReminderService from "../../../services/ReminderService";
+import { config } from "../../../config/index.js";
+import ReminderService from "../../../services/ReminderService.js";
 import {
     createDailyCron,
     createWeeklyCron,
@@ -11,7 +11,7 @@ import {
     validateCronString,
     type DayOfWeek,
     type TimeUnit,
-} from "../../../lib/cronUtils";
+} from "../../../lib/cronUtils.js";
 
 export class ReminderEditSlashCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -116,7 +116,7 @@ export class ReminderEditSlashCommand extends Command {
                 );
 
                 await interaction.respond(filtered.slice(0, 25));
-            } catch (error) {
+            } catch {
                 await interaction.respond([]);
             }
         }

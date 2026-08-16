@@ -1,8 +1,8 @@
 import { Args, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import { config } from "../../../config";
-import ReminderService from "../../../services/ReminderService";
-import logger, { logError, getErrorMessage } from "../../../lib/winston"
+import { config } from "../../../config/index.js";
+import ReminderService from "../../../services/ReminderService.js";
+import { logError } from "../../../lib/winston.js";
 
 export class DelReminderCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {

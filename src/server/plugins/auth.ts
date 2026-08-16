@@ -2,9 +2,9 @@ import fp from 'fastify-plugin';
 import jwt from '@fastify/jwt';
 import cookie from '@fastify/cookie';
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { env } from '../../config/env';
-import { COOKIE_NAME, JWT_EXPIRY } from '../../config/constants';
-import logger from '../../lib/winston';
+import { env } from '../../config/env.js';
+import { COOKIE_NAME } from '../../config/constants.js';
+import logger from '../../lib/winston.js';
 
 export default fp(async (fastify) => {
   // Register cookie plugin first

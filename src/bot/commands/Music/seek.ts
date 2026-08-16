@@ -1,9 +1,9 @@
 import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
-import { MusicService } from "../../../services/MusicService";
-import { parseTimeString, fancyTimeFormat } from "../../../lib/utils";
-import logger, { logError, getErrorMessage } from "../../../lib/winston"
+import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation.js";
+import { MusicService } from "../../../services/MusicService.js";
+import { parseTimeString, fancyTimeFormat } from "../../../lib/utils.js";
+import { logError } from "../../../lib/winston.js";
 
 /**
  * Seek Command (Refactored)
@@ -101,7 +101,7 @@ The position must not exceed the track's length.`,
 
         try {
             const positionString = await args.pick("string");
-            const formattedTime = await this.seek(guildId, positionString, message.channel);
+            await this.seek(guildId, positionString, message.channel);
         } catch (error) {
             logError("Error in seek command:", error);
             if (error instanceof Error && error.message.includes("There was no input")) {

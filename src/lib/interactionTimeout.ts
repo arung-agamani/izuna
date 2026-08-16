@@ -1,5 +1,5 @@
 import debounce from "lodash.debounce";
-import logger from "./winston";
+import logger from "./winston.js";
 
 const map = new Map<string, () => void>();
 

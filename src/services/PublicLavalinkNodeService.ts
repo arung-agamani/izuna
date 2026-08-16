@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { Socket } from "net";
-import logger, { logError } from "../lib/winston"
+import logger from "../lib/winston.js";
 
 export const ZodPublicLavalinkNode = z.object({
     "unique-id": z.string(),
@@ -18,7 +18,7 @@ const PUBLIC_NODES_API_SSL = "https://lavalink-list.ajieblogs.eu.org/SSL" as con
 const PUBLIC_NODES_API_NO_SSL = "https://lavalink-list.ajieblogs.eu.org/NonSSL" as const;
 const PUBLIC_NODES_API_ALL = "https://lavalink-list.ajieblogs.eu.org/All" as const;
 
-const PublicLavalinkNodeFetchType = ["ssl", "no-ssl", "all"] as const;
+type PublicLavalinkNodeFetchType = "ssl" | "no-ssl" | "all";
 
 export class PublicLavalinkNodeService {
     private static _instance: PublicLavalinkNodeService;
@@ -36,7 +36,7 @@ export class PublicLavalinkNodeService {
         // Private constructor to prevent direct instantiation
     }
 
-    public async fetchNodes(type: (typeof PublicLavalinkNodeFetchType)[number] = "all"): Promise<PublicLavalinkNode[]> {
+    public async fetchNodes(type: PublicLavalinkNodeFetchType = "all"): Promise<PublicLavalinkNode[]> {
         const now = Date.now();
         // Cache nodes for 10 minutes
         if (this._cachedNodes && now - this._lastFetchTime < 10 * 60 * 1000) {
@@ -83,7 +83,7 @@ export class PublicLavalinkNodeService {
                     settled = true;
                     try {
                         socket.destroy();
-                    } catch {}
+                    } catch { /* ignore destroy errors */ }
                     if (err) reject(err);
                     else resolve();
                 };
@@ -159,17 +159,17 @@ export class PublicLavalinkNodeService {
                         // Successful HTTP response -> return latency
                         const end = Date.now();
                         return end - start;
-                    } catch (innerErr) {
+                    } catch {
                         continue;
                     }
                 }
 
                 // all attempts failed, throw error instead
-                throw new Error("HTTP info/version endpoints unreachable");
+                throw new Error("HTTP info/version endpoints unreachable", { cause: tcpErr });
             } catch (httpErr) {
                 const tcpMsg = tcpErr instanceof Error ? tcpErr.message : String(tcpErr);
                 const httpMsg = httpErr instanceof Error ? httpErr.message : String(httpErr);
-                throw new Error(`Ping test failed for node ${node.identifier}: TCP error: ${tcpMsg}; HTTP fallback error: ${httpMsg}`);
+                throw new Error(`Ping test failed for node ${node.identifier}: TCP error: ${tcpMsg}; HTTP fallback error: ${httpMsg}`, { cause: httpErr });
             }
         }
     }

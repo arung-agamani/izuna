@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { AuthService } from "./AuthService";
-import { UserRepository } from "../repositories/UserRepository";
-import { discordAccessTokens } from "../lib/session";
-import type { User } from "@prisma/client";
-import type { DiscordTokens } from "./AuthService";
+import { AuthService } from "./AuthService.js";
+import { UserRepository } from "../repositories/UserRepository.js";
+import { discordAccessTokens } from "../lib/session.js";
+import type { User } from "../generated/prisma/client.js";
+import type { DiscordTokens } from "./AuthService.js";
 
 function makeUser(overrides: Partial<User> = {}): User {
     return {

@@ -1,7 +1,7 @@
 import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import { config } from "../../../config";
-import { closureGoogleOauthTracker } from "../../../lib/google";
+import { config } from "../../../config/index.js";
+import { closureGoogleOauthTracker } from "../../../lib/google.js";
 
 export class GoogleLoginCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {

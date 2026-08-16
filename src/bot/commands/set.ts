@@ -1,6 +1,6 @@
 import { Args, Command } from "@sapphire/framework";
 import { ChannelType, Message, PermissionFlagsBits } from "discord.js";
-import { addToJ2CVCManager } from "../../lib/channelTracker";
+import { addToJ2CVCManager } from "../../lib/channelTracker.js";
 
 export class SetCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {

@@ -6,14 +6,12 @@ import {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
-    StringSelectMenuInteraction,
-    Interaction,
     StringSelectMenuBuilder,
 } from "discord.js";
-import { getKanaInstance, Kana } from "../../lib/kana";
-import { SearchCharacterResult } from "../../lib/kana/collections/chara";
-import logger, { logError, getErrorMessage } from "../../lib/winston"
-import { addInteractionEntry, debounceInteraction } from "../../lib/interactionTimeout";
+import { getKanaInstance, Kana } from "../../lib/kana/index.js";
+import { SearchCharacterResult } from "../../lib/kana/collections/chara.js";
+import logger from "../../lib/winston.js";
+import { addInteractionEntry, debounceInteraction } from "../../lib/interactionTimeout.js";
 
 export class VNDBInteractionHandler extends InteractionHandler {
     kana: Kana;

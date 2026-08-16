@@ -1,5 +1,5 @@
-import prisma from "./prisma";
-import logger from "./winston";
+import prisma from "./prisma.js";
+import logger from "./winston.js";
 
 export const joinToCreateVoiceChatManager = new Map<string, string>();
 export const channelTrackingManager = new Set<string>();

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
-import { UserService } from "./UserService";
-import { UserRepository } from "../repositories/UserRepository";
-import type { User } from "@prisma/client";
+import { UserService } from "./UserService.js";
+import { UserRepository } from "../repositories/UserRepository.js";
+import type { User } from "../generated/prisma/client.js";
 
 function makeUser(overrides: Partial<User> = {}): User {
     return {

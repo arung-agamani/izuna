@@ -1,9 +1,9 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
-import tierlistRoutes from "./tierlist";
-import closureRoutes from "./closure";
-import reminderRoutes from "./reminders";
-import oauthRoutes from "../oauth";
-import izunaRoutes from "./izuna";
+import tierlistRoutes from "./tierlist/index.js";
+import closureRoutes from "./closure/index.js";
+import reminderRoutes from "./reminders/index.js";
+import oauthRoutes from "../oauth/index.js";
+import izunaRoutes from "./izuna/index.js";
 
 async function apiV1(instance: FastifyInstance, _: FastifyPluginOptions) {
     instance.register(tierlistRoutes, {

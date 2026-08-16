@@ -1,7 +1,6 @@
-import prisma from "../lib/prisma";
-import logger, { logError, getErrorMessage } from "../lib/winston"
-import { DiscordService } from "./DiscordService";
-import UserService from "./UserService";
+import { logError } from "../lib/winston.js";
+import { DiscordService } from "./DiscordService.js";
+import UserService from "./UserService.js";
 
 export class GuildService {
     private static instance: GuildService | null = null;
@@ -32,7 +31,7 @@ export class GuildService {
             return guilds;
         } catch (error) {
             logError("Error fetching guilds for user:", error);
-            throw new Error("Failed to fetch guilds for user");
+            throw new Error("Failed to fetch guilds for user", { cause: error });
         }
     }
 }

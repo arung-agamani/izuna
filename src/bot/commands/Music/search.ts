@@ -1,11 +1,8 @@
 import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, type Message } from "discord.js";
-import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
-import { MusicService } from "../../../services/MusicService";
-import logger, { logError, getErrorMessage } from "../../../lib/winston"
-
-const ytsearch = require("youtube-search-api");
-
+import ytsearch from "youtube-search-api";
+import { MusicService } from "../../../services/MusicService.js";
+import logger, { logError } from "../../../lib/winston.js";
 /**
  * Search Command (Refactored)
  *
@@ -142,7 +139,7 @@ export class SearchCommand extends Command {
             });
         } catch (error) {
             logError("YouTube search error:", error);
-            throw new Error("Failed to search YouTube. Please try again later.");
+            throw new Error("Failed to search YouTube. Please try again later.", { cause: error });
         }
     }
 }

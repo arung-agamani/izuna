@@ -1,7 +1,7 @@
 import fastify from "fastify";
-import plugins from "./plugins";
-import apiv1Routes from "../routes/api";
-import logger, { logError, getErrorMessage } from "../lib/winston";
+import plugins from "./plugins/index.js";
+import apiv1Routes from "../routes/api/index.js";
+import logger, { logError } from "../lib/winston.js";
 
 export async function buildServer() {
     const server = fastify({

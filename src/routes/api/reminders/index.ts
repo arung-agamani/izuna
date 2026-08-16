@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
-import ReminderService from "../../../services/ReminderService";
-import logger, { logError, getErrorMessage } from "../../../lib/winston"
+import ReminderService from "../../../services/ReminderService.js";
+import { logError } from "../../../lib/winston.js";
 
 // Validation schemas
 const CreateReminderSchema = z.object({

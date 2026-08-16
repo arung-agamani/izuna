@@ -15,7 +15,6 @@ vi.mock("../../../lib/prisma", () => ({
 
 // Intercept UserRepository so new UserRepository() returns a stub
 vi.mock("../../../repositories/UserRepository", () => {
-    const stub = { findById: mockFindById };
     return {
         UserRepository: class {
             findById = mockFindById;
@@ -23,7 +22,7 @@ vi.mock("../../../repositories/UserRepository", () => {
     };
 });
 
-import authRoutes from "./auth";
+import authRoutes from "./auth.js";
 
 describe("auth routes", () => {
     const app = Fastify({ logger: false });

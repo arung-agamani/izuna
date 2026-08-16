@@ -1,4 +1,4 @@
-import type { PrismaClient, Reminder } from "@prisma/client";
+import type { PrismaClient, Reminder } from "../generated/prisma/client.js";
 
 export type CreateReminderData = Pick<Reminder, "uid" | "message" | "cronString" | "channelType" | "channelId"> & { guildId?: string };
 export type UpdateReminderData = Partial<CreateReminderData>;

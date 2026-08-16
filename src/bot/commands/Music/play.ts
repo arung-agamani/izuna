@@ -1,9 +1,9 @@
 import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message, TextBasedChannel, VoiceBasedChannel } from "discord.js";
-import { fancyTimeFormat } from "../../../lib/utils";
-import logger, { logError, getErrorMessage } from "../../../lib/winston"
-import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
-import { MusicService } from "../../../services/MusicService";
+import { fancyTimeFormat } from "../../../lib/utils.js";
+import logger, { logError } from "../../../lib/winston.js";
+import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation.js";
+import { MusicService } from "../../../services/MusicService.js";
 
 /**
  * Play Music Command (Refactored)
@@ -148,14 +148,14 @@ Use --seek or -s flag to jump to a specific timestamp if available.`,
         query: string;
         isSeeking: boolean;
     }): Promise<void> {
-        const { textChannel, voiceChannel, guildId, authorId, query, isSeeking } = options;
+        const { textChannel, voiceChannel, guildId, query, isSeeking } = options;
 
         // Parse the input URL/query
         let resolution;
         try {
             resolution = await this.musicService.resolveInput(query, isSeeking);
         } catch (error) {
-            throw new Error(error instanceof Error ? error.message : "Failed to resolve input");
+            throw new Error(error instanceof Error ? error.message : "Failed to resolve input", { cause: error });
         }
 
         const { parsed, result, timestamp } = resolution;
@@ -211,7 +211,7 @@ Use --seek or -s flag to jump to a specific timestamp if available.`,
             }
         } catch (error) {
             logError("Error queuing tracks:", error);
-            throw new Error("Failed to queue tracks");
+            throw new Error("Failed to queue tracks", { cause: error });
         }
     }
 

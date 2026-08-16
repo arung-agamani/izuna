@@ -4,55 +4,144 @@ Sometimes all you need is a little time to relax...
 
 Totally not another hobby project to explore stuffs.
 
-This repository contains 2 main components : A web server and a Discord bot.
+This repository contains 2 main components: a Fastify web server and a Discord bot.
 
 ## Why?
 
-I want to explore stuffs. Also there is this library called `fastify` and really caught my attention, so yeah.
+I want to explore stuffs. Also there is this library called `fastify` and it really caught my attention, so yeah.
 
 Oh yeah, I made several bots before but I realized on how messy the codes were (not that the current one ain't). I want to rewrite the bot while trying to keep up with current best practices.
 
-## Architecture(?)
+## Architecture
 
-Everything is composed inside `src` directory, including the bot and the web server. Basically anything that's going to be executed by default will have it's implementation lies inside `src` directory. Other things like convenience scripts would happen in `scripts` folder, if any.
+Monorepo with two workspaces:
 
-Inside `src` lies the common stuff you'll see when creating web server. An `index.ts` file that will be the entrypoint, `interfaces` directory for storing types and interfaces used in the project, and probably any other additional directories if needed, such as `models` or `lib`.
-
-The only exception is the `bot` directory which contains the entire implementation of the bot. Currently only Discord bot lies inside, but it is not impossible to expand to other platform, such as LINE. Anything regarding the bot should be only isolated to this directory.
+| Path | What |
+|---|---|
+| `src/` | Backend — Discord bot + Fastify API, TypeScript, layered (`routes` → `services` → `repositories` → Prisma) |
+| `web/` | Frontend — React 19 + Vite 6 + Tailwind 4, built to `web/dist` and served by Fastify |
+| `prisma/` | Prisma schema + migrations |
+| `scripts/` | Convenience scripts |
 
 ### Stacks
 
--   `fastify` for web backend
--   `discord.js` for Discord bot
--   `@sapphire/framework` for bot command handler
+- `fastify` for the web backend
+- `discord.js` + `@sapphire/framework` for the bot
+- `shoukaku` + Lavalink for music
+- `prisma` (v7, driver adapters) + PostgreSQL for data
+- `winston` for logging
+- `vitest` for backend tests
 
-## Usage
+## Prerequisites
 
-The application is containerized as Docker image where the definition lies in `Dockerfile` file. It only compiles everything inside `src` and spews out the output in `build` directory, then copied into the image where the "entrypoint" is `index.js` file. Simply build the image using docker and run with required environment variables. The list of environment variables will follow this section.
+- Node.js **22+**
+- Yarn **v1** (classic)
+- PostgreSQL (for Prisma)
+- A `.env` file at the project root (see [Environment variables](#environment-variables))
 
-Running in development mode will not require Docker, but it's required to have `.env` file lies in the project root directory. Define all the required environment variables there. Start the app using the `dev` script defined in `package.json` and you're good to go.
+## Setup
 
-### Environment variables.
+```sh
+# Backend deps
+yarn install
 
-| Variable Name                 | Type   | Description                                         |
-| ----------------------------- | ------ | --------------------------------------------------- |
-| `DISCORD_BOT_TOKEN`           | string | Token used to login to Discord bot.                 |
-| `NHPROXY_AUTH`                | string | Auth string used for nhproxy backend                |
-| `RUN_BOT`                     | int    | Run bot portion. 0 for false, 1 for true            |
-| `RUN_WEB`                     | int    | Run web dashboard portion. 0 for false, 1 for true  |
-| `KUREYA_LAVALINK_PASSWORD`    | string | Password for lavalink server over kureya server     |
-| `DATABASE_URL`                | string | Remote database url                                 |
-| `DISCORD_OAUTH_CLIENT_ID`     | string | Discord Application OAuth Client ID                 |
-| `DISCORD_OAUTH_CLIENT_SECRET` | string | Discord Application OAuth Client Secret             |
-| `AUTH_SECRET`                 | string | JWT Secret                                          |
-| `S3_REGION`                   | string | S3 Region (Primary)                                 |
-| `S3_BUCKET`                   | string | S3 Bucket Name                                      |
-| `S3_CLIENT_ID`                | string | AWS Access Key ID                                   |
-| `S3_CLIENT_SECRET`            | string | AWS Secret Key                                      |
-| `USE_LOCAL_LAVALINK`          | string | Dev Purpose: Use local lavalink server              |
-| `LAVALINK_CONFIG_PATH`        | string | Path to JSON file containing list of lavalink nodes |
-| `SENTRY_DSN`                  | string | URL to Sentry DSN, for error tracing                |
+# Frontend deps
+cd web && yarn install && cd ..
+
+# Generate the Prisma client (into src/generated/, gitignored)
+npx prisma generate
+```
+
+## Running in development
+
+No Docker needed — just a `.env` at the project root.
+
+```sh
+# Everything (bot + web) with hot reload
+yarn dev
+
+# Component-specific
+yarn dev:bot    # bot only (RUN_WEB=0)
+yarn dev:web    # web server only (RUN_BOT=0)
+yarn dev:mute   # no Lavalink/Shoukaku (MUTE=1)
+```
+
+The frontend has its own dev server (Vite, port 5173):
+
+```sh
+cd web && yarn ldev
+```
+
+## Building
+
+```sh
+# Backend: prisma generate + type-check + esbuild transpile → build/
+yarn build
+
+# Frontend: Vite build → web/dist
+cd web && yarn build
+```
+
+## Tests
+
+```sh
+yarn test          # vitest (backend)
+yarn test:types    # type-check the test files
+yarn test:watch    # vitest watch mode
+```
+
+## Linting
+
+```sh
+yarn lint          # eslint src — errors fail, warnings pass
+yarn lint:fix      # auto-fix
+```
+
+## Database migrations
+
+```sh
+npx prisma migrate dev     # create + apply a new migration (dev)
+npx prisma migrate deploy  # apply pending migrations (prod)
+npx prisma generate        # regenerate the Prisma client after schema changes
+```
+
+Migrations run against `DATABASE_URL`, configured in `prisma.config.ts`.
+
+## Docker
+
+```sh
+docker build -t izuna .
+docker run --env-file .env -p 8000:8000 izuna
+```
+
+The container's entrypoint runs `npx prisma migrate deploy` then starts the app. The web server listens on `0.0.0.0:8000`.
+
+## Environment variables
+
+| Variable | Type | Description |
+|---|---|---|
+| `NODE_ENV` | string | `development` or `production` |
+| `DISCORD_BOT_TOKEN` | string | Discord bot token |
+| `DISCORD_OAUTH_CLIENT_ID` | string | Discord OAuth client ID |
+| `DISCORD_OAUTH_CLIENT_SECRET` | string | Discord OAuth client secret |
+| `GOOGLE_OAUTH_CLIENT_ID` | string | Google OAuth client ID |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | string | Google OAuth client secret |
+| `GOOGLE_CLOSURE_API_KEY` | string | Google API key (legacy closure) |
+| `AUTH_SECRET` | string | JWT signing secret |
+| `DATABASE_URL` | string | PostgreSQL connection URL (Prisma) |
+| `RUN_BOT` | string | `1` to start the bot, `0` to skip |
+| `RUN_WEB` | string | `1` to start the web server, `0` to skip |
+| `MUTE` | string | `1` to disable Lavalink/Shoukaku |
+| `LAVALINK_CONFIG_PATH` | string | URL to a JSON array of Lavalink nodes |
+| `USE_LOCAL_LAVALINK` | string | `true` to use `localhost:2333` instead |
+| `KUREYA_LAVALINK_PASSWORD` | string | Lavalink password for the kureya node |
+| `NHPROXY_AUTH` | string | Auth string for the nhproxy backend |
+| `S3_REGION` / `S3_BUCKET` | string | S3 region / bucket |
+| `S3_CLIENT_ID` / `S3_CLIENT_SECRET` | string | S3 access key ID / secret |
+| `LOKI_HOST` / `LOKI_USER` / `LOKI_PASS` | string | Optional Grafana Loki transport (opt-in) |
+| `SENTRY_DNS` | string | Sentry DSN (note: misspelled `DNS`, matches deployed config) |
+| `ADMIN_USERS` | string | Comma-separated Discord user IDs allowed to use `/api/izuna/admin/*` |
 
 ## Contributing
 
-Simply create an issue with features you want to contribute, and create PR to the `dev` branch. State the functionality, requirements, and why do you think your feature is cool to be added.
+Simply create an issue with features you want to contribute, and create a PR to the `dev` branch. State the functionality, requirements, and why you think your feature is cool to be added.

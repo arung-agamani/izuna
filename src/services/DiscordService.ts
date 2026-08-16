@@ -1,7 +1,7 @@
 import discordOauth2 from "discord-oauth2";
-import discordSession, { GuildMembership } from "../lib/session";
+import discordSession, { GuildMembership } from "../lib/session.js";
 import { PermissionsBitField } from "discord.js";
-import logger, { logError, getErrorMessage } from "../lib/winston"
+import { logError } from "../lib/winston.js";
 
 export class DiscordService {
     private static instance: DiscordService | null = null;

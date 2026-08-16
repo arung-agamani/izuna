@@ -1,10 +1,10 @@
 import { SapphireClient } from "@sapphire/framework";
 import { Shoukaku, Connectors, NodeOption, ShoukakuOptions } from "shoukaku";
-import { config } from "../config";
-import { setShoukakuContext } from "../services/ShoukakuContext";
-import logger from "../lib/winston";
-import { handleTagMessage } from "./handlers/tagHandler";
-import { channelTrackingManager, deleteFromEphemeralVCManager, initializeChannelTrackingManager, initializeJoinToCreateVCManager } from "../lib/channelTracker";
+import { config } from "../config/index.js";
+import { setLavalinkManager } from "../services/LavalinkService.js";
+import logger from "../lib/winston.js";
+import { handleTagMessage } from "./handlers/tagHandler.js";
+import { channelTrackingManager, deleteFromEphemeralVCManager, initializeChannelTrackingManager, initializeJoinToCreateVCManager } from "../lib/channelTracker.js";
 import { Partials, VoiceBasedChannel } from "discord.js";
 
 async function createBotApp() {
@@ -53,7 +53,7 @@ async function createBotApp() {
             voiceConnectionTimeout: 15,
         }
         const manager = new Shoukaku(new Connectors.DiscordJS(client), nodes, option);
-        setShoukakuContext(manager);
+        setLavalinkManager(manager);
         logger.info("Shoukaku manager initialized with nodes:", nodes.map(node => node.name).join(", "));
         manager.on("error", (node, err) => {
             logger.error("Shoukaku connection error", {
@@ -88,19 +88,19 @@ async function createBotApp() {
                 let guild, channel;
                 try {
                     guild = await client.guilds.fetch(guildId!);
-                } catch (error) {
+                } catch {
                     continue;
                 }
                 try {
                     channel = (await guild.channels.fetch(channelId!)) as VoiceBasedChannel;
-                } catch (error) {
+                } catch {
                     await deleteFromEphemeralVCManager(guildId!, channelId!);
                     continue;
                 }
                 if (channel?.members.size === 0) {
                     try {
                         await guild.channels.delete(channelId!);
-                    } catch (error) {
+                    } catch {
                         logger.warn(`${channel.name} has already deleted or non-existent or error`);
                     }
                     await deleteFromEphemeralVCManager(guildId!, channelId!);

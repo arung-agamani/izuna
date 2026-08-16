@@ -1,5 +1,6 @@
-import fetcher from "../fetcher";
-import logger from "../../winston";
+import fetcher from "../fetcher.js";
+import logger from "../../winston.js";
+import { BaseResponse } from "./commons.js";
 
 export interface SearchCharacterResult {
     id: string;

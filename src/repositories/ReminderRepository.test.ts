@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import type { Reminder } from "@prisma/client";
-import { ReminderRepository, type CreateReminderData } from "./ReminderRepository";
-import { mockPrismaClient } from "../test/helpers";
+import type { Reminder } from "../generated/prisma/client.js";
+import { ReminderRepository, type CreateReminderData } from "./ReminderRepository.js";
+import { mockPrismaClient } from "../test/helpers.js";
 
 function makeReminder(overrides: Partial<Reminder> = {}): Reminder {
     return {

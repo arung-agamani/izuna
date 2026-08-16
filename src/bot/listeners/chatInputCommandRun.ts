@@ -2,7 +2,7 @@ import { Command } from "@sapphire/framework";
 import { ChatInputCommandRunPayload } from "@sapphire/framework";
 import { Events, Listener } from "@sapphire/framework";
 import type { CommandInteraction } from "discord.js";
-import logger from "../../lib/winston";
+import logger from "../../lib/winston.js";
 
 export class ChatInputRunListener extends Listener {
     public constructor(context: Listener.Context, options: Listener.Options) {
@@ -12,7 +12,7 @@ export class ChatInputRunListener extends Listener {
         });
     }
 
-    public run(interaction: CommandInteraction, command: Command, payload: ChatInputCommandRunPayload) {
+    public run(interaction: CommandInteraction, command: Command, _payload: ChatInputCommandRunPayload) {
         logger.info("command_invoked", {
             event: "command_invoked",
             command: command.name,

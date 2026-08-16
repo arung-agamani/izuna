@@ -1,10 +1,7 @@
 import { Command, Args, ChatInputCommand } from "@sapphire/framework";
 import { Message, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } from "discord.js";
-import axios from "axios";
-import * as cheerio from "cheerio";
-import { PaginatedMessage } from "@sapphire/discord.js-utilities";
-import { Kana, getKanaInstance } from "../../../lib/kana";
-import { addInteractionEntry } from "../../../lib/interactionTimeout";
+import { Kana, getKanaInstance } from "../../../lib/kana/index.js";
+import { addInteractionEntry } from "../../../lib/interactionTimeout.js";
 
 export class VNDBCommand extends Command {
     kana: Kana;

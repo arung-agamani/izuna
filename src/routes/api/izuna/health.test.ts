@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import Fastify from "fastify";
-import healthRoutes from "./health";
+import healthRoutes from "./health.js";
 
 describe("GET /api/izuna/health", () => {
     const app = Fastify({ logger: false });

@@ -1,8 +1,8 @@
-import type { User } from "@prisma/client";
-import { UserRepository } from "../repositories/UserRepository";
-import prisma from "../lib/prisma";
-import { discordAccessTokens } from "../lib/session";
-import logger from "../lib/winston";
+import type { User } from "../generated/prisma/client.js";
+import { UserRepository } from "../repositories/UserRepository.js";
+import prisma from "../lib/prisma.js";
+import { discordAccessTokens } from "../lib/session.js";
+import logger from "../lib/winston.js";
 
 export interface DiscordLoginInput {
     id: string;

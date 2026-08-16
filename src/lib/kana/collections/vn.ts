@@ -1,5 +1,5 @@
-import fetcher from "../fetcher";
-import logger from "../../winston";
+import fetcher from "../fetcher.js";
+import logger from "../../winston.js";
 
 type FilterNames =
     | "id"
@@ -74,9 +74,9 @@ type FieldsNames =
 
 export interface BaseHTTPResponse {
     results: Record<string, any>[];
-    more: Boolean;
-    count?: Number;
-    compact_filters?: String;
+    more: boolean;
+    count?: number;
+    compact_filters?: string;
     normalized_filters?: Record<string, any>[];
 }
 

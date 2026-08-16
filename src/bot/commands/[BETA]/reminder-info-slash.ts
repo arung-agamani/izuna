@@ -1,6 +1,6 @@
 import { ChatInputCommand, Command } from "@sapphire/framework";
 import { EmbedBuilder } from "discord.js";
-import { config } from "../../../config";
+import { config } from "../../../config/index.js";
 
 export class ReminderInfoSlashCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {

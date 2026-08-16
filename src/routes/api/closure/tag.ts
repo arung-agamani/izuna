@@ -1,8 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import DiscordOAuth2 from "discord-oauth2";
-import logger, { logError } from "../../../lib/winston";
-import discordSession from "../../../lib/session";
-import { TagService } from "../../../services/TagService";
+import logger, { logError } from "../../../lib/winston.js";
+import discordSession from "../../../lib/session.js";
+import { TagService } from "../../../services/TagService.js";
 
 const tagService = TagService.getInstance();
 

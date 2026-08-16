@@ -1,9 +1,9 @@
 import type { SapphireClient } from "@sapphire/framework";
 import { CronJob } from "cron";
 import type { TextChannel } from "discord.js";
-import type { ReminderData } from "../interfaces/bot";
-import prisma from "./prisma";
-import logger from "./winston";
+import type { ReminderData } from "../interfaces/bot.js";
+import prisma from "./prisma.js";
+import logger from "./winston.js";
 
 const reminderCollection = new Map<string | number, ReminderData>();
 const reminderJobs = new Set<CronJob>();

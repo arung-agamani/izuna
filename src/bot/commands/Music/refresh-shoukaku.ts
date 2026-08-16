@@ -1,11 +1,11 @@
 import { ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import { MusicService } from "../../../services/MusicService";
-import logger, { logError, getErrorMessage } from "../../../lib/winston"
-import { config } from "../../../config";
+import { MusicService } from "../../../services/MusicService.js";
+import logger, { logError } from "../../../lib/winston.js";
+import { config } from "../../../config/index.js";
 import { NodeOption } from "shoukaku";
 import { fetch } from "undici";
-import { requireShoukakuContext } from "../../../services/ShoukakuContext";
+import { requireLavalinkManager } from "../../../services/LavalinkService.js";
 
 /**
  * Refresh Shoukaku Command (Refactored)
@@ -88,10 +88,10 @@ This is an admin utility command and should be used only when experiencing conne
     private async refresh(textChannel: any): Promise<void> {
         let shoukaku;
         try {
-            shoukaku = requireShoukakuContext();
+            shoukaku = requireLavalinkManager();
         } catch (error) {
             await textChannel.send("❌ Shoukaku client is not initialized");
-            throw new Error("Shoukaku client not initialized");
+            throw new Error("Shoukaku client not initialized", { cause: error });
         }
 
         await textChannel.send("🔄 Starting node refresh...");
@@ -104,7 +104,7 @@ This is an admin utility command and should be used only when experiencing conne
             await textChannel.send(`⚠️ Stopping ${sessionCount} active session(s)...`);
 
             // Stop all active sessions
-            for (const [guildId, session] of sessions) {
+            for (const [guildId] of sessions) {
                 try {
                     await this.musicService.destroySession(guildId);
                     logger.info(`Stopped session for guild ${guildId} during node refresh`);

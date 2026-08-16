@@ -1,7 +1,7 @@
 import type { VoiceBasedChannel } from "discord.js";
 import type { Player } from "shoukaku";
-import { getShoukakuContext, requireShoukakuContext } from "./ShoukakuContext";
-import logger, { logError } from "../lib/winston"
+import { getLavalinkManager, requireLavalinkManager } from "./LavalinkService.js";
+import logger from "../lib/winston.js";
 
 /**
  * PlayerManager - Utility for low-level Shoukaku player operations
@@ -18,7 +18,7 @@ export class PlayerManager {
      * State management is handled by caller (MusicService)
      */
     public async joinVoiceChannel(guildId: string, voiceChannel: VoiceBasedChannel): Promise<Player> {
-        const shoukakuManager = requireShoukakuContext();
+        const shoukakuManager = requireLavalinkManager();
         const shardId = (voiceChannel as unknown as { guild?: { shardId: number } }).guild?.shardId ?? 0;
 
         const player = await shoukakuManager.joinVoiceChannel({
@@ -34,7 +34,7 @@ export class PlayerManager {
      * Leave a voice channel for a guild
      */
     public async leaveVoiceChannel(guildId: string): Promise<void> {
-        const shoukakuManager = getShoukakuContext();
+        const shoukakuManager = getLavalinkManager();
         if (shoukakuManager) {
             try {
                 await shoukakuManager.leaveVoiceChannel(guildId);

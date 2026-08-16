@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { PlayerSessionRepository } from "./PlayerSessionRepository";
-import { mockPrismaClient } from "../test/helpers";
+import { PlayerSessionRepository } from "./PlayerSessionRepository.js";
+import { mockPrismaClient } from "../test/helpers.js";
 
 describe("PlayerSessionRepository", () => {
     it("deleteByGuild scopes the deleteMany to the guild", async () => {

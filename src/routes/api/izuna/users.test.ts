@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import jwt from "@fastify/jwt";
-import userRoutes from "./users";
+import userRoutes from "./users.js";
 
 // Hoisted — accessible inside vi.mock factories
 const {

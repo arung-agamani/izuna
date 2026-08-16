@@ -1,7 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
-import { config } from '../../config';
-import { closureGoogleOauthState, closureGoogleOauthTracker } from '../../lib/google';
-import logger, { logError, getErrorMessage } from '../../lib/winston'
+import { closureGoogleOauthState, closureGoogleOauthTracker } from '../../lib/google.js';
+import logger, { logError } from '../../lib/winston.js';
 
 const googleOAuthRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get<{

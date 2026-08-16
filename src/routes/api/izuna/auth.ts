@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
-import { UserRepository } from "../../../repositories/UserRepository";
-import prisma from "../../../lib/prisma";
-import { JWT_EXPIRY } from "../../../config/constants";
+import { UserRepository } from "../../../repositories/UserRepository.js";
+import prisma from "../../../lib/prisma.js";
+import { JWT_EXPIRY } from "../../../config/constants.js";
 
 const userRepo = new UserRepository(prisma);
 

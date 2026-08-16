@@ -1,10 +1,10 @@
 import type { SapphireClient } from "@sapphire/framework";
 import { CronJob } from "cron";
 import type { TextChannel } from "discord.js";
-import logger, { logError, getErrorMessage } from "../lib/winston";
-import type { Reminder } from "@prisma/client";
-import { ReminderRepository } from "../repositories/ReminderRepository";
-import prisma from "../lib/prisma";
+import logger, { logError } from "../lib/winston.js";
+import type { Reminder } from "../generated/prisma/client.js";
+import { ReminderRepository } from "../repositories/ReminderRepository.js";
+import prisma from "../lib/prisma.js";
 
 /**
  * Data structure for creating a new reminder

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import Fastify from "fastify";
-import lavalinkRoutes from "./lavalink";
+import lavalinkRoutes from "./lavalink.js";
 
 // Mock variables — accessible in both the mock factory and tests
 const mockFetchNodes = vi.fn();

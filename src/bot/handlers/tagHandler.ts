@@ -1,7 +1,7 @@
 import type { Message } from "discord.js";
-import type { Tag } from "@prisma/client";
-import { TagService } from "../../services/TagService";
-import logger from "../../lib/winston";
+import type { Tag } from "../../generated/prisma/client.js";
+import { TagService } from "../../services/TagService.js";
+import logger from "../../lib/winston.js";
 
 const isDevelopment = process.env["NODE_ENV"] === "development";
 const TAG_DELIMITER = isDevelopment ? "&" : "#";

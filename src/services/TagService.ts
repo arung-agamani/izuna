@@ -1,7 +1,6 @@
-import type { Tag } from "@prisma/client";
-import { TagRepository, type CreateTagData } from "../repositories/TagRepository";
-import prisma from "../lib/prisma";
-import logger from "../lib/winston";
+import type { Tag } from "../generated/prisma/client.js";
+import { TagRepository, type CreateTagData } from "../repositories/TagRepository.js";
+import prisma from "../lib/prisma.js";
 
 const TAG_NAME_REGEX = /^[A-Za-z0-9]+$/;
 

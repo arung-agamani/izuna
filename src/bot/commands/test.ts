@@ -1,6 +1,5 @@
 import { ChatInputCommand, Command } from "@sapphire/framework";
 import { Message, EmbedBuilder } from "discord.js";
-import prisma from "../../lib/prisma";
 
 export class TestCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {

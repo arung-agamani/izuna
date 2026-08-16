@@ -3,12 +3,12 @@ import fastifyCors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import fastifyRoutes from '@fastify/routes';
 import path from 'path';
-import { config } from '../../config';
-import authPlugin from './auth';
-import adminAuthPlugin from './adminAuth';
-import oauthPlugin from './oauth';
-import swaggerPlugin from './swagger';
-import rateLimitPlugin from './rateLimit';
+import { config } from '../../config/index.js';
+import authPlugin from './auth.js';
+import adminAuthPlugin from './adminAuth.js';
+import oauthPlugin from './oauth.js';
+import swaggerPlugin from './swagger.js';
+import rateLimitPlugin from './rateLimit.js';
 
 export default fp(async (fastify) => {
   // Register CORS plugin
@@ -23,7 +23,7 @@ export default fp(async (fastify) => {
 
   // Register static file serving — only serve actual files, pass SPA routes to 404 handler
   await fastify.register(fastifyStatic, {
-    root: path.resolve(__dirname, '..', '..', '..', 'web', 'dist'),
+    root: path.resolve(import.meta.dirname, '..', '..', '..', 'web', 'dist'),
     wildcard: false,
     lastModified: false,
     cacheControl: false,

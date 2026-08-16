@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import type { Guild } from "discord.js";
-import { getBotClient } from "../../../lib/botClient";
+import { getBotClient } from "../../../lib/botClient.js";
 
 const GuildResponse = {
     type: "object",

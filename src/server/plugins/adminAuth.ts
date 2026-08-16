@@ -1,7 +1,7 @@
 import fp from "fastify-plugin";
 import { FastifyRequest, FastifyReply } from "fastify";
-import { config } from "../../config";
-import logger from "../../lib/winston";
+import { config } from "../../config/index.js";
+import logger from "../../lib/winston.js";
 
 export default fp(async (fastify) => {
     // Pre-handler: require whitelisted admin user

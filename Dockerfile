@@ -3,10 +3,10 @@ ARG NODE_VERSION=22
 # ═══ Backend builder ═══════════════════════════════════
 FROM node:${NODE_VERSION}-alpine AS backend-builder
 WORKDIR /tmp
-COPY package.json yarn.lock tsconfig.json ./
+COPY package.json yarn.lock tsconfig.json prisma.config.ts ./
+COPY scripts ./scripts
 RUN yarn install --frozen-lockfile
 COPY prisma ./prisma
-RUN npx prisma generate
 COPY src ./src
 RUN yarn build
 
@@ -39,8 +39,7 @@ RUN yarn install --frozen-lockfile --production \
 COPY --from=backend-builder --chown=node:node /tmp/build ./build
 COPY --from=web-builder --chown=node:node /tmp/web/dist ./web/dist
 COPY --chown=node:node prisma ./prisma
-# Generate Prisma client against the final image's @prisma/client package
-RUN npx prisma generate
+COPY --chown=node:node prisma.config.ts ./prisma.config.ts
 
 EXPOSE 8000
 

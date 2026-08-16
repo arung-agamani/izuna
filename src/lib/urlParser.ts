@@ -20,7 +20,7 @@ export const URL_PATTERNS = {
      * - https://www.youtube.com/watch?v=ID
      * - https://m.youtube.com/watch?v=ID
      */
-    youtubeVideo: /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/,
+    youtubeVideo: /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w-]+\?v=|embed\/|v\/)?)([\w-]+)(\S+)?$/,
 
     /**
      * YouTube playlist regex - matches:
@@ -34,7 +34,7 @@ export const URL_PATTERNS = {
      * - https://drive.google.com/file/d/ID/view
      * - /file/d/ID
      */
-    googleDrive: /\/file\/d\/([^\/]+)/,
+    googleDrive: /\/file\/d\/([^/]+)/,
 
     /**
      * YouTube timestamp regex - matches:

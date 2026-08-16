@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import logger from "../winston";
+import logger from "../winston.js";
 
 const fetcher = axios.create({
     baseURL: "https://api.vndb.org/kana/",

@@ -1,8 +1,8 @@
 import { ChatInputCommand, Command } from "@sapphire/framework";
 import { AutocompleteInteraction } from "discord.js";
-import { config } from "../../../config";
-import ReminderService from "../../../services/ReminderService";
-import { describeCron } from "../../../lib/cronUtils";
+import { config } from "../../../config/index.js";
+import ReminderService from "../../../services/ReminderService.js";
+import { describeCron } from "../../../lib/cronUtils.js";
 
 export class ReminderDeleteSlashCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -40,7 +40,6 @@ export class ReminderDeleteSlashCommand extends Command {
 
             // Create choices with ID and description
             const choices = reminders.map((reminder) => {
-                const location = reminder.channelType === "DM" ? "DM" : `#${reminder.channelId}`;
                 const schedule = describeCron(reminder.cronString);
                 const message = reminder.message.length > 50
                     ? reminder.message.substring(0, 50) + "..."
@@ -59,7 +58,7 @@ export class ReminderDeleteSlashCommand extends Command {
             );
 
             await interaction.respond(filtered.slice(0, 25)); // Discord limit is 25
-        } catch (error) {
+        } catch {
             // If error, return empty array
             await interaction.respond([]);
         }

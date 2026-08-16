@@ -142,3 +142,5 @@ Dockerfile.test
 Lavalink.jar
 application.yml
 *.jar
+# Prisma generated client (build-time artifact)
+src/generated

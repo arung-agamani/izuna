@@ -1,4 +1,4 @@
-import type { PrismaClient, User } from "@prisma/client";
+import type { PrismaClient, User } from "../generated/prisma/client.js";
 
 /**
  * Data-access layer for the User model.

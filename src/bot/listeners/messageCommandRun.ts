@@ -2,7 +2,7 @@ import { Command } from "@sapphire/framework";
 import { MessageCommandRunPayload } from "@sapphire/framework";
 import { Events, Listener } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import logger from "../../lib/winston";
+import logger from "../../lib/winston.js";
 
 export class MessageRunListener extends Listener {
     public constructor(context: Listener.Context, options: Listener.Options) {

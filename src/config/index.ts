@@ -1,12 +1,12 @@
-import { env } from "./env";
-import logger from "../lib/winston";
+import { env } from "./env.js";
+import logger from "../lib/winston.js";
 import dotenv from "dotenv";
 import path from "path";
 
 // Load .env file in development
 if (env.NODE_ENV === "development") {
     logger.info("Application is running in development mode");
-    dotenv.config({ path: path.resolve(__dirname, "..", "..", ".env") });
+    dotenv.config({ path: path.resolve(import.meta.dirname, "..", "..", ".env") });
 } else {
     logger.info(`Application initiated at ${new Date().toLocaleString()}`);
     logger.info("Application is running in production mode");

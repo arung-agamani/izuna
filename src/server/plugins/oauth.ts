@@ -1,12 +1,11 @@
 import fp from 'fastify-plugin';
 import oauthplugin, { OAuth2Namespace } from '@fastify/oauth2';
 import { FastifyRequest } from 'fastify';
-import { env } from '../../config/env';
-import { config } from '../../config';
-import { GOOGLE_OAUTH_SCOPE, DISCORD_OAUTH_SCOPE } from '../../config/constants';
-import { closureGoogleOauthState } from '../../lib/google';
-import { oauthSessionState } from '../../lib/session';
-import logger, { logError } from '../../lib/winston'
+import { env } from '../../config/env.js';
+import { config } from '../../config/index.js';
+import { GOOGLE_OAUTH_SCOPE, DISCORD_OAUTH_SCOPE } from '../../config/constants.js';
+import { closureGoogleOauthState } from '../../lib/google.js';
+import { oauthSessionState } from '../../lib/session.js';
 
 export default fp(async (fastify) => {
   // Google OAuth2 Configuration

@@ -1,7 +1,7 @@
 import { Listener } from "@sapphire/framework";
-import { VoiceState, VoiceBasedChannel, ChannelType, VoiceChannel } from "discord.js";
-import { joinToCreateVoiceChatManager, channelTrackingManager, deleteFromEphemeralVCManager, addToEphemeralVCManager } from "../../lib/channelTracker";
-import logger from "../../lib/winston";
+import { VoiceState, ChannelType, VoiceChannel } from "discord.js";
+import { joinToCreateVoiceChatManager, channelTrackingManager, deleteFromEphemeralVCManager, addToEphemeralVCManager } from "../../lib/channelTracker.js";
+import logger from "../../lib/winston.js";
 
 export class VoiceStateUpdateListener extends Listener {
     public constructor(context: Listener.Context, options: Listener.Options) {
@@ -28,20 +28,20 @@ export class VoiceStateUpdateListener extends Listener {
                 let targetVoiceChannel;
                 try {
                     targetVoiceChannel = await guild.channels.fetch(previousVoiceChannelId);
-                } catch (error) {
+                } catch {
                     logger.warn(`${previousVoiceChannelId} fetch error. Might have been deleted`);
                     targetVoiceChannel = null;
                 }
                 if (targetVoiceChannel) {
                     const previousVoiceChannel = await guild.channels.cache.get(previousVoiceChannelId);
                     if (previousVoiceChannel && previousVoiceChannel instanceof VoiceChannel) {
-                        let totalMember = previousVoiceChannel.members.size;
+                        const totalMember = previousVoiceChannel.members.size;
                         logger.debug(`${targetVoiceChannel.name} has ${totalMember} people inside`);
                         if (totalMember === 0 && channelTrackingManager.has(`${guild.id}-${targetVoiceChannel.id}`)) {
                             // destroy channel
                             try {
                                 await guild.channels.delete(targetVoiceChannel);
-                            } catch (error) {
+                            } catch {
                                 logger.warn(`${targetVoiceChannel.name} has already deleted or non-existent or error`);
                             }
                             await deleteFromEphemeralVCManager(guild.id, previousVoiceChannelId);
@@ -79,21 +79,21 @@ export class VoiceStateUpdateListener extends Listener {
             let targetVoiceChannel;
             try {
                 targetVoiceChannel = await guild.channels.fetch(previousVoiceChannelId);
-            } catch (error) {
+            } catch {
                 logger.warn(`${previousVoiceChannelId} fetch error. Might have been deleted`);
                 targetVoiceChannel = null;
             }
             if (targetVoiceChannel) {
                 const previousVoiceChannel = await guild.channels.fetch(previousVoiceChannelId);
                 if (previousVoiceChannel && previousVoiceChannel instanceof VoiceChannel) {
-                    let totalMember = previousVoiceChannel.members.size;
+                    const totalMember = previousVoiceChannel.members.size;
                     logger.debug(`${targetVoiceChannel.name} has ${totalMember} people inside`);
                     if (totalMember !== 0) return;
                     if (!channelTrackingManager.has(`${guild.id}-${targetVoiceChannel.id}`)) return;
                     // destroy channel
                     try {
                         await guild.channels.delete(targetVoiceChannel);
-                    } catch (error) {
+                        } catch {
                         logger.warn(`${targetVoiceChannel.name} has already deleted or non-existent or error`);
                     }
                     await deleteFromEphemeralVCManager(guild.id, previousVoiceChannelId);

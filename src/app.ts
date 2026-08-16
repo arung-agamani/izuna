@@ -1,5 +1,5 @@
-import { buildServer } from './server/fastify';
-import logger, { logError, getErrorMessage } from './lib/winston'
+import { buildServer } from './server/fastify.js';
+import logger, { logError } from './lib/winston.js';
 
 /**
  * Application factory that builds and configures the Fastify server

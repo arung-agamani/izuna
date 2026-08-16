@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
-import { TagService } from "../../../services/TagService";
-import discordSession from "../../../lib/session";
+import { TagService } from "../../../services/TagService.js";
+import discordSession from "../../../lib/session.js";
 
 const tagService = TagService.getInstance();
 

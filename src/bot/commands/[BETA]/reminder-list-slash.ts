@@ -1,8 +1,8 @@
 import { ChatInputCommand, Command } from "@sapphire/framework";
 import { EmbedBuilder } from "discord.js";
-import { config } from "../../../config";
-import ReminderService from "../../../services/ReminderService";
-import { describeCron } from "../../../lib/cronUtils";
+import { config } from "../../../config/index.js";
+import ReminderService from "../../../services/ReminderService.js";
+import { describeCron } from "../../../lib/cronUtils.js";
 
 export class ReminderListSlashCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {

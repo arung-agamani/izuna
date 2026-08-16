@@ -1,4 +1,4 @@
-import type { PrismaClient, Tag } from "@prisma/client";
+import type { PrismaClient, Tag } from "../generated/prisma/client.js";
 
 export type CreateTagData = Omit<Tag, "id" | "createdAt" | "updatedAt" | "deletedAt">;
 

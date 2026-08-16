@@ -1,4 +1,4 @@
-interface BaseResponse {
+export interface BaseResponse {
     results: any[];
     more: boolean;
 }

@@ -1,7 +1,7 @@
 import "dotenv/config";
 // Sentry Initialization
 import * as Sentry from "@sentry/node";
-import { env } from "./config/env";
+import { env } from "./config/env.js";
 
 Sentry.init({
     dsn: env.SENTRY_DNS,
@@ -10,12 +10,12 @@ Sentry.init({
 });
 
 import type { SapphireClient } from "@sapphire/framework";
-import { config } from "./config";
-import createBot from "./bot/index";
-import logger, { logError, getErrorMessage } from "./lib/winston"
-import ReminderService from "./services/ReminderService";
-import { startWebServer } from "./app";
-import { setBotClient } from "./lib/botClient";
+import { config } from "./config/index.js";
+import createBot from "./bot/index.js";
+import logger, { logError } from "./lib/winston.js";
+import ReminderService from "./services/ReminderService.js";
+import { startWebServer } from "./app.js";
+import { setBotClient } from "./lib/botClient.js";
 let botClient: SapphireClient | null = null;
 
 async function initializeBot() {

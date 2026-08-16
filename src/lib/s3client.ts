@@ -1,5 +1,5 @@
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import logger, { logError } from "./winston";
+import logger, { logError } from "./winston.js";
 
 let s3: S3Client | undefined = undefined;
 
@@ -31,7 +31,7 @@ export async function uploadFile(scopeId: string, attachmentName: string, body: 
     });
 
     try {
-        const response = await s3.send(putCommand);
+        await s3.send(putCommand);
         logger.debug("S3 upload succeeded", { objectKey, size: body.length });
         return `https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com/${objectKey}`;
     } catch (error) {

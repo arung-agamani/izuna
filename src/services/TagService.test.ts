@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
-import { TagService } from "./TagService";
-import { TagRepository } from "../repositories/TagRepository";
-import type { Tag } from "@prisma/client";
+import { TagService } from "./TagService.js";
+import { TagRepository } from "../repositories/TagRepository.js";
+import type { Tag } from "../generated/prisma/client.js";
 
 function makeTag(overrides: Partial<Tag> = {}): Tag {
     return {

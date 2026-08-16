@@ -3,7 +3,7 @@ import { Formatters, Message, EmbedBuilder } from "discord.js";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { PaginatedMessage } from "@sapphire/discord.js-utilities";
-import logger, { logError, getErrorMessage } from "../../../lib/winston"
+import { logError } from "../../../lib/winston.js";
 
 interface NyaaItems {
     title: string;

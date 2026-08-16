@@ -1,9 +1,9 @@
 import { Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
-import { MusicService } from "../../../services/MusicService";
-import prisma from "../../../lib/prisma";
-import logger, { logError, getErrorMessage } from "../../../lib/winston"
+import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation.js";
+import { MusicService } from "../../../services/MusicService.js";
+import prisma from "../../../lib/prisma.js";
+import logger, { logError } from "../../../lib/winston.js";
 
 /**
  * Stop Music Command (Refactored)
@@ -16,7 +16,7 @@ import logger, { logError, getErrorMessage } from "../../../lib/winston"
  *
  * Migration Status: COMPLETE (full service-layer implementation)
  * - Uses MusicService for session cleanup
- * - Uses ShoukakuContext for player destruction
+ * - Uses LavalinkService for player destruction
  * - Cleans up Prisma player session records
  */
 export class StopMusicCommand extends Command {

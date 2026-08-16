@@ -1,9 +1,8 @@
 import { Args, Command } from "@sapphire/framework";
 import { Formatters, Message, EmbedBuilder, ChannelType, PermissionFlagsBits } from "discord.js";
-import axios from "../../../lib/axios";
-import logger, { logError, getErrorMessage } from "../../../lib/winston";
-import { uploadFile } from "../../../lib/s3client";
-import { TagService } from "../../../services/TagService";
+import axios from "../../../lib/axios.js";
+import { uploadFile } from "../../../lib/s3client.js";
+import { TagService } from "../../../services/TagService.js";
 import mime from "mime-types";
 
 const MAX_SIZE = 8 * 1024 * 1024;

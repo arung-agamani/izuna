@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import { z } from "zod";
-import { PublicLavalinkNodeService, ZodPublicLavalinkNode } from "../../../services/PublicLavalinkNodeService";
+import { PublicLavalinkNodeService } from "../../../services/PublicLavalinkNodeService.js";
 
 const NodeSchema = {
     type: "object",

@@ -46,6 +46,8 @@ jobs:
               run: yarn install --frozen-lockfile
             - name: Generate Prisma client
               run: npx prisma generate
+            - name: Lint
+              run: yarn lint
             - name: Typecheck tests
               run: yarn test:types
             - name: Run tests

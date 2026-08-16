@@ -1,10 +1,11 @@
+import { createRequire } from "node:module";
 import winston, { format } from "winston";
 import LokiTransport from "winston-loki";
 
+const require = createRequire(import.meta.url);
 const isDevelopment = process.env["NODE_ENV"] === "development";
 const isTest = process.env["NODE_ENV"] === "test";
 const appVersion: string = (() => { try { return require("../../package.json").version; } catch { return "unknown"; } })();
-
 /**
  * Convert an unknown error value to a safe string for logging.
  * Use in log metadata to avoid [object Object] when the error is not an Error instance.

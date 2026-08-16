@@ -1,8 +1,8 @@
 import { ChatInputCommand, Command } from "@sapphire/framework";
-import { ChannelType, AutocompleteInteraction, ApplicationCommandOptionType } from "discord.js";
-import { config } from "../../../config";
-import ReminderService from "../../../services/ReminderService";
-import { createDailyCron, createWeeklyCron, createIntervalCron, describeCron, getPresetChoices, validateCronString, type DayOfWeek, type TimeUnit } from "../../../lib/cronUtils";
+import { ChannelType, AutocompleteInteraction } from "discord.js";
+import { config } from "../../../config/index.js";
+import ReminderService from "../../../services/ReminderService.js";
+import { createDailyCron, createWeeklyCron, createIntervalCron, describeCron, getPresetChoices, validateCronString, type DayOfWeek, type TimeUnit } from "../../../lib/cronUtils.js";
 
 export class ReminderSlashCommand extends Command {
     public constructor(context: Command.Context, options: Command.Options) {
@@ -172,12 +172,9 @@ export class ReminderSlashCommand extends Command {
 
         try {
             let cronString: string | null = null;
-            let message: string;
-            let isDM: boolean;
-
             // Get common options
-            message = interaction.options.getString("message", true);
-            isDM = interaction.options.getBoolean("dm") ?? false;
+            const message = interaction.options.getString("message", true);
+            const isDM = interaction.options.getBoolean("dm") ?? false;
 
             // Process based on subcommand
             switch (subcommand) {

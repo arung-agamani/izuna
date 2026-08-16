@@ -1,14 +1,14 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
-import prisma from "../../../lib/prisma";
-import logger, { logError } from "../../../lib/winston";
+import prisma from "../../../lib/prisma.js";
+import logger, { logError } from "../../../lib/winston.js";
 import discordOauth2 from "discord-oauth2";
 
-import * as tagsHandler from "./tag";
+import * as tagsHandler from "./tag.js";
 import { PermissionsBitField } from "discord.js";
-import discordSession, { GuildMembership, discordAccessTokens } from "../../../lib/session";
-import UserService from "../../../services/UserService";
-import { UserRepository } from "../../../repositories/UserRepository";
-import { TagService } from "../../../services/TagService";
+import discordSession, { GuildMembership, discordAccessTokens } from "../../../lib/session.js";
+import UserService from "../../../services/UserService.js";
+import { UserRepository } from "../../../repositories/UserRepository.js";
+import { TagService } from "../../../services/TagService.js";
 const tagService = TagService.getInstance();
 const userRepo = new UserRepository(prisma);
 

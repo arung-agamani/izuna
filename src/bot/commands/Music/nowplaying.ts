@@ -1,9 +1,9 @@
 import { Args, Command } from "@sapphire/framework";
 import { Message, EmbedBuilder, Colors, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
-import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
-import { MusicService } from "../../../services/MusicService";
-import { fancyTimeFormat } from "../../../lib/utils";
-import logger, { logError, getErrorMessage } from "../../../lib/winston"
+import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation.js";
+import { MusicService } from "../../../services/MusicService.js";
+import { fancyTimeFormat } from "../../../lib/utils.js";
+import { logError } from "../../../lib/winston.js";
 
 /**
  * Now Playing 2 Command - User-Friendly Now Playing Display

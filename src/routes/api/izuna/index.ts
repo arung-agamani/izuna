@@ -1,10 +1,10 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
-import healthRoutes from "./health";
-import authRoutes from "./auth";
-import userRoutes from "./users";
-import guildRoutes from "./guilds";
-import adminRoutes from "./admin";
-import lavalinkRoutes from "./lavalink";
+import healthRoutes from "./health.js";
+import authRoutes from "./auth.js";
+import userRoutes from "./users.js";
+import guildRoutes from "./guilds.js";
+import adminRoutes from "./admin.js";
+import lavalinkRoutes from "./lavalink.js";
 
 async function izunaRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions) {
     await fastify.register(healthRoutes, { prefix: "/health" });

@@ -21,3 +21,5 @@ Dockerfile*
 docker-compose*
 vitest.config.*
 tsconfig.test.json
+# Prisma generated client — regenerated in the builder stage
+src/generated

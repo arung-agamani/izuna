@@ -1,8 +1,8 @@
 import { Args, ChatInputCommand, Command } from "@sapphire/framework";
 import type { Message } from "discord.js";
-import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation";
-import { MusicService } from "../../../services/MusicService";
-import logger, { logError, getErrorMessage } from "../../../lib/winston"
+import { validateMusicCommandPrerequisites } from "../../../lib/voiceValidation.js";
+import { MusicService } from "../../../services/MusicService.js";
+import { logError } from "../../../lib/winston.js";
 
 /**
  * Jump Command (Refactored)
