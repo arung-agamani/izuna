@@ -97,6 +97,11 @@ yarn lint          # eslint src — errors fail, warnings pass
 yarn lint:fix      # auto-fix
 ```
 
+## Metrics
+
+Prometheus metrics exposed at `/metrics` (prom-client). Point Alloy/Grafana Agent at it and `remote_write` to Grafana Cloud Metrics.
+
+
 ## Database migrations
 
 ```sh

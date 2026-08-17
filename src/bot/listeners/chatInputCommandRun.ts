@@ -3,6 +3,7 @@ import { ChatInputCommandRunPayload } from "@sapphire/framework";
 import { Events, Listener } from "@sapphire/framework";
 import type { CommandInteraction } from "discord.js";
 import logger from "../../lib/winston.js";
+import { commandInvokedTotal } from "../../lib/metrics.js";
 
 export class ChatInputRunListener extends Listener {
     public constructor(context: Listener.Context, options: Listener.Options) {
@@ -20,5 +21,6 @@ export class ChatInputRunListener extends Listener {
             guildId: interaction.guildId,
             userId: interaction.user.id,
         });
+        commandInvokedTotal.inc({ command: command.name, source: "slash" });
     }
 }

@@ -9,6 +9,7 @@ import adminAuthPlugin from './adminAuth.js';
 import oauthPlugin from './oauth.js';
 import swaggerPlugin from './swagger.js';
 import rateLimitPlugin from './rateLimit.js';
+import metricsPlugin from './metrics.js';
 
 export default fp(async (fastify) => {
   // Register CORS plugin
@@ -31,6 +32,8 @@ export default fp(async (fastify) => {
 
   // Register routes plugin
   await fastify.register(fastifyRoutes);
+  // Register Prometheus metrics endpoint (public, unauthenticated, not rate-limited)
+  await fastify.register(metricsPlugin);
   // Register admin authentication plugin (whitelist-based)
   await fastify.register(adminAuthPlugin);
 

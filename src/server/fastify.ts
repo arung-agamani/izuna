@@ -2,6 +2,7 @@ import fastify from "fastify";
 import plugins from "./plugins/index.js";
 import apiv1Routes from "../routes/api/index.js";
 import logger, { logError } from "../lib/winston.js";
+import { httpRequestsTotal, httpRequestDurationSeconds } from "../lib/metrics.js";
 
 export async function buildServer() {
     const server = fastify({
@@ -18,6 +19,10 @@ export async function buildServer() {
         server.addHook("onResponse", async (request, reply) => {
             const startTime = (request.raw as unknown as { _startTime?: number })._startTime;
             const responseTimeMs = startTime ? Date.now() - startTime : undefined;
+            const route = request.routerPath || "unmatched";
+            const labels = { method: request.method, route, status: String(reply.statusCode) };
+            httpRequestsTotal.inc(labels);
+            if (responseTimeMs !== undefined) httpRequestDurationSeconds.observe(labels, responseTimeMs / 1000);
             const level = reply.statusCode >= 500 ? "warn" : "info";
             logger.log(level, "http_request", {
                 method: request.method,

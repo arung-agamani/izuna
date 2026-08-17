@@ -3,6 +3,7 @@ import { MessageCommandRunPayload } from "@sapphire/framework";
 import { Events, Listener } from "@sapphire/framework";
 import type { Message } from "discord.js";
 import logger from "../../lib/winston.js";
+import { commandInvokedTotal } from "../../lib/metrics.js";
 
 export class MessageRunListener extends Listener {
     public constructor(context: Listener.Context, options: Listener.Options) {
@@ -20,5 +21,6 @@ export class MessageRunListener extends Listener {
             guildId: message.guildId,
             userId: message.author.id,
         });
+        commandInvokedTotal.inc({ command: command.name, source: "message" });
     }
 }

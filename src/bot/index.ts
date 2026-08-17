@@ -9,6 +9,11 @@ import { Partials, VoiceBasedChannel } from "discord.js";
 
 async function createBotApp() {
     const client = new SapphireClient({
+        // Sapphire scans <baseUserDirectory>/commands, /listeners, etc. for pieces.
+        // Set it explicitly to this module's directory (build/bot/ or src/bot/):
+        // package.json "main" points at the app entry (build/index.js), so the
+        // auto-detected root (build/) misses the pieces nested under bot/.
+        baseUserDirectory: import.meta.dirname,
         intents: [
             "Guilds",
             "GuildMessages",

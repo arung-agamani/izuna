@@ -52,6 +52,7 @@
         "lodash.debounce": "^4.0.8",
         "mime-types": "^2.1.35",
         "prisma": "^7.9.1",
+        "prom-client": "^15.1.3",
         "serializr": "^3.0.2",
         "shoukaku": "^4.3.0",
         "undici": "5",

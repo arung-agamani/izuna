@@ -4,6 +4,7 @@ import { PlayerManager } from "./PlayerManager.js";
 import { resolveNode } from "./LavalinkService.js";
 import { parseUrl, getLavalinkQuery, type ParsedUrl } from "../lib/urlParser.js";
 import logger, { logError } from "../lib/winston.js";
+import { trackStartedTotal, trackEndedTotal } from "../lib/metrics.js";
 
 export type LavalinkLoadType = "TRACK_LOADED" | "PLAYLIST_LOADED" | "SEARCH_RESULT" | "NO_MATCHES" | "LOAD_FAILED";
 
@@ -204,6 +205,7 @@ export class MusicService {
                 trackTitle: endedTrack?.info.title,
                 reason: data.reason,
             });
+            trackEndedTotal.inc({ reason: String(data.reason ?? "unknown") });
 
             // Progress queue based on repeat mode
             const currentPosition = currentSession.currentPosition;
@@ -266,6 +268,7 @@ export class MusicService {
                 trackTitle: track.info.title,
                 durationMs: track.info.length,
             });
+            trackStartedTotal.inc();
 
             const fancyTimeFormat = (seconds: number) => {
                 const hours = Math.floor(seconds / 3600);
