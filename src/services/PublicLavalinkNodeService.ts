@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Socket } from "net";
+import WebSocket from "ws";
 import logger from "../lib/winston.js";
 
 export const ZodPublicLavalinkNode = z.object({
@@ -172,6 +173,60 @@ export class PublicLavalinkNodeService {
                 throw new Error(`Ping test failed for node ${node.identifier}: TCP error: ${tcpMsg}; HTTP fallback error: ${httpMsg}`, { cause: httpErr });
             }
         }
+    }
+
+    /**
+     * Probe a node's actual WebSocket handshake (the same `/v4/websocket` endpoint
+     * Shoukaku connects to). Stricter than pingTest — catches nodes that answer
+     * HTTP but reject the socket (rate-limit 429, bad auth, dead socket, etc.).
+     * Resolves with latency on a successful handshake, rejects otherwise.
+     */
+    public async websocketProbe(node: PublicLavalinkNode, userId: string): Promise<number> {
+        const start = Date.now();
+        const timeoutMs = 3000;
+        const url = `${node.secure ? "wss" : "ws"}://${node.host}:${node.port}/v4/websocket`;
+        const headers = {
+            "Client-Name": "izuna-health-check",
+            "User-Agent": "Izuna-Lavalink-Health-Check/1.0",
+            Authorization: node.password,
+            "User-Id": userId,
+        };
+
+        return new Promise<number>((resolve, reject) => {
+            let settled = false;
+            const ws = new WebSocket(url, { headers, handshakeTimeout: timeoutMs });
+
+            const finish = (error?: Error) => {
+                if (settled) return;
+                settled = true;
+                try {
+                    ws.terminate();
+                } catch {
+                    // ignore terminate errors on an already-dead socket
+                }
+                if (error) reject(error);
+                else resolve(Date.now() - start);
+            };
+
+            const timer = setTimeout(() => finish(new Error("WebSocket handshake timeout")), timeoutMs);
+
+            ws.once("open", () => {
+                clearTimeout(timer);
+                finish();
+            });
+            ws.once("unexpected-response", (_req, res) => {
+                clearTimeout(timer);
+                finish(new Error(`Rejected with HTTP ${res.statusCode ?? "unknown"}`));
+            });
+            ws.once("error", (error) => {
+                clearTimeout(timer);
+                finish(error instanceof Error ? error : new Error(String(error)));
+            });
+            ws.once("close", (code) => {
+                clearTimeout(timer);
+                finish(new Error(`WebSocket closed before handshake (code ${code})`));
+            });
+        });
     }
 
     public getNodes(): PublicLavalinkNode[] | null {

@@ -153,7 +153,7 @@ Use --seek or -s flag to jump to a specific timestamp if available.`,
         // Parse the input URL/query
         let resolution;
         try {
-            resolution = await this.musicService.resolveInput(query, isSeeking);
+            resolution = await this.musicService.resolveInput(query, isSeeking, guildId);
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : "Failed to resolve input", { cause: error });
         }

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import api from "../../lib/api";
+import AdminNav from "./AdminNav";
 
 gsap.registerPlugin(useGSAP);
 
@@ -174,7 +175,7 @@ export default function AdminGuilds() {
 
     return (
         <div ref={containerRef} className="mx-auto py-8 px-4">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
                 <h1 className="text-2xl m-0" style={{ fontFamily: "var(--font-display)" }}>
                     Guilds
                     {!isLoading && (
@@ -184,6 +185,7 @@ export default function AdminGuilds() {
                     )}
                 </h1>
             </div>
+            <AdminNav />
 
             {isLoading && (
                 <div className="text-center py-16" style={{ color: "var(--color-text-muted)" }}>

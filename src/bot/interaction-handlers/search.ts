@@ -65,7 +65,7 @@ export class SearchInteractionHandler extends InteractionHandler {
             const session = await this.musicService.getOrCreateSession(guildId, voiceChannel, textChannel);
 
             // Resolve the track
-            const resolveResult = await this.musicService.resolveTrack(parsedData.ytId);
+            const resolveResult = await this.musicService.resolveTrack(parsedData.ytId, "youtube", guildId);
 
             if (resolveResult.loadType === "LOAD_FAILED" || resolveResult.loadType === "NO_MATCHES") {
                 await interaction.message.edit({

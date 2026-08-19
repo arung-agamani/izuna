@@ -58,6 +58,7 @@
         "undici": "5",
         "winston": "^3.19.0",
         "winston-loki": "^6.1.6",
+        "ws": "^8.21.0",
         "youtube-search-api": "^1.2.1",
         "zod": "^3.21.4"
     },

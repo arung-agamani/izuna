@@ -1,11 +1,15 @@
 import { SapphireClient } from "@sapphire/framework";
 import { Shoukaku, Connectors, NodeOption, ShoukakuOptions } from "shoukaku";
 import { config } from "../config/index.js";
-import { setLavalinkManager } from "../services/LavalinkService.js";
-import logger from "../lib/winston.js";
+import { setLavalinkManager, setLavalinkNodeManager, getLavalinkManager } from "../services/LavalinkService.js";
+import logger, { logError } from "../lib/winston.js";
 import { handleTagMessage } from "./handlers/tagHandler.js";
 import { channelTrackingManager, deleteFromEphemeralVCManager, initializeChannelTrackingManager, initializeJoinToCreateVCManager } from "../lib/channelTracker.js";
 import { Partials, VoiceBasedChannel } from "discord.js";
+import { LavalinkNodeManager } from "../services/LavalinkNodeManager.js";
+import { KeyValueRepository } from "../repositories/KeyValueRepository.js";
+import { PublicLavalinkNodeService } from "../services/PublicLavalinkNodeService.js";
+import prisma from "../lib/prisma.js";
 
 async function createBotApp() {
     const client = new SapphireClient({
@@ -45,8 +49,17 @@ async function createBotApp() {
         }
     }
     
+    let nodeManager: LavalinkNodeManager | null = null;
+
     if (!process.env["MUTE"] && process.env["MUTE"] !== "1") { 
         logger.info("Initializing Shoukaku connector");
+        nodeManager = new LavalinkNodeManager(
+            new KeyValueRepository(prisma),
+            PublicLavalinkNodeService.instance,
+            getLavalinkManager,
+            Number(process.env["LAVALINK_MAX_PUBLIC_NODES"] ?? "3"),
+        );
+        const nm = nodeManager;
         const option: ShoukakuOptions = {
             resume: true,
             resumeTimeout: 60,
@@ -56,24 +69,36 @@ async function createBotApp() {
             reconnectInterval: 5,
             restTimeout: 60,
             voiceConnectionTimeout: 15,
+            nodeResolver: nodeManager.nodeResolver(),
         }
         const manager = new Shoukaku(new Connectors.DiscordJS(client), nodes, option);
         setLavalinkManager(manager);
-        logger.info("Shoukaku manager initialized with nodes:", nodes.map(node => node.name).join(", "));
+        // Register error/ready handlers BEFORE adding any node — a connection failure
+        // during syncNodes() would otherwise emit 'error' with no listener and Node
+        // throws ERR_UNHANDLED_ERROR, masking the real cause.
         manager.on("error", (node, err) => {
-            logger.error("Shoukaku connection error", {
+            const isError = err instanceof Error;
+            logError("Shoukaku connection error", err, {
                 node: node || "unknown",
-                error: err instanceof Error ? err.message : String(err),
-                stack: err instanceof Error ? err.stack : undefined,
+                code: isError && "code" in err ? (err as Error & { code?: unknown }).code : undefined,
+                cause: isError && err.cause instanceof Error ? err.cause.message : undefined,
             });
+            nm.recordError(node, err);
         });
         manager.on("ready", () => {
             logger.info("✅ Shoukaku manager ready", {
                 nodes: manager.nodes.size,
             });
         });
+        setLavalinkNodeManager(nodeManager);
+        logger.info("Shoukaku manager initialized with nodes:", nodes.map(node => node.name).join(", "));
     }
     await client.login(process.env["DISCORD_BOT_TOKEN"]);
+    // Sync the public node pool only after login — Shoukaku refuses to connect any
+    // node until the connector sets the bot user id on 'clientReady'.
+    if (nodeManager) {
+        await nodeManager.syncNodes();
+    }
     await initializeJoinToCreateVCManager();
     await initializeChannelTrackingManager();
     client.on("messageCreate", async (message) => {

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import api from "../../lib/api";
+import AdminNav from "./AdminNav";
 
 gsap.registerPlugin(useGSAP);
 
@@ -82,9 +83,10 @@ export default function AdminOverview() {
 
     return (
         <div ref={containerRef} className="mx-auto py-8 px-4">
-            <h1 className="text-2xl mb-6" style={{ fontFamily: "var(--font-display)" }}>
+            <h1 className="text-2xl mb-4" style={{ fontFamily: "var(--font-display)" }}>
                 Admin Overview
             </h1>
+            <AdminNav />
             {isLoading && (
                 <div className="text-center py-16" style={{ color: "var(--color-text-muted)" }}>
                     Loading bot info...

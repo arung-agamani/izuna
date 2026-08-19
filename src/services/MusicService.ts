@@ -3,6 +3,7 @@ import { LoadType, type Track, type Player } from "shoukaku";
 import { PlayerManager } from "./PlayerManager.js";
 import { resolveNode } from "./LavalinkService.js";
 import { parseUrl, getLavalinkQuery, type ParsedUrl } from "../lib/urlParser.js";
+import { sourceOf, type NodeSource } from "../lib/lavalink/source.js";
 import logger, { logError } from "../lib/winston.js";
 import { trackStartedTotal, trackEndedTotal } from "../lib/metrics.js";
 
@@ -166,13 +167,17 @@ export class MusicService {
         const guildId = session.guildId;
 
         // Track exception - provide user feedback
-        player.on?.("exception", (err: any) => {
-            logError("Player exception:", err);
+        player.on("exception", (err) => {
+            logError("Player exception", new Error(err.exception.message), {
+                severity: err.exception.severity,
+                cause: err.exception.cause,
+                guildId,
+            });
             // Always get fresh session from map to avoid stale references
             const currentSession = MusicService.sessions.get(guildId);
             if (!currentSession) return;
 
-            if (err.exception?.message === "This video is not available") {
+            if (err.exception.message === "This video is not available") {
                 if (currentSession.textChannel?.isSendable()) {
                     currentSession.textChannel.send("⏭️ Skipping unavailable track").catch(logger.error);
                 }
@@ -189,6 +194,14 @@ export class MusicService {
             if (currentSession.textChannel?.isSendable()) {
                 currentSession.textChannel.send("⏭️ Track stuck, skipping...").catch(logger.error);
             }
+        });
+
+        // Track start — mark the session as actively playing
+        player.on("start", () => {
+            const currentSession = MusicService.sessions.get(guildId);
+            if (!currentSession) return;
+            currentSession.isPlaying = true;
+            currentSession.isPaused = false;
         });
 
         // Track end - handle queue progression
@@ -224,6 +237,7 @@ export class MusicService {
             // Check if reached end of queue
             if (currentSession.currentPosition >= queueSize) {
                 currentSession.isPlaying = false;
+                currentSession.isPaused = false;
                 if (currentSession.textChannel?.isSendable()) await currentSession.textChannel.send("✅ Reached the end of playlist");
 
                 if (repeatMode === "playlist") {
@@ -312,8 +326,12 @@ export class MusicService {
      * Resolve a query via Lavalink REST.
      * This mirrors what `play.ts` does today, but is meant to become the single entry point.
      */
-    public async resolveTrack(query: string): Promise<LavalinkResolveResult> {
-        const lavalinkNode = resolveNode();
+    public async resolveTrack(query: string, source: NodeSource, guildId?: string): Promise<LavalinkResolveResult> {
+        // Pin REST resolution to the session's player node when one exists, so a
+        // track is resolved on the same node that will actually play it. Falls back
+        // to source-aware selection for the first track of a brand-new session.
+        const sessionNode = guildId ? MusicService.sessions.get(guildId)?.player?.node : undefined;
+        const lavalinkNode = sessionNode && sessionNode.state === 1 /* State.CONNECTED */ ? sessionNode : resolveNode(source);
 
         const res = (await lavalinkNode.rest.resolve(query)) as any;
         if (res && res.loadType) res.loadType = shoukakuLoadTypeToString(res.loadType);
@@ -397,6 +415,7 @@ export class MusicService {
     public async resolveInput(
         input: string,
         seekMode: boolean = false,
+        guildId?: string,
     ): Promise<{
         parsed: ParsedUrl;
         result: LavalinkResolveResult;
@@ -404,13 +423,14 @@ export class MusicService {
     }> {
         const parsed = parseUrl(input, seekMode);
         const lavalinkQuery = getLavalinkQuery(parsed);
+        const source = sourceOf(parsed);
 
         // Special handling for Google Drive - needs additional processing
         if (parsed.type === "google-drive") {
             throw new Error("Google Drive support requires additional setup. Please use YouTube links or search queries.");
         }
 
-        const result = await this.resolveTrack(lavalinkQuery);
+        const result = await this.resolveTrack(lavalinkQuery, source, guildId);
 
         return {
             parsed,

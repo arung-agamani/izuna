@@ -1,6 +1,13 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
+import type { HealthService } from "../../../services/HealthService.js";
 
-async function healthRoutes(fastify: FastifyInstance, _opts: FastifyPluginOptions) {
+interface HealthRoutesOptions extends FastifyPluginOptions {
+    healthService: HealthService;
+}
+
+async function healthRoutes(fastify: FastifyInstance, opts: HealthRoutesOptions) {
+    const { healthService } = opts;
+
     fastify.get("/", {
         schema: {
             description: "Health check endpoint.",
@@ -17,6 +24,16 @@ async function healthRoutes(fastify: FastifyInstance, _opts: FastifyPluginOption
         },
     }, async (_req, reply) => {
         return reply.send({ status: "ok", version: "0.0.1" });
+    });
+
+    fastify.get("/ready", {
+        schema: {
+            description: "Readiness check — reports DB, bot, and Lavalink status.",
+            tags: ["health"],
+        },
+    }, async (_req, reply) => {
+        const result = await healthService.check();
+        return reply.status(result.status === "ok" ? 200 : 503).send(result);
     });
 }
 

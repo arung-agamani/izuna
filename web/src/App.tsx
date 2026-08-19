@@ -29,6 +29,7 @@ import DashTags from "./routes/dash/Tags";
 // Admin
 import AdminOverview from "./routes/dash/admin/Overview";
 import AdminGuilds from "./routes/dash/admin/Guilds";
+import AdminLavalink from "./routes/dash/admin/Lavalink";
 
 import "react-toastify/dist/ReactToastify.css";
 
@@ -54,6 +55,7 @@ function App() {
                     <Route path="tags" element={<DashTags />} />
                     <Route path="admin" element={<AdminOverview />} />
                     <Route path="admin/guilds" element={<AdminGuilds />} />
+                    <Route path="admin/lavalink" element={<AdminLavalink />} />
                     <Route path="reminders" element={<DashReminders />} />
                     <Route path="profile" element={<DashProfile />} />
                 </Route>

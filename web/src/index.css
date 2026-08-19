@@ -90,3 +90,25 @@ body::before {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* ── Form fields ────────────────────────────────── */
+
+.field-input {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    color: var(--color-text-primary);
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.field-input::placeholder {
+    color: var(--color-text-muted);
+}
+
+.field-input:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-accent-glow);
+}
