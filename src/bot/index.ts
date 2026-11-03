@@ -50,8 +50,9 @@ async function createBotApp() {
     }
     
     let nodeManager: LavalinkNodeManager | null = null;
+    let shoukaku: Shoukaku | null = null;
 
-    if (!process.env["MUTE"] && process.env["MUTE"] !== "1") { 
+    if (!process.env["MUTE"] && process.env["MUTE"] !== "1") {
         logger.info("Initializing Shoukaku connector");
         nodeManager = new LavalinkNodeManager(
             new KeyValueRepository(prisma),
@@ -71,12 +72,12 @@ async function createBotApp() {
             voiceConnectionTimeout: 15,
             nodeResolver: nodeManager.nodeResolver(),
         }
-        const manager = new Shoukaku(new Connectors.DiscordJS(client), nodes, option);
-        setLavalinkManager(manager);
+        shoukaku = new Shoukaku(new Connectors.DiscordJS(client), nodes, option);
+        setLavalinkManager(shoukaku);
         // Register error/ready handlers BEFORE adding any node — a connection failure
         // during syncNodes() would otherwise emit 'error' with no listener and Node
         // throws ERR_UNHANDLED_ERROR, masking the real cause.
-        manager.on("error", (node, err) => {
+        shoukaku.on("error", (node, err) => {
             const isError = err instanceof Error;
             logError("Shoukaku connection error", err, {
                 node: node || "unknown",
@@ -85,10 +86,26 @@ async function createBotApp() {
             });
             nm.recordError(node, err);
         });
-        manager.on("ready", () => {
+        shoukaku.on("ready", () => {
             logger.info("✅ Shoukaku manager ready", {
-                nodes: manager.nodes.size,
+                nodes: shoukaku!.nodes.size,
             });
+        });
+        // When the last connected node drops, trigger an emergency sync so the bot
+        // can find a replacement without waiting for the next periodic tick.
+        shoukaku.on("disconnect", (name) => {
+            logger.warn("Lavalink node disconnected", {
+                name,
+                remainingConnected: nm.getConnectedNodeCount(),
+            });
+            if (!nm.hasConnectedNodes()) {
+                logger.warn("All Lavalink nodes disconnected — triggering emergency sync");
+                nm.emergencySync().catch((err) => {
+                    logger.error("Emergency sync after all-nodes-dead failed", {
+                        error: err instanceof Error ? err.message : String(err),
+                    });
+                });
+            }
         });
         setLavalinkNodeManager(nodeManager);
         logger.info("Shoukaku manager initialized with nodes:", nodes.map(node => node.name).join(", "));
@@ -98,6 +115,9 @@ async function createBotApp() {
     // node until the connector sets the bot user id on 'clientReady'.
     if (nodeManager) {
         await nodeManager.syncNodes();
+        // Proactively refresh the public node pool on an interval. Re-adds dead
+        // nodes (Shoukaku reconnects same-name nodes) and picks up new entries.
+        nodeManager.startPeriodicSync();
     }
     await initializeJoinToCreateVCManager();
     await initializeChannelTrackingManager();
@@ -138,6 +158,19 @@ async function createBotApp() {
             }
         })();
     }, 5000);
+
+    // Graceful shutdown — stop the sync timer and disconnect from Discord so the
+    // process can exit cleanly (the timer would otherwise keep the event loop alive).
+    const onShutdown = (signal: string) => {
+        logger.info(`Received ${signal} — shutting down Lavalink + bot`);
+        nodeManager?.stopPeriodicSync();
+        shoukaku?.nodes.forEach((node) => node.disconnect(1000, "graceful shutdown"));
+        client.destroy();
+        process.exit(0);
+    };
+    process.on("SIGINT", () => onShutdown("SIGINT"));
+    process.on("SIGTERM", () => onShutdown("SIGTERM"));
+
     return client;
 }
 

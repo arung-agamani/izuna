@@ -1,7 +1,7 @@
 import type { Shoukaku } from "shoukaku";
 import { z } from "zod";
 import type { KeyValueRepository } from "../repositories/KeyValueRepository.js";
-import { DEFAULT_SOURCE_TAGS, type LavalinkNodeManager } from "./LavalinkNodeManager.js";
+import { DEFAULT_SOURCE_TAGS, NODE_HEALTH_KEY, NodeHealthMapSchema, type LavalinkNodeManager, type NodeHealthMap } from "./LavalinkNodeManager.js";
 
 const SOURCE_TAGS_KEY = "lavalink:source-tags";
 const NODE_TAGS_KEY = "lavalink:node-tags";
@@ -90,6 +90,17 @@ export class LavalinkAdminService {
     }
 
     async syncNodes(): Promise<void> {
+        await this.getNodeManager()?.syncNodes();
+    }
+
+    async getHealth(): Promise<NodeHealthMap> {
+        const parsed = NodeHealthMapSchema.safeParse(await this.kv.get(NODE_HEALTH_KEY));
+        return parsed.success ? parsed.data : {};
+    }
+
+    /** Delete the stored node-health map and immediately re-evaluate from scratch. */
+    async resetHealth(): Promise<void> {
+        await this.kv.delete(NODE_HEALTH_KEY);
         await this.getNodeManager()?.syncNodes();
     }
 }

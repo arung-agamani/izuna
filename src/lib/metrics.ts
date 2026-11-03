@@ -1,6 +1,6 @@
 import { Counter, Gauge, Histogram, collectDefaultMetrics, register } from "prom-client";
 import { getBotClient } from "./botClient.js";
-import { getLavalinkManager } from "../services/LavalinkService.js";
+import { getLavalinkManager, getLavalinkNodeManager } from "../services/LavalinkService.js";
 import { MusicService } from "../services/MusicService.js";
 
 // NOTE: this module imports MusicService/LavalinkService and is in turn imported by
@@ -98,6 +98,14 @@ export const lavalinkNodes = new Gauge({
     help: "Number of registered Lavalink nodes.",
     collect() {
         this.set(getLavalinkManager()?.nodes.size ?? 0);
+    },
+});
+
+export const lavalinkNodesConnected = new Gauge({
+    name: "izuna_lavalink_nodes_connected",
+    help: "Number of CONNECTED Lavalink nodes (subset of izuna_lavalink_nodes).",
+    collect() {
+        this.set(getLavalinkNodeManager()?.getConnectedNodeCount() ?? 0);
     },
 });
 

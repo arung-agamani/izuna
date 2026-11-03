@@ -191,6 +191,114 @@ describe("LavalinkNodeManager", () => {
         });
     });
 
+    describe("getConnectedNodeCount / hasConnectedNodes", () => {
+        it("counts only CONNECTED nodes", () => {
+            const connected = makeNode("up", "public", 1, 1 /* CONNECTED */);
+            const disconnected = makeNode("down", "public", 1, 3 /* DISCONNECTED */);
+            const { nodeManager } = makeManager([connected, disconnected]);
+
+            expect(nodeManager.getConnectedNodeCount()).toBe(1);
+            expect(nodeManager.hasConnectedNodes()).toBe(true);
+        });
+
+        it("returns 0 / false when no nodes are connected", () => {
+            const { nodeManager } = makeManager([makeNode("down", "public", 1, 3)]);
+
+            expect(nodeManager.getConnectedNodeCount()).toBe(0);
+            expect(nodeManager.hasConnectedNodes()).toBe(false);
+        });
+
+        it("returns 0 / false when the manager is empty", () => {
+            const { nodeManager } = makeManager([]);
+
+            expect(nodeManager.getConnectedNodeCount()).toBe(0);
+            expect(nodeManager.hasConnectedNodes()).toBe(false);
+        });
+    });
+
+    describe("startPeriodicSync / stopPeriodicSync", () => {
+        it("schedules recurring syncNodes calls", async () => {
+            vi.useFakeTimers();
+            try {
+                const { nodeManager, publicNodes } = makeManager([]);
+                publicNodes.fetchNodes.mockResolvedValue([]);
+                publicNodes.websocketProbe.mockResolvedValue(10);
+
+                nodeManager.startPeriodicSync(1000);
+                expect(publicNodes.fetchNodes).not.toHaveBeenCalled();
+
+                await vi.advanceTimersByTimeAsync(1000);
+                expect(publicNodes.fetchNodes).toHaveBeenCalledTimes(1);
+
+                await vi.advanceTimersByTimeAsync(1000);
+                expect(publicNodes.fetchNodes).toHaveBeenCalledTimes(2);
+
+                nodeManager.stopPeriodicSync();
+                await vi.advanceTimersByTimeAsync(2000);
+                expect(publicNodes.fetchNodes).toHaveBeenCalledTimes(2); // no more after stop
+            } finally {
+                vi.useRealTimers();
+            }
+        });
+
+        it("is idempotent — calling start twice does not create two timers", async () => {
+            vi.useFakeTimers();
+            try {
+                const { nodeManager, publicNodes } = makeManager([]);
+                publicNodes.fetchNodes.mockResolvedValue([]);
+
+                nodeManager.startPeriodicSync(1000);
+                nodeManager.startPeriodicSync(1000);
+
+                await vi.advanceTimersByTimeAsync(1000);
+                expect(publicNodes.fetchNodes).toHaveBeenCalledTimes(1);
+            } finally {
+                vi.useRealTimers();
+            }
+        });
+    });
+
+    describe("emergencySync", () => {
+        it("runs syncNodes when no lock is held and cooldown has elapsed", async () => {
+            const { nodeManager, publicNodes } = makeManager([]);
+            publicNodes.fetchNodes.mockResolvedValue([]);
+            publicNodes.websocketProbe.mockResolvedValue(10);
+
+            await nodeManager.emergencySync();
+
+            expect(publicNodes.fetchNodes).toHaveBeenCalledTimes(1);
+        });
+
+        it("skips when cooldown is still active", async () => {
+            const { nodeManager, publicNodes } = makeManager([]);
+            publicNodes.fetchNodes.mockResolvedValue([]);
+            publicNodes.websocketProbe.mockResolvedValue(10);
+
+            await nodeManager.emergencySync(); // first call — runs
+            await nodeManager.emergencySync(); // second call — cooldown
+
+            expect(publicNodes.fetchNodes).toHaveBeenCalledTimes(1);
+        });
+
+        it("waits for an in-flight sync instead of running a second one", async () => {
+            const { nodeManager, publicNodes } = makeManager([]);
+            let resolveFetch: () => void = () => {};
+            publicNodes.fetchNodes.mockImplementation(
+                () => new Promise<void>((resolve) => { resolveFetch = resolve; }).then(() => []),
+            );
+            publicNodes.websocketProbe.mockResolvedValue(10);
+
+            const promise1 = nodeManager.emergencySync();
+            const promise2 = nodeManager.emergencySync(); // should wait, not run a second sync
+
+            // Let promise2's waitForSync poll a few times, then resolve the in-flight sync.
+            setTimeout(() => resolveFetch(), 100);
+            await Promise.all([promise1, promise2]);
+
+            expect(publicNodes.fetchNodes).toHaveBeenCalledTimes(1);
+        });
+    });
+
     describe("syncNodes", () => {
         it("adds converted public nodes (bounded) and loads preferences", async () => {
             const { nodeManager, manager, publicNodes, kv } = makeManager([], { "lavalink:source-tags": { youtube: ["premium"] } });

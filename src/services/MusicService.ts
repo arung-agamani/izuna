@@ -1,7 +1,7 @@
 import type { VoiceBasedChannel, TextBasedChannel, Guild } from "discord.js";
 import { LoadType, type Track, type Player } from "shoukaku";
 import { PlayerManager } from "./PlayerManager.js";
-import { resolveNode } from "./LavalinkService.js";
+import { resolveNodeWithRecovery } from "./LavalinkService.js";
 import { parseUrl, getLavalinkQuery, type ParsedUrl } from "../lib/urlParser.js";
 import { sourceOf, type NodeSource } from "../lib/lavalink/source.js";
 import logger, { logError } from "../lib/winston.js";
@@ -331,7 +331,7 @@ export class MusicService {
         // track is resolved on the same node that will actually play it. Falls back
         // to source-aware selection for the first track of a brand-new session.
         const sessionNode = guildId ? MusicService.sessions.get(guildId)?.player?.node : undefined;
-        const lavalinkNode = sessionNode && sessionNode.state === 1 /* State.CONNECTED */ ? sessionNode : resolveNode(source);
+        const lavalinkNode = sessionNode && sessionNode.state === 1 /* State.CONNECTED */ ? sessionNode : await resolveNodeWithRecovery(source);
 
         const res = (await lavalinkNode.rest.resolve(query)) as any;
         if (res && res.loadType) res.loadType = shoukakuLoadTypeToString(res.loadType);

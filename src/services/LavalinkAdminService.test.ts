@@ -12,6 +12,7 @@ function makeService(nodes: Node[], kvValues: Record<string, unknown> = {}) {
     const kv = {
         get: vi.fn(async (key: string) => kvValues[key] ?? null),
         set: vi.fn(async () => undefined),
+        delete: vi.fn(async () => undefined),
     } as unknown as KeyValueRepository;
     const manager = { nodes: new Map(nodes.map((n) => [n.name, n])) } as unknown as Shoukaku;
     const nodeManager = {
@@ -106,6 +107,31 @@ describe("LavalinkAdminService", () => {
         it("delegates to the node manager", async () => {
             const { service, nodeManager } = makeService([]);
             await service.syncNodes();
+            expect(nodeManager.syncNodes).toHaveBeenCalled();
+        });
+    });
+
+    describe("getHealth", () => {
+        it("returns an empty map when no health data is stored", async () => {
+            const { service } = makeService([]);
+            expect(await service.getHealth()).toEqual({});
+        });
+
+        it("returns the stored health map when present", async () => {
+            const health = {
+                a: { healthy: true, latencyMs: 20, lastCheckedAt: "2026-01-01T00:00:00.000Z" },
+                b: { healthy: false, latencyMs: null, lastCheckedAt: "2026-01-01T00:00:00.000Z" },
+            };
+            const { service } = makeService([], { "lavalink:node-health": health });
+            expect(await service.getHealth()).toEqual(health);
+        });
+    });
+
+    describe("resetHealth", () => {
+        it("deletes the health key and re-syncs nodes", async () => {
+            const { service, kv, nodeManager } = makeService([]);
+            await service.resetHealth();
+            expect(kv.delete).toHaveBeenCalledWith("lavalink:node-health");
             expect(nodeManager.syncNodes).toHaveBeenCalled();
         });
     });

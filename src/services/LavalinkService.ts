@@ -41,3 +41,25 @@ export function resolveNode(source: NodeSource): Node {
     if (!node) throw new Error("No Lavalink node connected");
     return node;
 }
+
+/**
+ * Resolve a node with self-healing fallback. If no node is currently connected,
+ * triggers an emergency sync (which fetches + health-checks the public pool) and
+ * retries resolution. The emergency sync is guarded by a cooldown and a sync lock,
+ * so concurrent callers won't spam the public API.
+ *
+ * @param source  - The source category for tag-aware routing.
+ * @param timeoutMs - Max time to wait for an emergency sync (default 30s).
+ * @throws Error if no node can be found after the emergency sync completes.
+ */
+export async function resolveNodeWithRecovery(source: NodeSource, timeoutMs = 30_000): Promise<Node> {
+    const existing = nodeManager?.resolveNode(source);
+    if (existing) return existing;
+
+    logger.warn("No connected Lavalink nodes — triggering emergency sync", { source });
+    await nodeManager?.emergencySync(timeoutMs);
+
+    const after = nodeManager?.resolveNode(source);
+    if (!after) throw new Error("No Lavalink node connected — emergency sync did not find any healthy node");
+    return after;
+}

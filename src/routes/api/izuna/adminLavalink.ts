@@ -31,6 +31,18 @@ const PreferencesResponse = {
     },
 };
 
+const HealthResponse = {
+    type: "object",
+    additionalProperties: {
+        type: "object",
+        properties: {
+            healthy: { type: "boolean" },
+            latencyMs: { type: ["number", "null"] },
+            lastCheckedAt: { type: "string" },
+        },
+    },
+};
+
 const ErrorResponse = { type: "object", properties: { error: { type: "string" } } };
 const DataResponse = (item: Record<string, unknown>) => ({ type: "object", properties: { data: item } });
 const DataArrayResponse = (item: Record<string, unknown>) => ({ type: "object", properties: { data: { type: "array", items: item }, count: { type: "number" } } });
@@ -87,6 +99,29 @@ async function adminLavalinkRoutes(fastify: FastifyInstance, opts: AdminLavalink
     }, async (_req, reply) => {
         await lavalinkAdminService.syncNodes();
         return reply.send({ data: { synced: true } });
+    });
+
+    fastify.get("/health", {
+        onRequest: [fastify.adminRequired],
+        schema: {
+            description: "Stored node health map (healthy/latency/last-checked per node).",
+            tags: ["admin", "lavalink"],
+            response: { 200: DataResponse(HealthResponse) },
+        },
+    }, async (_req, reply) => {
+        return reply.send({ data: await lavalinkAdminService.getHealth() });
+    });
+
+    fastify.delete("/health", {
+        onRequest: [fastify.adminRequired],
+        schema: {
+            description: "Reset the stored node health map and re-evaluate from scratch.",
+            tags: ["admin", "lavalink"],
+            response: { 200: DataResponse({ type: "object", properties: { reset: { type: "boolean" } } }) },
+        },
+    }, async (_req, reply) => {
+        await lavalinkAdminService.resetHealth();
+        return reply.send({ data: { reset: true } });
     });
 }
 

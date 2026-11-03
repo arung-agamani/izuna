@@ -10,6 +10,8 @@ describe("admin lavalink routes", () => {
         getPreferences: vi.fn(),
         updatePreferences: vi.fn(),
         syncNodes: vi.fn(),
+        getHealth: vi.fn(),
+        resetHealth: vi.fn(),
     };
 
     beforeAll(async () => {
@@ -80,5 +82,25 @@ describe("admin lavalink routes", () => {
         expect(res.statusCode).toBe(200);
         expect(res.json()).toEqual({ data: { synced: true } });
         expect(service.syncNodes).toHaveBeenCalled();
+    });
+
+    it("GET /health returns the stored health map", async () => {
+        const health = { a: { healthy: true, latencyMs: 20, lastCheckedAt: "2026-01-01T00:00:00.000Z" } };
+        service.getHealth.mockResolvedValue(health);
+
+        const res = await app.inject({ method: "GET", url: "/admin/lavalink/health" });
+
+        expect(res.statusCode).toBe(200);
+        expect(res.json()).toEqual({ data: health });
+    });
+
+    it("DELETE /health resets the health map", async () => {
+        service.resetHealth.mockResolvedValue(undefined);
+
+        const res = await app.inject({ method: "DELETE", url: "/admin/lavalink/health" });
+
+        expect(res.statusCode).toBe(200);
+        expect(res.json()).toEqual({ data: { reset: true } });
+        expect(service.resetHealth).toHaveBeenCalled();
     });
 });

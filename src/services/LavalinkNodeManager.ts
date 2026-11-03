@@ -8,7 +8,12 @@ import logger from "../lib/winston.js";
 
 const SOURCE_TAGS_KEY = "lavalink:source-tags";
 const NODE_TAGS_KEY = "lavalink:node-tags";
-const NODE_HEALTH_KEY = "lavalink:node-health";
+export const NODE_HEALTH_KEY = "lavalink:node-health";
+
+/** Default interval for periodic node pool refresh: 10 minutes. */
+const DEFAULT_SYNC_INTERVAL_MS = 600_000;
+/** Minimum gap between syncs — prevents spamming the public API. */
+const DEFAULT_SYNC_COOLDOWN_MS = 30_000;
 
 // Shoukaku exposes its State enum only under `Constants.State`, not as a top-level
 // export. CONNECTED = 1 (see refresh-shoukaku.ts:152 for the existing convention).
@@ -23,13 +28,13 @@ export const DEFAULT_SOURCE_TAGS: Record<string, string[]> = {
     default: ["public"],
 };
 
-type NodeHealthEntry = {
+export type NodeHealthEntry = {
     healthy: boolean;
     latencyMs: number | null;
     lastCheckedAt: string;
 };
 
-type NodeHealthMap = Record<string, NodeHealthEntry>;
+export type NodeHealthMap = Record<string, NodeHealthEntry>;
 
 interface PingResult {
     node: PublicLavalinkNode;
@@ -43,7 +48,7 @@ const NodeHealthEntrySchema = z.object({
     lastCheckedAt: z.string(),
 });
 
-const NodeHealthMapSchema = z.record(z.string(), NodeHealthEntrySchema);
+export const NodeHealthMapSchema = z.record(z.string(), NodeHealthEntrySchema);
 
 /** Stable identifier for a public node — matches `toNodeOption`'s `name`. */
 function nodeKey(node: PublicLavalinkNode): string {
@@ -75,11 +80,18 @@ export class LavalinkNodeManager {
     private nodeTags: Record<string, string[]> = {};
     private lastErrors: Map<string, string> = new Map();
 
+    // --- Self-healing state ---
+    private syncLock = false;
+    private lastSyncAt = 0;
+    private periodicSyncTimer: ReturnType<typeof setInterval> | null = null;
+
     constructor(
         private readonly kv: KeyValueRepository,
         private readonly publicNodes: PublicLavalinkNodeService,
         private readonly getManager: () => Shoukaku | undefined,
         private readonly maxPublicNodes: number = 3,
+        private readonly syncCooldownMs: number = DEFAULT_SYNC_COOLDOWN_MS,
+        private readonly syncIntervalMs: number = DEFAULT_SYNC_INTERVAL_MS,
     ) {}
 
     async loadPreferences(): Promise<void> {
@@ -194,6 +206,102 @@ export class LavalinkNodeManager {
             });
         }
         await this.loadPreferences();
+    }
+
+    // ---------------------------------------------------------------------------
+    // Self-healing: periodic refresh, emergency sync, connected-node tracking
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Start a periodic timer that refreshes the public node pool on a fixed
+     * interval. Idempotent — calling this when a timer is already running is a
+     * no-op. The timer keeps the process alive; call {@link stopPeriodicSync}
+     * on graceful shutdown.
+     */
+    startPeriodicSync(intervalMs: number = this.syncIntervalMs): void {
+        if (this.periodicSyncTimer) return;
+        this.periodicSyncTimer = setInterval(() => {
+            this.syncNodes().catch((err) => {
+                logger.warn("Periodic Lavalink node sync failed", {
+                    error: err instanceof Error ? err.message : String(err),
+                });
+            });
+        }, intervalMs);
+        // Don't let the timer alone keep the process alive during graceful shutdown.
+        if (typeof this.periodicSyncTimer.unref === "function") {
+            this.periodicSyncTimer.unref();
+        }
+        logger.info("Started periodic Lavalink node sync", { intervalMs });
+    }
+
+    /** Stop the periodic sync timer started by {@link startPeriodicSync}. */
+    stopPeriodicSync(): void {
+        if (this.periodicSyncTimer) {
+            clearInterval(this.periodicSyncTimer);
+            this.periodicSyncTimer = null;
+            logger.info("Stopped periodic Lavalink node sync");
+        }
+    }
+
+    /**
+     * Trigger a guarded, on-demand node sync. Safe to call from multiple
+     * callers concurrently — only one sync runs at a time and a cooldown
+     * prevents rapid re-entry after a recent sync.
+     *
+     * @param timeoutMs Max time to wait if another sync is already in progress.
+     *                  Defaults to 30s. If the wait times out, the method
+     *                  returns without syncing (the caller falls back to a no-node error).
+     */
+    async emergencySync(timeoutMs: number = 30_000): Promise<void> {
+        if (this.syncLock) {
+            await this.waitForSync(timeoutMs);
+            return;
+        }
+
+        if (Date.now() - this.lastSyncAt < this.syncCooldownMs) {
+            logger.debug("Emergency sync skipped — cooldown active", {
+                msSinceLastSync: Date.now() - this.lastSyncAt,
+            });
+            return;
+        }
+
+        this.syncLock = true;
+        try {
+            logger.info("Starting emergency Lavalink node sync");
+            await this.syncNodes();
+            this.lastSyncAt = Date.now();
+        } catch (error) {
+            logger.warn("Emergency Lavalink node sync failed", {
+                error: error instanceof Error ? error.message : String(error),
+            });
+        } finally {
+            this.syncLock = false;
+        }
+    }
+
+    /** Number of nodes currently in CONNECTED state. */
+    getConnectedNodeCount(): number {
+        const manager = this.getManager();
+        if (!manager) return 0;
+        return [...manager.nodes.values()].filter((n) => n.state === CONNECTED).length;
+    }
+
+    /** Convenience predicate — true when at least one node is CONNECTED. */
+    hasConnectedNodes(): boolean {
+        return this.getConnectedNodeCount() > 0;
+    }
+
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Wait for an in-flight sync to complete. Polls the sync lock every 500ms.
+     * Resolves when the sync completes or the timeout elapses (whichever first).
+     */
+    private async waitForSync(timeoutMs: number): Promise<void> {
+        const start = Date.now();
+        while (this.syncLock && Date.now() - start < timeoutMs) {
+            await new Promise<void>((resolve) => setTimeout(resolve, 500));
+        }
     }
 
     private async loadHealth(): Promise<NodeHealthMap> {

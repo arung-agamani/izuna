@@ -32,6 +32,16 @@ interface PreferencesResponse {
     data: LavalinkPreferences;
 }
 
+interface NodeHealthEntry {
+    healthy: boolean;
+    latencyMs: number | null;
+    lastCheckedAt: string;
+}
+
+interface HealthResponse {
+    data: Record<string, NodeHealthEntry>;
+}
+
 const primaryButtonStyle: CSSProperties = {
     background: "var(--color-accent)",
     color: "#fff",
@@ -270,10 +280,29 @@ export default function AdminLavalink() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["admin-lavalink-nodes"] });
             queryClient.invalidateQueries({ queryKey: ["admin-lavalink-preferences"] });
+            queryClient.invalidateQueries({ queryKey: ["admin-lavalink-health"] });
             setFeedback({ kind: "success", message: "Public node pool re-synced." });
         },
         onError: (err) => {
             setFeedback({ kind: "error", message: err instanceof Error ? err.message : "Failed to sync nodes." });
+        },
+    });
+
+    const { data: health } = useQuery({
+        queryKey: ["admin-lavalink-health"],
+        queryFn: async () => (await api.get("api/izuna/admin/lavalink/health").json<HealthResponse>()).data,
+        retry: false,
+    });
+
+    const resetHealthMutation = useMutation({
+        mutationFn: async () => api.delete("api/izuna/admin/lavalink/health"),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["admin-lavalink-health"] });
+            queryClient.invalidateQueries({ queryKey: ["admin-lavalink-nodes"] });
+            setFeedback({ kind: "success", message: "Node health reset — re-evaluated from scratch." });
+        },
+        onError: (err) => {
+            setFeedback({ kind: "error", message: err instanceof Error ? err.message : "Failed to reset node health." });
         },
     });
 
@@ -343,6 +372,50 @@ export default function AdminLavalink() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {nodes?.map((node) => (
                                     <NodeCard key={node.name} node={node} />
+                                ))}
+                            </div>
+                        )}
+                    </section>
+
+                    {/* Stored node health */}
+                    <section className="lavalink-card rounded-2xl p-6 mb-6" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                        <div className="flex items-center justify-between mb-1">
+                            <h2 className="text-lg m-0" style={{ fontFamily: "var(--font-display)" }}>
+                                Stored node health
+                            </h2>
+                            <button
+                                type="button"
+                                onClick={() => resetHealthMutation.mutate()}
+                                disabled={resetHealthMutation.isPending}
+                                className={buttonInteraction}
+                                style={secondaryButtonStyle}
+                            >
+                                {resetHealthMutation.isPending ? "Resetting..." : "Reset health data"}
+                            </button>
+                        </div>
+                        <p className="text-xs m-0 mb-4" style={{ color: "var(--color-text-muted)" }}>
+                            Persisted reachability from the last evaluation. Reset clears it so the next sync re-discovers healthy nodes from scratch.
+                        </p>
+
+                        {health && Object.keys(health).length === 0 ? (
+                            <p className="text-sm m-0" style={{ color: "var(--color-text-muted)" }}>
+                                No stored health data yet.
+                            </p>
+                        ) : (
+                            <div>
+                                {Object.entries(health ?? {}).map(([name, entry]) => (
+                                    <div key={name} className="flex items-center gap-3 py-1.5" style={{ borderBottom: "1px solid var(--color-border)" }}>
+                                        <span className="text-xs font-mono truncate flex-1 min-w-0" style={{ color: "var(--color-text-primary)" }} title={name}>
+                                            {name}
+                                        </span>
+                                        <span className="text-xs shrink-0 flex items-center gap-1.5" style={{ color: entry.healthy ? "var(--color-positive)" : "var(--color-warning)" }}>
+                                            <span className="w-2 h-2 rounded-full inline-block" style={{ background: entry.healthy ? "var(--color-positive)" : "var(--color-warning)" }} />
+                                            {entry.healthy ? "healthy" : "dead"}
+                                        </span>
+                                        <span className="text-xs font-mono shrink-0" style={{ color: "var(--color-text-muted)" }}>
+                                            {entry.healthy && entry.latencyMs != null ? `${entry.latencyMs}ms` : "—"}
+                                        </span>
+                                    </div>
                                 ))}
                             </div>
                         )}
