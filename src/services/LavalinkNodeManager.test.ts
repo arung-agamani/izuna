@@ -333,5 +333,19 @@ describe("LavalinkNodeManager", () => {
             expect(manager.addNode).not.toHaveBeenCalled();
             expect(kv.get).toHaveBeenCalledWith("lavalink:source-tags");
         });
+
+        it("skips nodes already in the pool (add-only)", async () => {
+            const { nodeManager, manager, publicNodes } = makeManager([]);
+            // Seed the pool with an existing node named "a".
+            manager.nodes.set("a", makeNode("a", "public", 1));
+            publicNodes.fetchNodes.mockResolvedValue([makePublicNode("a"), makePublicNode("b")]);
+            publicNodes.websocketProbe.mockResolvedValue(10);
+
+            await nodeManager.syncNodes();
+
+            // "a" already exists → skipped; only "b" is added.
+            expect(manager.addNode).toHaveBeenCalledTimes(1);
+            expect(manager.addNode).toHaveBeenCalledWith(expect.objectContaining({ name: "b" }));
+        });
     });
 });

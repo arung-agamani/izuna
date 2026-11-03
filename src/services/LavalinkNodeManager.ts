@@ -195,11 +195,19 @@ export class LavalinkNodeManager {
         try {
             const nodes = await this.publicNodes.fetchNodes("all");
             const selected = await this.selectHealthyNodes(nodes);
+            let added = 0;
             for (const node of selected) {
-                manager.addNode(toNodeOption(node));
-                logger.debug("Added public Lavalink node to pool", { name: nodeKey(node) });
+                const option = toNodeOption(node);
+                if (manager.nodes.has(option.name)) continue; // add-only — never replace a live node
+                manager.addNode(option);
+                added += 1;
+                logger.debug("Added public Lavalink node to pool", { name: option.name });
             }
-            logger.info("Public Lavalink node selection complete", { fetched: nodes.length, selected: selected.length });
+            logger.info("Public Lavalink node selection complete", {
+                fetched: nodes.length,
+                selected: selected.length,
+                added,
+            });
         } catch (error) {
             logger.warn("Failed to sync public Lavalink nodes; continuing with configured nodes only", {
                 error: error instanceof Error ? error.message : String(error),
