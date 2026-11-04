@@ -195,18 +195,25 @@ export class LavalinkNodeManager {
         try {
             const nodes = await this.publicNodes.fetchNodes("all");
             const selected = await this.selectHealthyNodes(nodes);
-            let added = 0;
+            const addedNames: string[] = [];
+            const skippedNames: string[] = [];
             for (const node of selected) {
                 const option = toNodeOption(node);
-                if (manager.nodes.has(option.name)) continue; // add-only — never replace a live node
+                if (manager.nodes.has(option.name)) {
+                    skippedNames.push(option.name);
+                    continue; // add-only — never replace a live node
+                }
                 manager.addNode(option);
-                added += 1;
-                logger.debug("Added public Lavalink node to pool", { name: option.name });
+                addedNames.push(option.name);
             }
             logger.info("Public Lavalink node selection complete", {
                 fetched: nodes.length,
                 selected: selected.length,
-                added,
+                selectedNames: selected.map(nodeKey),
+                added: addedNames.length,
+                addedNames,
+                skipped: skippedNames.length,
+                skippedNames,
             });
         } catch (error) {
             logger.warn("Failed to sync public Lavalink nodes; continuing with configured nodes only", {
@@ -327,7 +334,10 @@ export class LavalinkNodeManager {
     }
 
     private async pingNodes(nodes: PublicLavalinkNode[]): Promise<PingResult[]> {
-        const userId = this.getManager()?.id ?? "izuna-health-check";
+        // Probe with a placeholder User-Id, NOT the bot's real id. Connecting to a
+        // node with the same User-Id as an active player session can make the node
+        // replace the player's session, disrupting playback when the probe closes.
+        const userId = "izuna-health-check";
         return mapWithConcurrency(nodes, PING_CONCURRENCY, async (node) => {
             try {
                 const latencyMs = await this.publicNodes.websocketProbe(node, userId);

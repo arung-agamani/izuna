@@ -196,12 +196,19 @@ export class MusicService {
             }
         });
 
-        // Track start — mark the session as actively playing
-        player.on("start", () => {
+        // Track start — mark the session as actively playing and log the actual playback
+        player.on("start", (data) => {
             const currentSession = MusicService.sessions.get(guildId);
             if (!currentSession) return;
             currentSession.isPlaying = true;
             currentSession.isPaused = false;
+            logger.info("track_started", {
+                event: "track_started",
+                guildId,
+                trackTitle: data.track.info.title,
+                durationMs: data.track.info.length,
+            });
+            trackStartedTotal.inc();
         });
 
         // Track end - handle queue progression
@@ -276,13 +283,6 @@ export class MusicService {
                 track: { encoded: track.encoded },
                 position: track.info?.position || 0,
             });
-            logger.info("track_started", {
-                event: "track_started",
-                guildId: session.guildId,
-                trackTitle: track.info.title,
-                durationMs: track.info.length,
-            });
-            trackStartedTotal.inc();
 
             const fancyTimeFormat = (seconds: number) => {
                 const hours = Math.floor(seconds / 3600);
